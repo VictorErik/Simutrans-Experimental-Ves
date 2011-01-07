@@ -118,6 +118,7 @@ stadt_info_t::stadt_info_t(stadt_t* stadt_) :
 	add_pax_dest( pax_dest_old, stadt->get_pax_destinations_old());
 	add_pax_dest( pax_dest_new, stadt->get_pax_destinations_new());
 	pax_destinations_last_change = stadt->get_pax_destinations_new_change();
+	reliefkarte_t::set_current_city(stadt_);
 }
 
 
