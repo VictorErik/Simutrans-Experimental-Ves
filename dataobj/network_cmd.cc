@@ -228,7 +228,7 @@ bool nwc_join_t::execute(karte_t *welt)
 		if (nwj.send( packet->get_sender())) {
 			if (nwj.answer == 1) {
 				// now send sync command
-				nwc_sync_t *nws = new nwc_sync_t(welt->get_sync_steps() + umgebung_t::server_frames_ahead, welt->get_map_counter(), nwj.client_id);
+				nwc_sync_t *nws = new nwc_sync_t(welt->get_sync_steps() + 1, welt->get_map_counter(), nwj.client_id);
 				network_send_all(nws, false);
 				pending_join_client = packet->get_sender();
 			}
@@ -540,13 +540,13 @@ void nwc_routesearch_t::check_for_transmission(karte_t *world)
 	// transmit min limit set if there has been 8 or more updates, or if no further update after a specified number of sync steps
 	if(  accumulated_updates>=8  ||  (accumulated_updates>0  &&
 		 world->get_sync_steps()-last_update_sync_step>=4*world->get_einstellungen()->get_frames_per_step())  ) {
-		network_send_all( new nwc_routesearch_t(world->get_sync_steps() + umgebung_t::server_frames_ahead, world->get_map_counter(), min_limit_set, true), false );
+		network_send_all( new nwc_routesearch_t(world->get_sync_steps() + 1, world->get_map_counter(), min_limit_set, true), false );
 		last_update_sync_step = 0;
 		accumulated_updates = 0;
 		active_limit_set = min_limit_set;
 		dbg->warning("nwc_routesearch_t::check_for_transmission", "transmit sync_step=%u map_counter=%u limits=(%u, %u, %u, %llu, %u)",
-			world->get_sync_steps() + umgebung_t::server_frames_ahead, world->get_map_counter(), min_limit_set.rebuild_connexions,
-			min_limit_set.filter_eligible, min_limit_set.fill_matrix, min_limit_set.explore_paths, min_limit_set.reroute_goods);
+			world->get_sync_steps() + 1, world->get_map_counter(), min_limit_set.rebuild_connexions, min_limit_set.filter_eligible,
+			min_limit_set.fill_matrix, min_limit_set.explore_paths, min_limit_set.reroute_goods);
 	}
 }
 
@@ -726,7 +726,7 @@ bool nwc_tool_t::execute(karte_t *welt)
 		// copy data, sets tool_client_id to sender client_id
 		nwc_tool_t *nwt = new nwc_tool_t(*this);
 		nwt->exec = true;
-		nwt->sync_step = welt->get_sync_steps() + umgebung_t::server_frames_ahead;
+		nwt->sync_step = welt->get_sync_steps() + 1;
 		nwt->last_sync_step = welt->get_last_random_seed_sync();
 		nwt->last_random_seed = welt->get_last_random_seed();
 		dbg->warning("nwc_tool_t::execute", "send sync_steps=%d  wkz=%d %s. Random flags: %d", nwt->get_sync_step(), wkz_id, init ? "init" : "work", get_random_mode());
@@ -744,7 +744,7 @@ bool nwc_tool_t::ignore_old_events() const
 
 
 // compare default_param's (NULL pointers allowed
-// @returns true if default_param are equal
+// @return true if default_param are equal
 bool nwc_tool_t::cmp_default_param(const char *d1, const char *d2)
 {
 	if (d1) {
