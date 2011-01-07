@@ -21,7 +21,7 @@
 
 class karte_t;
 
-#define MAX_BUTTON_TYPE (19)
+#define MAX_BUTTON_TYPE (20)
 
 /**
  * Reliefkartenfenster für Simutrans.

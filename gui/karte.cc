@@ -14,6 +14,7 @@
 #include "../dataobj/einstellungen.h"
 
 #include "../boden/wege/schiene.h"
+#include "../boden/wege/strasse.h"
 #include "../dings/leitung2.h"
 #include "../dataobj/powernet.h"
 #include "../utils/cbuffer_t.h"
@@ -31,7 +32,7 @@ reliefkarte_t * reliefkarte_t::single_instance = NULL;
 karte_t * reliefkarte_t::welt = NULL;
 reliefkarte_t::MAP_MODES reliefkarte_t::mode = MAP_TOWN;
 bool reliefkarte_t::is_visible = false;
-
+stadt_t* reliefkarte_t::current_city;
 // color for the land
 const uint8 reliefkarte_t::map_type_color[MAX_MAP_TYPE_WATER+MAX_MAP_TYPE_LAND] =
 {
@@ -531,6 +532,19 @@ void reliefkarte_t::calc_map_pixel(const koord k)
 			}
 
 			break;
+		case MAP_PRIVATE_ROUTES:
+			if (gr->hat_weg(road_wt))
+			{
+				strasse_t *weg = static_cast<strasse_t *>(gr->get_weg(road_wt));
+				for ( int i = 0 ; i < weg->private_car_routes.get_count(); i++) 
+				{
+					stadt_t* city = welt->get_city(weg->private_car_routes[i]->get_origin_city_pos());
+					if ( city == current_city)
+					{
+						set_relief_farbe(k, COL_WHITE );
+					}
+				}
+			}
 
 		default:
 			break;

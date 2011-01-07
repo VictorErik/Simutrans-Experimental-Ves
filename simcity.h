@@ -309,10 +309,9 @@ private:
 	road_destination_finder_t *finder;
 
 	vector_tpl<senke_t*> substations;
-
+public:
 	vector_tpl<private_car_route_t*> private_car_routes;
 
-public:
 	/**
 	 * Returns pointer to history for city
 	 * @author hsiegeln

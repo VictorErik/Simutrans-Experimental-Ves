@@ -74,7 +74,8 @@ const char map_frame_t::map_type[MAX_BUTTON_TYPE][64] =
 	"Depots",
 	"Forest",
 	"CityLimit",
-	"PaxDest"
+	"PaxDest",
+	"PrivateRoute"
 };
 
 const uint8 map_frame_t::map_type_color[MAX_BUTTON_TYPE] =

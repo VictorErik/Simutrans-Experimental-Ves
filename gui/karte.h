@@ -1,6 +1,8 @@
 #ifndef gui_karte_h
 #define gui_karte_h
 
+#include <set>
+#include "../simcity.h"
 #include "components/gui_komponente.h"
 #include "../tpl/array2d_tpl.h"
 
@@ -10,7 +12,7 @@ class karte_t;
 class fabrik_t;
 class grund_t;
 class stadt_t;
-
+class private_car_route_t;
 
 #define MAX_MAP_TYPE_LAND 14
 #define MAX_MAP_TYPE_WATER 5
@@ -49,7 +51,8 @@ public:
 		MAP_DEPOT,
 		MAP_FOREST,
 		MAP_CITYLIMIT,
-		MAP_PAX_DEST
+		MAP_PAX_DEST,
+		MAP_PRIVATE_ROUTES
 	};
 
 private:
@@ -105,7 +108,8 @@ private:
 	uint16 citycar_speed_average;
 
 	void set_citycar_speed_average();
-
+	
+	static stadt_t* current_city;
 public:
 	void karte_to_screen(koord &) const;
 
@@ -184,6 +188,7 @@ public:
 	void set_city( const stadt_t* _city );
 
 	const stadt_t* get_city() const { return city; };
+	static void set_current_city(stadt_t* s) { current_city = s; } 
 };
 
 #endif
