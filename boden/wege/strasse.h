@@ -2,6 +2,7 @@
 #define boden_wege_strasse_h
 
 #include "weg.h"
+class private_car_route_t;
 
 /**
  * Auf der Strasse können Autos fahren.
@@ -21,6 +22,8 @@ public:
 	void set_gehweg(bool janein);
 
 	virtual void rdwr(loadsave_t *file);
+
+	vector_tpl<private_car_route_t*> private_car_routes;
 };
 
 #endif

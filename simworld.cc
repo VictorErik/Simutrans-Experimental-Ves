@@ -894,7 +894,11 @@ DBG_DEBUG("karte_t::distribute_groundobjs_cities()","prepare cities");
 		uint32 tbegin = dr_time();
 #endif
 		for(  unsigned i=0;  i<new_anzahl_staedte;  i++  ) {
-			stadt_t* s = new stadt_t(spieler[1], (*pos)[i], (*city_population)[i]);
+			stadt_t* s = new stadt_t(spieler[1], (*pos)[i], (*city_population)[i], check_road_connexions_month_next_city++);
+			if(check_road_connexions_month_next_city > 12)
+			{
+				check_road_connexions_month_next_city = 1;
+			}
 			DBG_DEBUG("karte_t::distribute_groundobjs_cities()","Erzeuge stadt %i with %ld inhabitants",i,(s->get_city_history_month())[HIST_CITICENS] );
 			stadt.append(s, s->get_einwohner(), 64);
 			if(is_display_init()) {
@@ -1725,6 +1729,8 @@ karte_t::karte_t() : convoi_array(0), ausflugsziele(16), stadt(0), marker(0,0)
 
 	// @author: jamespetts
 	set_scale();
+
+	check_road_connexions_month_next_city = 1;
 }
 
 
@@ -4412,6 +4418,11 @@ DBG_MESSAGE("karte_t::speichern(loadsave_t *file)", "saved messages");
 		file->rdwr_double(industry_density_proportion);
 	}
 
+	if(file->get_experimental_version() >= 10)
+	{
+		file->rdwr_byte(check_road_connexions_month_next_city);
+	}
+
 	// save all open windows (upon request)
 	rwdr_all_win(file);
 
@@ -5127,30 +5138,36 @@ DBG_MESSAGE("karte_t::laden()", "%d ways loaded",weg_t::get_alle_wege().get_coun
 		file->rdwr_short(base_pathing_counter);
 	}
 	
-		if(file->get_experimental_version() >= 7)
+	if(file->get_experimental_version() >= 7)
+	{
+		file->rdwr_double(industry_density_proportion);
+	}
+
+	else
+	{
+		// Reconstruct the actual industry density.
+		// @author: jamespetts			
+		// Loading a game - must set this to zero here and recalculate.
+		actual_industry_density = 0;
+		double weight;
+		ITERATE(fab_list, i)
 		{
-			file->rdwr_double(industry_density_proportion);
-		}
-		else
-		{
-			// Reconstruct the actual industry density.
-			// @author: jamespetts			
-			// Loading a game - must set this to zero here and recalculate.
-			actual_industry_density = 0;
-			double weight;
-			ITERATE(fab_list, i)
+			const fabrik_besch_t* factory_type = fab_list[i]->get_besch();
+			if(!factory_type->is_electricity_producer())
 			{
-				const fabrik_besch_t* factory_type = fab_list[i]->get_besch();
-				if(!factory_type->is_electricity_producer())
-				{
-					// Power stations are excluded from the target weight:
-					// a different system is used for them.
-					weight = factory_type->get_gewichtung();
-					actual_industry_density += (1.0 / weight);
-				}
+				// Power stations are excluded from the target weight:
+				// a different system is used for them.
+				weight = factory_type->get_gewichtung();
+				actual_industry_density += (1.0 / weight);
 			}
-			industry_density_proportion = actual_industry_density / finance_history_month[0][WORLD_CITICENS];
 		}
+		industry_density_proportion = actual_industry_density / finance_history_month[0][WORLD_CITICENS];
+	}
+
+	if(file->get_experimental_version() >= 10)
+	{
+		file->rdwr_byte(check_road_connexions_month_next_city);
+	}
 
 	// Added by : Knightly
 	if ( einstellungen->get_default_path_option() == 2 )

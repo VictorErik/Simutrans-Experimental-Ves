@@ -141,8 +141,7 @@ void stadt_t::privatecar_rdwr(loadsave_t *file)
 		uint32 count = car_ownership[0].get_count();
 		file->rdwr_long(count);
 		ITERATE(car_ownership[0], i)
-		{
-			
+		{	
 			file->rdwr_longlong(car_ownership[0].get_element(i).year);
 			file->rdwr_short(car_ownership[0].get_element(i).ownership_percent);
 		}	
@@ -1264,7 +1263,29 @@ stadt_t::~stadt_t()
 	}
 
 	delete finder;
-	delete private_car_route;
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter_c(connected_cities);
+	while(iter_c.next())
+	{
+		const koord k = iter_c.get_current_key();
+		stadt_t* city = welt->get_city(k);
+		if(city)
+		{
+			city->prune_route_to(get_pos());
+		}
+		delete iter_c.access_current_value();
+	}
+
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter_i(connected_industries);
+	while(iter_i.next())
+	{
+		delete iter_i.access_current_value();
+	}
+
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter_a(connected_attractions);
+	while(iter_a.next())
+	{
+		delete iter_a.access_current_value();
+	}
 
 	if(  reliefkarte_t::get_karte()->get_city() == this  ) {
 		reliefkarte_t::get_karte()->set_city(NULL);
@@ -1306,7 +1327,7 @@ stadt_t::~stadt_t()
 		
 		if(!welt->get_is_shutting_down())
 		{
-			koordhashtable_iterator_tpl<koord, uint16> iter(connected_cities);
+			koordhashtable_iterator_tpl<koord, private_car_route_t*> iter(connected_cities);
 			while(iter.next())
 			{
 				if(iter.get_current_key() == pos)
@@ -1321,7 +1342,7 @@ stadt_t::~stadt_t()
 }
 
 
-stadt_t::stadt_t(spieler_t* sp, koord pos, sint32 citizens) :
+stadt_t::stadt_t(spieler_t* sp, koord pos, sint32 citizens, uint8 car_update_month) :
 	buildings(16),
 	pax_destinations_old(koord(PAX_DESTINATIONS_SIZE, PAX_DESTINATIONS_SIZE)),
 	pax_destinations_new(koord(PAX_DESTINATIONS_SIZE, PAX_DESTINATIONS_SIZE)),
@@ -1425,8 +1446,9 @@ next_name:;
 	calc_internal_passengers();
 
 	finder = new road_destination_finder_t(welt, new automobil_t(welt));
-	private_car_route = new route_t();
-	check_road_connexions = false;
+
+	private_car_update_month = car_update_month;
+	private_car_update_counter = 0;
 
 }
 
@@ -1496,8 +1518,6 @@ stadt_t::stadt_t(karte_t* wl, loadsave_t* file) :
 	calc_internal_passengers();
 
 	finder = new road_destination_finder_t(welt, new automobil_t(welt));
-	private_car_route = new route_t();
-	check_road_connexions = false;
 }
 
 
@@ -1687,10 +1707,34 @@ void stadt_t::rdwr(loadsave_t* file)
 		// recalculate borders
 		recalc_city_size();
 
-		connected_cities.clear();
-		connected_industries.clear();
-		connected_attractions.clear();
-		check_road_connexions = false;
+	}
+
+	if(file->get_experimental_version() >= 10)
+	{
+		file->rdwr_byte(private_car_update_month);
+		file->rdwr_byte(private_car_update_counter);
+		
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter1(connected_cities);
+		while(iter1.next())
+		{
+			iter1.access_current_value()->rdwr(file);
+		}
+
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter2(connected_industries);
+		while(iter1.next())
+		{
+			iter2.access_current_value()->rdwr(file);
+		}
+
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter3(connected_attractions);
+		while(iter1.next())
+		{
+			iter3.access_current_value()->rdwr(file);
+		}
+	}
+	else
+	{
+		private_car_update_month = welt->apply_check_road_connexions_month_next_city();
 	}
 }
 
@@ -1792,16 +1836,16 @@ void stadt_t::rotate90( const sint16 y_size )
 	swap<uint8>( pax_destinations_temp, pax_destinations_old );
 
 	vector_tpl<koord> k_list(connected_cities.get_count());
-	vector_tpl<uint16> f_list(connected_cities.get_count());
-	koordhashtable_iterator_tpl<koord, uint16> iter1(connected_cities);
+	vector_tpl<private_car_route_t*> f_list(connected_cities.get_count());
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter1(connected_cities);
 	while(iter1.next())
 	{
 		koord k = iter1.get_current_key();
-		uint16 f  = connected_cities.remove(k);
+		private_car_route_t* f  = connected_cities.remove(k);
 		k.rotate90(y_size);
 		if(connected_cities.is_contained(k))
 		{
-			uint16 f_2 = connected_cities.remove(k);
+			private_car_route_t* f_2 = connected_cities.remove(k);
 			koord k_2 = k;
 			k_2.rotate90(y_size);
 			assert(k_2 != koord::invalid);
@@ -1821,15 +1865,15 @@ void stadt_t::rotate90( const sint16 y_size )
 
 	k_list.clear();
 	f_list.clear();
-	koordhashtable_iterator_tpl<koord, uint16> iter2(connected_industries);
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter2(connected_industries);
 	while(iter2.next())
 	{
 		koord k = iter2.get_current_key();
-		uint16 f  = connected_industries.remove(k);
+		private_car_route_t* f  = connected_industries.remove(k);
 		k.rotate90(y_size);
 		if(connected_industries.is_contained(k))
 		{
-			uint16 f_2 = connected_industries.remove(k);
+			private_car_route_t* f_2 = connected_industries.remove(k);
 			koord k_2 = k;
 			k_2.rotate90(y_size);
 			assert(k_2 != koord::invalid);
@@ -1849,15 +1893,15 @@ void stadt_t::rotate90( const sint16 y_size )
 
 	k_list.clear();
 	f_list.clear();
-	koordhashtable_iterator_tpl<koord, uint16> iter3(connected_attractions);
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter3(connected_attractions);
 	while(iter3.next())
 	{
 		koord k = iter3.get_current_key();
-		uint16 f  = connected_attractions.remove(k);
+		private_car_route_t* f  = connected_attractions.remove(k);
 		k.rotate90(y_size);
 		if(connected_attractions.is_contained(k))
 		{
-			uint16 f_2 = connected_attractions.remove(k);
+			private_car_route_t* f_2 = connected_attractions.remove(k);
 			koord k_2 = k;
 			k_2.rotate90(y_size);
 			assert(k_2 != koord::invalid);
@@ -2096,17 +2140,104 @@ void stadt_t::neuer_monat(bool check) //"New month" (Google)
 	}
 	city_history_year[0][HIST_CAR_OWNERSHIP] = car_ownership_sum / MAX_CITY_HISTORY_MONTHS;
 
-	// Clearing these will force recalculation as necessary.
-	// Cannot do this too often, as it severely impacts on performance.
-	check_road_connexions = check;
-
-	if(check_road_connexions)
+	if(private_car_update_counter == 0)
 	{
-		connected_cities.clear();
-		connected_industries.clear();
-		connected_attractions.clear();
-		check_road_connexions = false;
+		if(check)
+		{
+			private_car_update_counter++;
+			if(private_car_update_counter > 12)
+			{
+				private_car_update_counter = 1;
+			}
+		}
 	}
+	
+	else if(private_car_update_counter == private_car_update_month)
+	{
+		// Remove old routes
+		bool can_set_counter_zero = true;
+		private_car_route_t* route = NULL;
+
+		// Cities
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter1(connected_cities);
+		while(iter1.next())
+		{
+			route = iter1.access_current_value();
+			if(!route)
+			{
+				connected_cities.remove(iter1.get_current_key());
+			}
+			else
+			{
+				if(route->get_months_old() >= 6)
+				{
+					delete route;
+				}
+				else
+				{
+					can_set_counter_zero = false;
+				}
+			}
+		}
+
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter2(connected_industries);
+		while(iter2.next())
+		{
+			route = iter2.access_current_value();
+			if(!route)
+			{
+				connected_industries.remove(iter2.get_current_key());
+			}
+			else
+			{
+				if(route->get_months_old() >= 6)
+				{
+					delete route;
+				}
+				else
+				{
+					can_set_counter_zero = false;
+				}
+			}
+		}
+
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter3(connected_attractions);
+		while(iter3.next())
+		{
+			route = iter3.access_current_value();
+			if(!route)
+			{
+				connected_attractions.remove(iter3.get_current_key());
+			}
+			else
+			{
+				if(route->get_months_old() >= 6)
+				{
+					delete route;
+				}
+				else
+				{
+					can_set_counter_zero = false;
+				}
+			}
+		}
+		if(can_set_counter_zero)
+		{
+			private_car_update_counter = 0;
+		}
+	}
+
+	else
+	{
+		private_car_update_counter ++;
+		if(private_car_update_counter > 12)
+		{
+			private_car_update_counter = 1;
+		}
+	}
+
+		
+		
 	
 	if (!stadtauto_t::list_empty()) 
 	{
@@ -2119,8 +2250,6 @@ void stadt_t::neuer_monat(bool check) //"New month" (Google)
 		// Divide by a factor because number of cars drawn on screen should be a fraction of actual traffic, or else
 		// everywhere will become completely clogged with traffic. Linear rather than logorithmic scaling so
 		// that the player can have a better idea visually of the amount of traffic.
-
-#define DESTINATION_CITYCARS
 
 #ifdef DESTINATION_CITYCARS 
 		// Subtract incoming trips and cars already generated to prevent double counting.
@@ -2202,7 +2331,7 @@ void stadt_t::neuer_monat(bool check) //"New month" (Google)
 		number_of_cars = factor * traffic_level;
 		incoming_private_cars = 0;
 #else
-		//uint16 number_of_cars = ((city_history_month[1][HIST_CITYCARS] * welt->get_einstellungen()->get_verkehr_level()) / 16) / 64;
+		uint16 number_of_cars = ((city_history_month[1][HIST_CITYCARS] * welt->get_einstellungen()->get_verkehr_level()) / 16) / 64;
 #endif
 
 		while(!current_cars.empty() && (sint32)current_cars.get_count() > number_of_cars)
@@ -2231,6 +2360,37 @@ void stadt_t::neuer_monat(bool check) //"New month" (Google)
 					number_of_cars--;
 				}
 			}
+		}
+	}
+
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter1(connected_cities);
+	private_car_route_t* route;
+	while(iter1.next())
+	{
+		route = iter1.access_current_value();
+		if(route && route->get_origin_city_pos() == get_pos())
+		{
+			route->roll_month();
+		}
+	}
+
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter2(connected_attractions);
+	while(iter2.next())
+	{
+		route = iter2.access_current_value();
+		if(route)
+		{
+			route->roll_month();
+		}
+	}
+
+	koordhashtable_iterator_tpl<koord, private_car_route_t*> iter3(connected_industries);
+	while(iter3.next())
+	{
+		route = iter3.access_current_value();
+		if(route)
+		{
+			route->roll_month();
 		}
 	}
 }
@@ -2366,35 +2526,49 @@ uint16 stadt_t::check_road_connexion_to(stadt_t* city)
 
 	if(connected_cities.is_contained(city->get_pos()))
 	{
-		return connected_cities.get(city->get_pos());
+		const private_car_route_t* const route = connected_cities.get(city->get_pos());
+		if(route)
+		{
+			return route->get_journey_time_per_tile();
+		}
+		else
+		{
+			return 65335;
+		}
 	}
 	else if(city == this)
 	{
 		const koord3d pos3d(townhall_road, welt->lookup_hgt(townhall_road));
 		const weg_t* road = welt->lookup(pos3d)->get_weg(road_wt);
 		const uint16 journey_time_per_tile = road ? road->get_besch() == welt->get_city_road() ? welt->get_generic_road_speed_city() : welt->calc_generic_road_speed(road->get_besch()) : welt->get_generic_road_speed_city();
-		connected_cities.put(pos, journey_time_per_tile);
+		connected_cities.put(pos, new private_car_route_t(journey_time_per_tile));
 		return journey_time_per_tile;
 	}
 	else
 	{
 		const koord destination_road = city->get_townhall_road();
 		const koord3d desintation_koord(destination_road.x, destination_road.y, welt->lookup_hgt(destination_road));
-		const uint16 journey_time_per_tile = check_road_connexion(desintation_koord);
-		connected_cities.put(city->get_pos(), journey_time_per_tile);
-		city->add_road_connexion(journey_time_per_tile, this);
-		if(journey_time_per_tile == 65535)
+		private_car_route_t* route = check_road_connexion(desintation_koord);
+		if(route->get_journey_time_per_tile() == 65535)
 		{
 			// We know that, if this city is not connected to any given city, then every city
 			// to which this city is connected must likewise not be connected. So, avoid
 			// unnecessary recalculation by propogating this now.
-			koordhashtable_iterator_tpl<koord, uint16> iter(connected_cities);
+			koordhashtable_iterator_tpl<koord, private_car_route_t*> iter(connected_cities);
 			while(iter.next())
 			{
-				welt->get_city(iter.get_current_key())->add_road_connexion(65535, city);
+				welt->get_city(iter.get_current_key())->add_road_connexion(NULL, city);
 			}
+			delete route;
+			connected_cities.put(city->get_pos(), NULL);
+			city->add_road_connexion(NULL, this);
+			return 65535;
 		}
-		return journey_time_per_tile;
+		
+		connected_cities.put(city->get_pos(), route);
+		city->add_road_connexion(route, this);
+
+		return route->get_journey_time_per_tile();
 	}
 }
 
@@ -2407,7 +2581,15 @@ uint16 stadt_t::check_road_connexion_to(const fabrik_t* industry)
 	
 	if(connected_industries.is_contained(industry->get_pos().get_2d()))
 	{
-		return connected_industries.get(industry->get_pos().get_2d());
+		const private_car_route_t* const route = connected_industries.get(industry->get_pos().get_2d());
+		if(route)
+		{
+			return route->get_journey_time_per_tile();
+		}
+		else
+		{
+			return 65535;
+		}
 	}
 	if(industry->get_city())
 	{
@@ -2443,23 +2625,24 @@ uint16 stadt_t::check_road_connexion_to(const fabrik_t* industry)
 			road = gr->get_weg(road_wt);
 			if(road != NULL)
 			{
-				goto found_road;
-				found_road:
 				const koord3d destination = road->get_pos();
-				const uint16 journey_time_per_tile = check_road_connexion(destination);
-				connected_industries.put(industry->get_pos().get_2d(), journey_time_per_tile);
-				if(journey_time_per_tile == 65535)
+				private_car_route_t* route = check_road_connexion(destination);
+				if(route->get_journey_time_per_tile() == 65535)
 				{
 					// We know that, if this city is not connected to any given industry, then every city
 					// to which this city is connected must likewise not be connected. So, avoid
 					// unnecessary recalculation by propogating this now.
-					koordhashtable_iterator_tpl<koord, uint16> iter(connected_cities);
+					koordhashtable_iterator_tpl<koord, private_car_route_t*> iter(connected_cities);
 					while(iter.next())
 					{
 						welt->get_city(iter.get_current_key())->set_no_connexion_to_industry(industry);
 					}
+					delete route;
+					connected_industries.put(industry->get_pos().get_2d(), NULL);
+					return 65535;
 				}
-				return journey_time_per_tile;
+				connected_industries.put(industry->get_pos().get_2d(), route);
+				return route->get_journey_time_per_tile();
 			}
 		}
 	}
@@ -2486,7 +2669,15 @@ uint16 stadt_t::check_road_connexion_to(const gebaeude_t* attraction)
 	
 	if(connected_attractions.is_contained(attraction->get_pos().get_2d()))
 	{
-		return connected_attractions.get(attraction->get_pos().get_2d());
+		const private_car_route_t* route = connected_attractions.get(attraction->get_pos().get_2d());
+		if(route)
+		{
+			return route->get_journey_time_per_tile();
+		}
+		else
+		{
+			return 65535;
+		}
 	}
 	const koord pos = attraction->get_pos().get_2d();
 	grund_t *gr;
@@ -2512,9 +2703,9 @@ uint16 stadt_t::check_road_connexion_to(const gebaeude_t* attraction)
 	}
 	if(road == NULL)
 	{
-		// No road connecting to industry - no connexion at all.
+		// No road connecting to attraction - no connexion at all.
 		// We should therefore set *every* city to register this
-		// industry as unconnected.
+		// attraction as unconnected.
 		
 		const weighted_vector_tpl<stadt_t*>& staedte = welt->get_staedte();
 		for(weighted_vector_tpl<stadt_t*>::const_iterator j = staedte.begin(), end = staedte.end(); j != end; ++j) 
@@ -2523,63 +2714,46 @@ uint16 stadt_t::check_road_connexion_to(const gebaeude_t* attraction)
 		}
 		return 65535;
 	}
+	
 	const koord3d destination = road->get_pos();
-	const uint16 journey_time_per_tile = check_road_connexion(destination);
-	connected_attractions.put(attraction->get_pos().get_2d(), journey_time_per_tile);
-	if(journey_time_per_tile == 65535)
+	private_car_route_t* route = check_road_connexion(destination);
+	if(route->get_journey_time_per_tile() == 65535)
 	{
 		// We know that, if this city is not connected to any given industry, then every city
 		// to which this city is connected must likewise not be connected. So, avoid
 		// unnecessary recalculation by propogating this now.
-		koordhashtable_iterator_tpl<koord, uint16> iter(connected_cities);
+		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter(connected_cities);
 		while(iter.next())
 		{
 			welt->get_city(iter.get_current_key())->set_no_connexion_to_attraction(attraction);
 		}
+		delete route;
+		connected_attractions.put(attraction->get_pos().get_2d(), NULL);
+		return 65535;
 	}
-	return journey_time_per_tile;
+	connected_attractions.put(attraction->get_pos().get_2d(), route);
+	return route->get_journey_time_per_tile();
 }
 
-uint16 stadt_t::check_road_connexion(koord3d dest)
+private_car_route_t* stadt_t::check_road_connexion(koord3d dest)
 {
 	const koord3d origin(townhall_road.x, townhall_road.y, welt->lookup_hgt(townhall_road));
-	private_car_route->clear();
+	private_car_route_t* route = new private_car_route_t(get_pos(), welt);
 	finder->set_destination(dest);
 	const uint32 depth = welt->get_max_road_check_depth();
 	// Must use calc_route rather than find_route, or else this will be *far* too slow: only calc_route uses A*.
-	if(!private_car_route->calc_route(welt, origin, dest, finder, welt->get_citycar_speed_average(), 0, depth))
-	{
-		return 65535;
-	}
-	koord3d pos;
-	const sint32 vehicle_speed_average = welt->get_citycar_speed_average();
-	sint32 top_speed;
-	sint32 speed_sum = 0;
-	uint32 count = 0;
-	weg_t* road;
-	ITERATE_PTR(private_car_route,i)
-	{
-		pos = private_car_route->position_bei(i);
-		road = welt->lookup(pos)->get_weg(road_wt);
-		top_speed = road->get_max_speed();
-		speed_sum += min(top_speed, vehicle_speed_average);
-		count += road->is_diagonal() ? 7 : 10; //Use precalculated numbers to avoid division here.
-	}
-	const sint32 speed_average = (float)(speed_sum / ((float)count / 10.0F))  / 1.3F;
-	const float journey_distance_km = (float)private_car_route->get_count() * welt->get_einstellungen()->get_distance_per_tile();
-	const uint16 journey_time = 600 * (journey_distance_km / speed_average); // *Tenths* of minutes: hence *600, not *60.
-	const uint16 straight_line_distance_tiles = accurate_distance(origin.get_2d(), dest.get_2d());
-	return journey_time / (straight_line_distance_tiles == 0 ? 1 : straight_line_distance_tiles);
+	route->calc_route(origin, dest, finder, welt->get_citycar_speed_average(), 0, depth);
+	return route;
 }
 
-void stadt_t::add_road_connexion(uint16 journey_time_per_tile, stadt_t* origin_city)
+void stadt_t::add_road_connexion(private_car_route_t* route, stadt_t* origin_city)
 {
 	
 	if(this == NULL)
 	{
 		return;
 	}
-	connected_cities.put(origin_city->get_pos(), journey_time_per_tile);
+	connected_cities.put(origin_city->get_pos(), route);
 }
 
 void stadt_t::set_no_connexion_to_industry(const fabrik_t* unconnected_industry)
@@ -2588,7 +2762,7 @@ void stadt_t::set_no_connexion_to_industry(const fabrik_t* unconnected_industry)
 	{
 		return;
 	}
-	connected_industries.put(unconnected_industry->get_pos().get_2d(), 65535);
+	connected_industries.put(unconnected_industry->get_pos().get_2d(), NULL);
 }
 
 void stadt_t::set_no_connexion_to_attraction(const gebaeude_t* unconnected_attraction)
@@ -2597,7 +2771,12 @@ void stadt_t::set_no_connexion_to_attraction(const gebaeude_t* unconnected_attra
 	{
 		return;
 	}
-	connected_attractions.put(unconnected_attraction->get_pos().get_2d(), 65535);
+	connected_attractions.put(unconnected_attraction->get_pos().get_2d(), NULL);
+}
+
+void stadt_t::prune_route_to(koord destination)
+{
+	connected_cities.remove(destination);
 }
 
 
@@ -3274,6 +3453,13 @@ inline void stadt_t::set_private_car_trip(int passengers, stadt_t* destination_t
 
 		//And mark the trip as outgoing for growth calculations
 		outgoing_private_cars += passengers;
+
+		//Add cars to the route
+		private_car_route_t* route = connected_cities.get(destination_town->get_pos());
+		if(route)
+		{
+			route->add_car_trips(passengers);
+		}
 	}
 }
 
@@ -4812,7 +4998,94 @@ void stadt_t::remove_connected_industry(fabrik_t* fab)
 	connected_industries.remove(fab->get_pos().get_2d());
 }
 
+void stadt_t::remove_connected_attraction(koord k)
+{
+	connected_cities.remove(k);
+}
+
+
+void stadt_t::remove_connected_industry(koord k)
+{
+	connected_industries.remove(k);
+}
+
 void stadt_t::remove_connected_attraction(gebaeude_t* attraction)
 {
 	connected_attractions.remove(attraction->get_pos().get_2d());
+}
+
+void private_car_route_t::rdwr(loadsave_t *file)
+{
+	file->rdwr_short(journey_time_per_tile);
+	file->rdwr_short(months_old);
+	file->rdwr_short(number_of_cars_this_month);
+	file->rdwr_short(number_of_cars_last_month);
+	origin_city_pos.rdwr(file);
+	route_t::rdwr(file);
+}
+	
+private_car_route_t::~private_car_route_t()
+{
+	strasse_t* road;
+	koord3d pos;
+
+	ITERATE_PTR(this, i)
+	{
+		pos = position_bei(i);
+		road = (strasse_t*)welt->lookup(pos)->get_weg(road_wt);
+		if(road)
+		{
+			road->private_car_routes.remove(this);
+		}
+	}
+	
+	if(origin_city_pos != koord::invalid)
+	{
+		stadt_t* city = welt->get_city(origin_city_pos);
+		if(city)
+		{
+			city->prune_route_to(destination_city_pos);
+			city->remove_connected_industry(destination_city_pos);
+			city->remove_connected_attraction(destination_city_pos);
+		}
+
+		city = welt->get_city(destination_city_pos);
+		if(city)
+		{
+			city->prune_route_to(origin_city_pos);
+		}
+	}
+}
+
+void private_car_route_t::calc_route(koord3d start, koord3d ziel, fahrer_t *fahr, const sint32 max_speed_kmh, const uint32 weight, const uint32 max_cost)
+{
+	destination_city_pos = ziel.get_2d();
+	
+	if(!route_t::calc_route(welt, start, ziel, fahr, max_speed_kmh, weight, max_cost))
+	{
+		journey_time_per_tile = 65535;
+		return;
+	}
+
+	koord3d pos;
+	sint32 vehicle_speed_average = welt->get_citycar_speed_average();
+	sint32 top_speed;
+	sint32 speed_sum = 0;
+	uint32 count = 0;
+	strasse_t* road;
+
+	ITERATE_PTR(this, i)
+	{
+		pos = position_bei(i);
+		road = (strasse_t*)welt->lookup(pos)->get_weg(road_wt);
+		top_speed = road->get_max_speed();
+		speed_sum += min(top_speed, vehicle_speed_average);
+		count += road->is_diagonal() ? 7 : 10; //Use precalculated numbers to avoid division here.
+		road->private_car_routes.append(this);
+	}
+	const sint32 speed_average = (float)(speed_sum / ((float)count / 10.0F))  / 1.3F;
+	const float journey_distance_km = (float)get_count() * welt->get_einstellungen()->get_distance_per_tile();
+	const uint16 journey_time = 600 * (journey_distance_km / speed_average); // *Tenths* of minutes: hence *600, not *60.
+	const uint16 straight_line_distance_tiles = accurate_distance(start.get_2d(), ziel.get_2d());
+	journey_time_per_tile = journey_time / (straight_line_distance_tiles == 0 ? 1 : straight_line_distance_tiles);
 }

@@ -539,7 +539,22 @@ DBG_MESSAGE("wkz_remover()",  "removing roadsign at (%s)", pos.get_str());
 		weg->count_sign();
 		if(weg->get_waytype() == road_wt)
 		{
-			welt->set_recheck_road_connexions();
+			strasse_t* st = (strasse_t*) weg;
+			ITERATE(st->private_car_routes, i)
+			{
+				stadt_t* origin_city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+				stadt_t* destination_city = welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+				if(origin_city)
+				{
+					origin_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				if(destination_city)
+				{
+					destination_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				
+				delete st->private_car_routes[i];
+			}
 		}
 		return true;
 	}
@@ -579,7 +594,22 @@ DBG_MESSAGE("wkz_remover()",  "removing bridge from %d,%d,%d",gr->get_pos().x, g
 		bruecke_t* br = gr->find<bruecke_t>();
 		if(br->get_besch()->get_waytype() == road_wt)
 		{
-			welt->set_recheck_road_connexions();
+			strasse_t* st = (strasse_t*) br;
+			ITERATE(st->private_car_routes, i)
+			{
+				stadt_t* origin_city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+				stadt_t* destination_city = welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+				if(origin_city)
+				{
+					origin_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				if(destination_city)
+				{
+					destination_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				
+				delete st->private_car_routes[i];
+			}
 		}
 		msg = brueckenbauer_t::remove(welt, sp, gr->get_pos(), br->get_besch()->get_waytype());
 		return msg == NULL;
@@ -590,7 +620,22 @@ DBG_MESSAGE("wkz_remover()",  "removing bridge from %d,%d,%d",gr->get_pos().x, g
 DBG_MESSAGE("wkz_remover()",  "removing tunnel  from %d,%d,%d",gr->get_pos().x, gr->get_pos().y, gr->get_pos().z);
 		if(gr->get_weg_nr(0)->get_waytype() == road_wt)
 		{
-			welt->set_recheck_road_connexions();
+			strasse_t* st = (strasse_t*) gr->get_weg_nr(0);
+			ITERATE(st->private_car_routes, i)
+			{
+				stadt_t* origin_city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+				stadt_t* destination_city = welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+				if(origin_city)
+				{
+					origin_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				if(destination_city)
+				{
+					destination_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				
+				delete st->private_car_routes[i];
+			}
 		}		
 		msg = tunnelbauer_t::remove(welt, sp, gr->get_pos(), gr->get_weg_nr(0)->get_waytype());
 		return msg == NULL;
@@ -742,7 +787,22 @@ DBG_MESSAGE("wkz_remover()", "removing way");
 		}
 		if(w->get_waytype() == road_wt)
 		{
-			welt->set_recheck_road_connexions();
+			strasse_t* st = (strasse_t*) gr->get_weg_nr(0);
+			ITERATE(st->private_car_routes, i)
+			{
+				stadt_t* origin_city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+				stadt_t* destination_city = welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+				if(origin_city)
+				{
+					origin_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				if(destination_city)
+				{
+					destination_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				
+				delete st->private_car_routes[i];
+			}
 		}
 
 		cost_sum = gr->weg_entfernen(w->get_waytype(), true);
@@ -752,7 +812,22 @@ DBG_MESSAGE("wkz_remover()", "removing way");
 		if(gr->get_weg_nr(1)) {
 			if(gr->get_weg_nr(1)->get_waytype() == road_wt)
 			{
-				welt->set_recheck_road_connexions();
+			strasse_t* st = (strasse_t*) gr->get_weg_nr(1);
+			ITERATE(st->private_car_routes, i)
+			{
+				stadt_t* origin_city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+				stadt_t* destination_city = welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+				if(origin_city)
+				{
+					origin_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				if(destination_city)
+				{
+					destination_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+				}
+				
+				delete st->private_car_routes[i];
+			}
 			}
 			cost_sum = gr->weg_entfernen(gr->get_weg_nr(1)->get_waytype(), true);
 		}
@@ -761,7 +836,22 @@ DBG_MESSAGE("wkz_remover()", "removing way");
 			const tunnel_besch_t* besch = gr->find<tunnel_t>()->get_besch();
 			if(besch->get_waytype() == road_wt)
 			{
-				welt->set_recheck_road_connexions();
+				strasse_t* st = (strasse_t*) gr->find<tunnel_t>();
+				ITERATE(st->private_car_routes, i)
+				{
+					stadt_t* origin_city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+					stadt_t* destination_city = welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+					if(origin_city)
+					{
+						origin_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+					}
+					if(destination_city)
+					{
+						destination_city->prune_route_to(st->private_car_routes[i]->get_origin_city_pos());
+					}
+				
+					delete st->private_car_routes[i];
+				}
 			}
 			gr->obj_loesche_alle(sp);
 			cost_sum += gr->weg_entfernen(besch->get_waytype(), true);
@@ -1491,7 +1581,7 @@ const char *wkz_add_city_t::work( karte_t *welt, spieler_t *sp, koord3d pos )
 				//  stadt_t *stadt = new stadt_t(welt, welt->get_spieler(1), pos,citizens/10+simrand(2*citizens+1));
 
 				// always start with 1/10 citicens
-				stadt_t* stadt = new stadt_t(welt->get_spieler(1), pos.get_2d(), citizens / 10);
+				stadt_t* stadt = new stadt_t(welt->get_spieler(1), pos.get_2d(), citizens / 10, welt->apply_check_road_connexions_month_next_city());
 
 				welt->add_stadt(stadt);
 				stadt->laden_abschliessen();

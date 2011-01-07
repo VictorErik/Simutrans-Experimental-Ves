@@ -453,6 +453,7 @@ ifneq ($(findstring $(OSTYPE), cygwin mingw),)
 endif
 
 CCFLAGS += -DUSE_INDEPENDENT_PATH_POOL
+CCFLAGS += -DDESTINATION_CITYCARS
 
 CCFLAGS  += $(CFLAGS)
 CXXFLAGS += $(CFLAGS)

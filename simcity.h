@@ -96,6 +96,63 @@ public:
 	}
 };
 
+class private_car_route_t : public route_t
+{
+private:
+	uint16 journey_time_per_tile;
+	
+	/**
+	 * For checking the time at which this route was first created, to see whether
+	 * it needs re-checking. Use get_zeit_ms() to fill this.
+	 * @author jamespetts
+	 */
+	uint16 months_old;
+	uint16 number_of_cars_this_month;
+	uint16 number_of_cars_last_month;
+
+	/**
+	 * FNote that the origin and destination are interchangable, as routes are
+	 * bi-directional. The only distinction is that the origin city is the
+	 * city from which a route is searched.
+	 * @author jamespetts
+	 */
+	koord origin_city_pos;
+	koord destination_city_pos;
+
+	karte_t* welt;
+
+public:
+	uint16 get_journey_time_per_tile() const { return journey_time_per_tile; }
+	uint16 get_months_old() const { return months_old; }
+
+	koord get_origin_city_pos() const { return origin_city_pos; }
+	koord get_destination_city_pos() const { return destination_city_pos; }
+
+	void roll_month() { months_old ++; number_of_cars_last_month = number_of_cars_this_month; number_of_cars_this_month = 0; }
+
+	void add_car_trips(uint16 number) { number_of_cars_this_month += number; }
+
+	void rdwr(loadsave_t *file);
+
+	void calc_route (koord3d start, koord3d ziel, fahrer_t *fahr, const sint32 max_speed_kmh, const uint32 weight, const uint32 max_cost=0xFFFFFFFF);
+
+	uint16 get_number_of_cars_this_month() const { return number_of_cars_this_month; }
+	uint16 get_number_of_cars_last_month() const { return number_of_cars_last_month; }
+
+	/**
+	 * This version of the constructor should be called when a city internal route needs to be set.
+	 * @author jamespetts
+	 */
+	private_car_route_t(uint16 journey_time) { journey_time_per_tile = journey_time; destination_city_pos = koord::invalid; number_of_cars_this_month = number_of_cars_last_month = months_old = 0; origin_city_pos = koord::invalid; welt = NULL; }
+
+	private_car_route_t(koord origin_pos, karte_t* w) { journey_time_per_tile = months_old = number_of_cars_this_month  = number_of_cars_last_month = 0; origin_city_pos = origin_pos; destination_city_pos = koord::invalid; welt = w; }
+	/**
+	 * The destructor needs to delete all pointers to itself from road objects initialised in init_roads().
+	 * @author jamespetts
+	 */
+	~private_car_route_t(); 
+};
+
 /**
  * Die Objecte der Klasse stadt_t bilden die Staedte in Simu. Sie
  * wachsen automatisch.
@@ -245,14 +302,15 @@ private:
 	// (in 10ths of minutes); 65535 = unreachable.
 	// @author: jamespetts, April 2010, modified December 2010 to koords rather than poiners
 	// so as to be network safe
-	koordhashtable_tpl<koord, uint16> connected_cities;
-	koordhashtable_tpl<koord, uint16> connected_industries;
-	koordhashtable_tpl<koord, uint16> connected_attractions;
+	koordhashtable_tpl<koord, private_car_route_t*> connected_cities;
+	koordhashtable_tpl<koord, private_car_route_t*> connected_industries;
+	koordhashtable_tpl<koord, private_car_route_t*> connected_attractions;
 
 	road_destination_finder_t *finder;
-	route_t *private_car_route;
 
 	vector_tpl<senke_t*> substations;
+
+	vector_tpl<private_car_route_t*> private_car_routes;
 
 public:
 	/**
@@ -422,14 +480,15 @@ private:
 	uint16 check_road_connexion_to(stadt_t* city);
 	uint16 check_road_connexion_to(const fabrik_t* industry);
 	uint16 check_road_connexion_to(const gebaeude_t* attraction);
-	uint16 check_road_connexion(koord3d destination);
+	private_car_route_t* check_road_connexion(koord3d destination);
 
 	// Adds a connexion back from a city when a route has been calculated.
-	void add_road_connexion(uint16 journey_time_per_tile, stadt_t* origin_city);
+	void add_road_connexion(private_car_route_t* route, stadt_t* origin_city);
 	void set_no_connexion_to_industry(const fabrik_t* unconnected_industry);
 	void set_no_connexion_to_attraction(const gebaeude_t* unconnected_attraction);
 
-	bool check_road_connexions;
+	uint8 private_car_update_month;
+	uint8 private_car_update_counter;
 
 public:
 	/**
@@ -523,7 +582,7 @@ public:
 	 * @param number of citizens
 	 * @author Hj. Malthaner
 	 */
-	stadt_t(spieler_t* sp, koord pos, sint32 citizens);
+	stadt_t(spieler_t* sp, koord pos, sint32 citizens, uint8 car_update_month);
 
 	/**
 	 * Erzeugt eine neue Stadt nach Angaben aus der Datei file.
@@ -642,10 +701,14 @@ public:
 	void remove_connected_city(stadt_t* city);
 	void remove_connected_industry(fabrik_t* fab);
 	void remove_connected_attraction(gebaeude_t* attraction);
+	void remove_connected_industry(koord k);
+	void remove_connected_attraction(koord k);
 
 	// @author: jamespetts
 	// September 2010
 	uint16 get_max_dimension();
+
+	void prune_route_to(koord destination);
 
 };
 

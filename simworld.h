@@ -428,6 +428,8 @@ private:
 	// will be done in step when client number changed
 	void announce_server();
 
+	uint8 check_road_connexions_month_next_city;
+
 public:
 	/* reads height data from 8 or 25 bit bmp or ppm files
 	 * @return either pointer to heightfield (use delete [] for it) or NULL
@@ -1186,6 +1188,8 @@ public:
 	 * called by server before sending the ready-cmds
 	 */
 	void reset_map_counter();
+
+	uint8 apply_check_road_connexions_month_next_city() { return check_road_connexions_month_next_city++; }
 
 private:
 		

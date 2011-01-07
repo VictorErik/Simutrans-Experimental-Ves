@@ -26,9 +26,9 @@
 #include "kanal.h"
 #include "runway.h"
 
-
 #include "../grund.h"
 #include "../../simworld.h"
+#include "../../simcity.h"
 #include "../../simimg.h"
 #include "../../simhalt.h"
 #include "../../simdings.h"
@@ -310,6 +310,41 @@ void weg_t::info(cbuffer_t & buf) const
 
 #if 1
 	buf.printf(translator::translate("convoi passed last\nmonth %i\n"), statistics[1][1]);
+	if(get_waytype() == road_wt)
+	{
+		strasse_t* st = (strasse_t*)this;
+		if(st->private_car_routes.get_count() > 0)
+		{
+			buf.printf(translator::translate("\nPrivate vehicles use this road to travel:\n\n"));
+			ITERATE(st->private_car_routes, i)
+			{
+				const char* origin_name;
+				const char* destination_name;
+				stadt_t* city = welt->get_city(st->private_car_routes[i]->get_origin_city_pos());
+				if(city)
+				{
+					origin_name = city->get_name();
+				}
+				else
+				{
+					origin_name = "(not a city)";
+				}
+
+				city =  welt->get_city(st->private_car_routes[i]->get_destination_city_pos());
+
+				if(city)
+				{
+					destination_name = city->get_name();
+				}
+				else
+				{
+					destination_name = "(not a city)";
+				}
+
+				buf.printf("* between %s and %s\n(%d this month, %d last month)\n", origin_name, destination_name, st->private_car_routes[i]->get_number_of_cars_this_month(),  st->private_car_routes[i]->get_number_of_cars_last_month());
+			}
+		}
+	}
 #else
 	// Debug - output stats
 	buf.append("\n");
