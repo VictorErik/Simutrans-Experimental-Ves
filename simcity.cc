@@ -1721,13 +1721,13 @@ void stadt_t::rdwr(loadsave_t* file)
 		}
 
 		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter2(connected_industries);
-		while(iter1.next())
+		while(iter2.next())
 		{
 			iter2.access_current_value()->rdwr(file);
 		}
 
 		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter3(connected_attractions);
-		while(iter1.next())
+		while(iter3.next())
 		{
 			iter3.access_current_value()->rdwr(file);
 		}
@@ -2679,6 +2679,18 @@ uint16 stadt_t::check_road_connexion_to(const gebaeude_t* attraction)
 			return 65535;
 		}
 	}
+
+	if(attraction->get_stadt())
+	{
+		// If an attraction is in a city, presume that it is connected
+		// if the city is connected. Do not presume the converse.
+		const uint16 time_to_city = check_road_connexion_to(attraction->get_stadt());
+		if(time_to_city < 65335)
+		{
+			return time_to_city;
+		}
+	}
+	
 	const koord pos = attraction->get_pos().get_2d();
 	grund_t *gr;
 	weg_t* road = NULL;
@@ -2719,7 +2731,7 @@ uint16 stadt_t::check_road_connexion_to(const gebaeude_t* attraction)
 	private_car_route_t* route = check_road_connexion(destination);
 	if(route->get_journey_time_per_tile() == 65535)
 	{
-		// We know that, if this city is not connected to any given industry, then every city
+		// We know that, if this city is not connected to any given attraction, then every city
 		// to which this city is connected must likewise not be connected. So, avoid
 		// unnecessary recalculation by propogating this now.
 		koordhashtable_iterator_tpl<koord, private_car_route_t*> iter(connected_cities);
