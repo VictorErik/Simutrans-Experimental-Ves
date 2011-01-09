@@ -103,6 +103,9 @@ public:
 
 	// The time at which this packet arrived at the current station
 	// @author: jamespetts
+	// Doubles as the time at which this packet got on the current convoi
+	// Be very careful to reset it at the appropriate times.
+	// @author: neroden
 	sint64 arrival_time;
 
 	int operator==(const ware_t &w) {
