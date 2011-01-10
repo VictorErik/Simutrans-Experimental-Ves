@@ -200,11 +200,12 @@ public:
 		financial_history[0][cost_type] += amount;
 	}
 
-	void book_average(sint64 numerator, sint64 denominator, int cost_type)
+	void book_average(sint64 amount, sint64 instances, int cost_type)
 	{
 		assert(cost_type == LINE_AVERAGE_SPEED || cost_type == LINE_COMFORT);
-		rolling_average[cost_type] += (uint32) numerator;
-		rolling_average_count[cost_type] += (uint32)denominator;
+		rolling_average[cost_type] += (uint32) (amount * instances);
+		rolling_average_count[cost_type] += (uint32)instances;
+		// Overflow at 1000 km/h and 4 million passengers per month, should be OK
 		financial_history[0][cost_type] = rolling_average[cost_type] / rolling_average_count[cost_type];
 	}
 

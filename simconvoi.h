@@ -889,10 +889,11 @@ public:
 	void book(sint64 amount, int cost_type);
 
 	/**
-	* book an avarage, tracking numerator & denominator
+	* book an average, amount * instances / instances
+	* accumulate amount and instances separately
 	* @author neroden
 	*/
-	void book_average(sint64 numerator, sint64 denominator, int cost_type);
+	void book_average(sint64 amount, sint64 instances, int cost_type);
 
 	/**
 	* return a pointer to the financial history

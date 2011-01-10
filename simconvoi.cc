@@ -4073,17 +4073,17 @@ void convoi_t::dump() const
 		(const void *)fpl );
 }
 
-void convoi_t::book_average(sint64 numerator, sint64 denominator, int cost_type)
+void convoi_t::book_average(sint64 amount, sint64 instances, int cost_type)
 {
 	assert(cost_type == CONVOI_AVERAGE_SPEED || cost_type == CONVOI_COMFORT);
 	// Average types
-	rolling_average[cost_type] += numerator;
-	rolling_average_count[cost_type] += denominator;
+	rolling_average[cost_type] += (uint32)amount * (uint32)instances;
+	rolling_average_count[cost_type] += instances;
 	sint32 tmp = rolling_average[cost_type] / rolling_average_count[cost_type];
 	financial_history[0][cost_type] = tmp;
 	if (line.is_bound())
 	{
-		line->book_average(numerator, denominator, simline_t::convoi_to_line_catgory[cost_type] );
+		line->book_average(amount, instances, simline_t::convoi_to_line_catgory[cost_type] );
 	}
 }
 void convoi_t::book(sint64 amount, int cost_type)
