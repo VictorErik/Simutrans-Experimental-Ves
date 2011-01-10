@@ -707,24 +707,6 @@ void vehikel_t::set_convoi(convoi_t *c)
 	}
 }
 
-/*
-	Get "journey minutes" (ow ow ow).
-    This is Yet Another Time Conversion Routine.
-	@author neroden
- */
-uint32
-vehikel_t::get_journey_minutes(uint32 journey_ticks) const
-{
-	// At the moment this is a horrible hack, waiting until the time cleanup patches
-	// can go in.... We REALLY REALLY need to clean up the time.  This constant is
-	// a completely phony absurdity.
-	uint32 journey_minutes = journey_ticks / 4096.0F;
-	if (journey_minutes == 0) {
-		journey_minutes = 1;
-	}
-	return journey_minutes;
-}
-
 /**
  * Unload freight to halt
  * @return sum of unloaded goods
@@ -795,7 +777,7 @@ vehikel_t::unload_freight(halthandle_t halt)
 					// we want km per hour, so multiply by km_per_tile and the actual code is:
 					float magic_factor = km_per_tile * 1024 * VEHICLE_SPEED_FACTOR;
 					const uint32 journey_kmh = magic_factor * (float)journey_distance / (float)journey_ticks;
-					// Actually book it.
+					// Actually book it.  This is frankly an evil way to do things, but it allows for a compilation test.
 					cnv->book_average(journey_kmh, ware.menge, CONVOI_AVERAGE_SPEED);
 
 					//		    printf("Liefere %d %s nach %s via %s an %s\n",
