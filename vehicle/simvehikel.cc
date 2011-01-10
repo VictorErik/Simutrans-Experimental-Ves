@@ -775,7 +775,12 @@ vehikel_t::unload_freight(halthandle_t halt)
 					// ...which is horribly, horribly wrong.
 					// This is experimental, so we have to adjust for km_per tile.  This gives tiles per hour,
 					// we want km per hour, so multiply by km_per_tile... and the actual code is:
-					float magic_factor = km_per_tile * 1024 * VEHICLE_SPEED_FACTOR;
+						#if 0
+						float magic_factor = km_per_tile * 1024 * VEHICLE_SPEED_FACTOR;
+						#endif /* 0 */
+					// ...except that multiplying by km_per_tile seems to give too-low numbers (why?)
+					// ...so let's not do that.
+					float magic_factor = 1024 * VEHICLE_SPEED_FACTOR;
 					const uint32 journey_kmh = magic_factor * (float)journey_distance / (float)journey_ticks;
 					// Actually book it.  This is frankly an evil way to do things, but it allows for a compilation test.
 					cnv->book_average(journey_kmh, tmp.menge, CONVOI_AVERAGE_SPEED);
