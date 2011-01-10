@@ -712,13 +712,17 @@ void vehikel_t::set_convoi(convoi_t *c)
     This is Yet Another Time Conversion Routine.
 	@author neroden
  */
-uint16
+uint32
 vehikel_t::get_journey_minutes(uint32 journey_ticks) const
 {
 	// At the moment this is a horrible hack, waiting until the time cleanup patches
 	// can go in.... We REALLY REALLY need to clean up the time.  This constant is
 	// a completely phony absurdity.
-	return journey_ticks / 4096.0F;
+	uint32 journey_minutes = journey_ticks / 4096.0F;
+	if (journey_minutes == 0) {
+		journey_minutes = 1;
+	}
+	return journey_minutes;
 }
 
 /**
@@ -762,6 +766,37 @@ vehikel_t::unload_freight(halthandle_t halt)
 
 				else if(halt == end_halt || halt == via_halt) 
 				{
+					// Here, compute the journey time and average speed, and book the speed.
+					// Must be done *before* calling liefere_an, which may reset .arrival_time
+					// to arrival time at the halt.
+					// @author neroden
+					const uint32 journey_ticks = welt->get_zeit_ms() - tmp.arrival_time;
+					halthandle_t embarkation_halt = tmp.get_embarkation();
+					const uint32 journey_distance = accurate_distance(halt->get_basis_pos(), embarkation_halt->get_basis_pos());
+					float km_per_tile = welt->get_einstellungen()->get_distance_per_tile();
+					// CLEAN THIS UP after time units cleanup gets into standard.  FIXME!
+					// This is ONLY ugly because of bad unit conversions.  It should be a one-liner.
+					// This is the conceptual code for standard:
+						#if 0
+						const uint64 MICRONS_PER_TILE = 2^12 * 256;
+						const uint64 journey_speed = journey_distance * MICRONS_PER_TILE/ journey_ticks;
+						const uint32 journey_kmh = speed_to_kmh(journey_speed);
+						#endif /* 0 */
+					// However, speed_to_kmh is (speed)*VEHICLE_SPEED_FACTOR / 2^10 rounded to nearest
+					// and VEHICLE_SPEED_FACTOR is 80
+					// so journey_kmh = (journey_distance/journey_ticks) * 2^12 * 256 * 80 / 2^10
+					// cancel out the powers of two and fold constants to get:
+						#if 0
+						const uint32 journey_kmh = journey_distance * 1024 * VEHICLE_SPEED_FACTOR / journey_ticks;
+						#endif 0
+					// This is *probably the same as the 4096 * 20 factor used previously in experimental....
+					// ...which is horribly, horribly wrong.
+					// This is experimental, so we have to adjust for km_per tile.  This gives tiles per hour,
+					// we want km per hour, so multiply by km_per_tile and the actual code is:
+					float magic_factor = km_per_tile * 1024 * VEHICLE_SPEED_FACTOR;
+					const uint32 journey_kmh = magic_factor * (float)journey_distance / (float)journey_ticks;
+					// Actually book it.
+					cnv->book_average(journey_kmh, ware.menge, CONVOI_AVERAGE_SPEED);
 
 					//		    printf("Liefere %d %s nach %s via %s an %s\n",
 					//                           tmp->menge,
@@ -881,6 +916,9 @@ bool vehikel_t::load_freight(halthandle_t halt, bool overcrowd)
 			//hinein = inside (Google)
 
 			ware_t ware = halt->hole_ab(besch->get_ware(), hinein, fpl, cnv->get_besitzer(), cnv, overcrowd);
+
+			// Set embarkation halt for the ware (for timing reasons)
+			ware.set_embarkation(halt);
 
 			// Set departure time ("time of arrival on the convoi") now.
 			// This is defensive coding, we don't want the "arrival time at the halt" to

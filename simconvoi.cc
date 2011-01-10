@@ -3117,8 +3117,19 @@ void convoi_t::rdwr(loadsave_t *file)
 		for(uint8 i = 0; i < count; i ++)
 		{	
 			file->rdwr_long(rolling_average[i]);
-			file->rdwr_short(rolling_average_count[i]);
-		}		
+			if (file->get_experimental_version() >= 10)
+			{
+				file->rdwr_long(rolling_average_count[i]);
+			}
+			else
+			{
+				// Member size lengthened in version 10
+				uint16 rolling_average_count = rolling_average_count[i];
+				file->rdwr_short(rolling_average_count);
+				if(file->is_loading()) {
+					rolling_average_count[i] = rolling_average_count;
+				}
+			}
 	}
 	else if(file->is_loading())
 	{
@@ -3359,17 +3370,14 @@ void convoi_t::laden() //"load" (Babelfish)
 	
 	const double journey_time = (welt->get_zeit_ms() - last_departure_time) / 4096.0F;
 	const sint32 average_speed = ((double)journey_distance / journey_time) * 20.0;
-	if(journey_distance > 0)
-	{
-		book(average_speed, CONVOI_AVERAGE_SPEED);
-	}
 	last_departure_time = welt->get_zeit_ms();
-		
+
 	// Recalculate comfort
 	const uint8 comfort = get_comfort();
 	if(comfort)
 	{
-		book(get_comfort(), CONVOI_COMFORT);
+		// For now, average comfort over trips.  FIXME LATER.
+		book_average(get_comfort(), 1, CONVOI_COMFORT);
 	}
 
 	for(uint8 i = 0; i < anz_vehikel; i++)
@@ -4066,30 +4074,38 @@ void convoi_t::dump() const
 		(const void *)fpl );
 }
 
-
+void convoi_t::book_average(sint64 numerator, sint64 denominator, int cost_type)
+{
+	assert(cost_type == CONVOI_AVERAGE_SPEED || cost_type == CONVOI_COMFORT);
+	// Average types
+	rolling_average[cost_type] += numerator;
+	rolling_average_count[cost_type] += denominator;
+	sint32 tmp = rolling_average[cost_type] / rolling_average_count[cost_type];
+	financial_history[0][cost_type] = tmp;
+	if (line.is_bound())
+	{
+		line->book_average(numerator, denominator, simline_t::convoi_to_line_catgory[cost_type] );
+	}
+}
 void convoi_t::book(sint64 amount, int cost_type)
 {
 	assert(  cost_type<MAX_CONVOI_COST);
+	assert(cost_type != CONVOI_AVERAGE_SPEED && cost_type != CONVOI_COMFORT);
 
-	if(cost_type != CONVOI_AVERAGE_SPEED && cost_type != CONVOI_COMFORT)
-	{
-		// Summative types
-		financial_history[0][cost_type] += amount;
-	}
-	else
-	{
+	// Summative types
+	financial_history[0][cost_type] += amount;
 		// Average types
 		rolling_average[cost_type] += amount;
 		rolling_average_count[cost_type] ++;
 		sint32 tmp = rolling_average[cost_type] / rolling_average_count[cost_type];
 		financial_history[0][cost_type] = tmp;
 	}
-	if (line.is_bound()) 
+	if (line.is_bound())
 	{
 		line->book(amount, simline_t::convoi_to_line_catgory[cost_type] );
 	}
 
-	if(cost_type == CONVOI_TRANSPORTED_GOODS) 
+	if(cost_type == CONVOI_TRANSPORTED_GOODS)
 	{
 		besitzer_p->buche(amount, COST_ALL_TRANSPORTED);
 	}

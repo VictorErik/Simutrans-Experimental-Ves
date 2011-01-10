@@ -41,6 +41,10 @@ private:
 	//A handle to the ultimate origin.
 	halthandle_t origin;
 
+	//@author: neroden
+	//A handle to the most recent embarkation point.
+	halthandle_t embarkation
+
 	/**
 	 * die engültige Zielposition,
 	 * das ist i.a. nicht die Zielhaltestellenposition
@@ -83,6 +87,10 @@ public:
 	halthandle_t get_origin() const { return origin; }
 	void set_origin(halthandle_t value) { origin = value; }
 
+	//@author: neroden
+	halthandle_t get_embarkation() const { return embarkation; }
+	void set_embarkation(halthandle_t value) { embarkation = value; }
+
 	//@author: jamespetts
 	uint32 get_accumulated_distance() const { return accumulated_distance; }
 	//void add_distance(uint32 distance) { accumulated_distance += distance; }
@@ -115,18 +123,23 @@ public:
 			index  == w.index  &&
 			ziel  == w.ziel  &&
 			zielpos == w.zielpos &&
-			origin == w.origin;
+			origin == w.origin &&
+			embarkation == w.embarkation;
 	}
 
 	// Lighter version of operator == that only checks equality
 	// of metrics needed for merging.
+	// It's not OK for the embarkation point to be different
+	// though it's very unlikely to have the same origin and different
+	// embarkations....
 	inline bool can_merge_with (const ware_t &w) const
 	{
 		return index  == w.index  &&
 			ziel  == w.ziel  &&
 			// Only merge the destination *position* if the load is not freight
 			(index < 2 || zielpos == w.zielpos) &&
-			origin == w.origin;
+			origin == w.origin &&
+			embarkation == w.embarkation;
 	}
 
 	int operator!=(const ware_t &w) { return !(*this == w); 	}

@@ -256,8 +256,20 @@ void simline_t::rdwr(loadsave_t *file)
 		for(uint8 i = 0; i < counter; i ++)
 		{	
 			file->rdwr_long(rolling_average[i]);
-			file->rdwr_short(rolling_average_count[i]);
-		}	
+			if (file->get_experimental_version() >= 10)
+			{
+				file->rdwr_long(rolling_average_count[i]);
+			}
+			else
+			{
+				// Member size lengthened in version 10
+				uint16 rolling_average_count = rolling_average_count[i];
+				file->rdwr_short(rolling_average_count);
+				if(file->is_loading()) {
+					rolling_average_count[i] = rolling_average_count;
+				}
+			}
+		}
 	}
 }
 
