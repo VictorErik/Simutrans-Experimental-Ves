@@ -749,37 +749,18 @@ vehikel_t::unload_freight(halthandle_t halt)
 
 				halthandle_t end_halt = tmp.get_ziel();
 				halthandle_t via_halt = tmp.get_zwischenziel();
-
-				// Throw away cargo for deleted destinations now.
-				if (!end_halt.is_bound() || !via_halt.is_bound())
+				
+				// probleme mit fehlerhafter ware
+				// vielleicht wurde zwischendurch die
+				// Zielhaltestelle entfernt ?
+				if(!end_halt.is_bound() || !via_halt.is_bound()) 
 				{
 					DBG_MESSAGE("vehikel_t::entladen()", "destination of %d %s is no longer reachable",tmp.menge,translator::translate(tmp.get_name()));
 					//kill_queue.insert(tmp);
 					kill_queue.append(tmp);
-				}
-				else if (halt == via_halt && halt->is_overcrowded(tmp.get_besch()->get_catg_index()) && welt->get_einstellungen()->is_avoid_overcrowding())
-				{
-					// Halt overcrowded - discard goods/passengers, and collect no revenue.
-					// Experimetal 7.2 - also calculate a refund.
+				} 
 
-					if(tmp.get_origin().is_bound())
-					{
-						// Cannot refund unless we know the origin.
-						const uint16 distance = accurate_distance(halt->get_basis_pos(), tmp.get_origin()->get_basis_pos());
-						// Refund is approximation: twice distance at standard rate with no adjustments.
-						const sint64 refund_amount = tmp.menge * tmp.get_besch()->get_preis() * distance * 2;
-						current_revenue -= refund_amount;
-					}
-
-					// Add passengers to unhappy passengers.
-					if(tmp.is_passenger())
-					{
-						halt->add_pax_unhappy(tmp.menge);
-					}
-					kill_queue.append(tmp);
-					INT_CHECK("simvehikel 937a");
-				}
-				else if (halt == end_halt || halt == via_halt)
+				else if(halt == end_halt || halt == via_halt) 
 				{
 
 					//		    printf("Liefere %d %s nach %s via %s an %s\n",
@@ -791,59 +772,79 @@ vehikel_t::unload_freight(halthandle_t halt)
 
 					// hier sollte nur ordentliche ware verabeitet werden
 					// "here only tidy commodity should be processed" (Babelfish) 
-
-					// @author neroden:
-					// Before supplying the passengers/goods to the halt, compute
-					// journey time.  Because times are still a mess in simutrans as
-					// of this writing, isolate the ugly in a subroutine.
-					uint16 journey_minutes = get_journey_minutes(welt->get_zeit_ms() - tmp.arrival_time);
-
-					const uint32 menge = halt->liefere_an(tmp); //"supply" (Babelfish)
-					sum_menge += menge;
-
-					// Calculates the revenue for each packet.
-					// @author: jamespetts
-					current_revenue += cnv->calc_revenue(iter.access_current());
-					// book delivered goods to destination
-					if(halt == end_halt)
+					
+					if(halt != end_halt && halt->is_overcrowded(tmp.get_besch()->get_catg_index()) && welt->get_einstellungen()->is_avoid_overcrowding())
 					{
-						// pax is always index 1
-						const int categorie = tmp.get_index()>1 ? 2 : tmp.get_index();
-						get_besitzer()->buche( menge, (player_cost)(COST_TRANSPORTED_PAS+categorie) );
+						// Halt overcrowded - discard goods/passengers, and collect no revenue.
+						// Experimetal 7.2 - also calculate a refund.
+
+						if(tmp.get_origin().is_bound())
+						{
+							// Cannot refund unless we know the origin.
+							const uint16 distance = accurate_distance(halt->get_basis_pos(), tmp.get_origin()->get_basis_pos());
+							// Refund is approximation: twice distance at standard rate with no adjustments.
+							const sint64 refund_amount = tmp.menge * tmp.get_besch()->get_preis() * distance * 2;
+							current_revenue -= refund_amount;
+						}
+
+						// Add passengers to unhappy passengers.
 						if(tmp.is_passenger())
 						{
-							// New for Experimental 7.2 - add happy passengers
-							// to the origin station and transported passengers/mail
-							// to the origin city only *after* they arrive at their 
-							// destinations.
-							if(tmp.get_origin().is_bound())
-							{
-								// Check required because Simutrans-Standard saved games
-								// do not have origins.
-								tmp.get_origin()->add_pax_happy(menge);
-								stadt_t* origin_city = welt->get_city(tmp.get_origin()->get_basis_pos());
-								if(origin_city)
-								{
-									origin_city->add_transported_passengers(menge);
-								}
-							}
-						}
-						else if(tmp.is_mail())
-						{
-							if(tmp.get_origin().is_bound())
-							{
-								// Check required because Simutrans-Standard saved games
-								// do not have origins.
-								stadt_t* origin_city = welt->get_city(tmp.get_origin()->get_basis_pos());
-								if(origin_city)
-								{
-									origin_city->add_transported_mail(menge);
-								}
-							}
+							halt->add_pax_unhappy(tmp.menge);
 						}
 					}
+					
+					else
+					{
+						const uint32 menge = halt->liefere_an(tmp); //"supply" (Babelfish)
+						sum_menge += menge;
+
+						// Calculates the revenue for each packet. 
+						// @author: jamespetts
+						current_revenue += cnv->calc_revenue(iter.access_current());
+						// book delivered goods to destination
+						if(end_halt == halt) 
+						{
+							// pax is always index 1
+							const int categorie = tmp.get_index()>1 ? 2 : tmp.get_index();
+							get_besitzer()->buche( menge, (player_cost)(COST_TRANSPORTED_PAS+categorie) );
+							if(tmp.is_passenger())
+							{
+								// New for Experimental 7.2 - add happy passengers
+								// to the origin station and transported passengers/mail
+								// to the origin city only *after* they arrive at their 
+								// destinations.
+								if(tmp.get_origin().is_bound())
+								{
+									// Check required because Simutrans-Standard saved games
+									// do not have origins.
+									tmp.get_origin()->add_pax_happy(menge);
+									stadt_t* origin_city = welt->get_city(tmp.get_origin()->get_basis_pos());
+									if(origin_city)
+									{
+										origin_city->add_transported_passengers(menge);
+									}
+								}
+							}
+							else if(tmp.is_mail())
+							{
+								if(tmp.get_origin().is_bound())
+								{
+									// Check required because Simutrans-Standard saved games
+									// do not have origins.
+									stadt_t* origin_city = welt->get_city(tmp.get_origin()->get_basis_pos());
+									if(origin_city)
+									{
+										origin_city->add_transported_mail(menge);
+									}
+								}
+							}
+
+						}
+					}				
 					kill_queue.append(tmp);
-					INT_CHECK("simvehikel 937b");
+
+					INT_CHECK("simvehikel 937");
 				}
 			}
 		}

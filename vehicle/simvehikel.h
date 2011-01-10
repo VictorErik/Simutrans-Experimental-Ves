@@ -191,6 +191,8 @@ private:
 
 	sint32 calc_modified_speed_limit(const koord3d *position, ribi_t::ribi current_direction, bool is_corner);
 
+	uint16 vehikel_t::get_journey_minutes(uint32 journey_ticks) const;
+
 	/**
 	 * Unload freight to halt
 	 * @return sum of unloaded goods
