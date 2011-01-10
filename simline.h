@@ -202,7 +202,7 @@ public:
 
 	void book_average(sint64 numerator, sint64 denominator, int cost_type)
 	{
-		assert(cost_type === LINE_AVERAGE_SPEED || cost_type == LINE_COMFORT);
+		assert(cost_type == LINE_AVERAGE_SPEED || cost_type == LINE_COMFORT);
 		rolling_average[cost_type] += (uint32) numerator;
 		rolling_average_count[cost_type] += (uint32)denominator;
 		financial_history[0][cost_type] = rolling_average[cost_type] / rolling_average_count[cost_type];
