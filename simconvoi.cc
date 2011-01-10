@@ -3370,7 +3370,6 @@ void convoi_t::laden() //"load" (Babelfish)
 	const uint32 journey_distance = accurate_distance(fahr[0]->get_pos().get_2d(), fahr[0]->last_stop_pos);
 	
 	const double journey_time = (welt->get_zeit_ms() - last_departure_time) / 4096.0F;
-	const sint32 average_speed = ((double)journey_distance / journey_time) * 20.0;
 	last_departure_time = welt->get_zeit_ms();
 
 	// Recalculate comfort
@@ -4095,12 +4094,6 @@ void convoi_t::book(sint64 amount, int cost_type)
 
 	// Summative types
 	financial_history[0][cost_type] += amount;
-		// Average types
-		rolling_average[cost_type] += amount;
-		rolling_average_count[cost_type] ++;
-		sint32 tmp = rolling_average[cost_type] / rolling_average_count[cost_type];
-		financial_history[0][cost_type] = tmp;
-	}
 	if (line.is_bound())
 	{
 		line->book(amount, simline_t::convoi_to_line_catgory[cost_type] );
