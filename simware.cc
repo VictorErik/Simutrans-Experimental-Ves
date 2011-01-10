@@ -152,6 +152,7 @@ void ware_t::rdwr(karte_t *welt,loadsave_t *file)
 		}
 		if (file->get_experimental_version()>=10)
 		{
+			koord embarkation_koord;
 			embarkation_koord.rdwr(file);
 			embarkation = welt->get_halt_koord_index(embarkation_koord);
 		}
