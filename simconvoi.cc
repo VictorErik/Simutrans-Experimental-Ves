@@ -3115,7 +3115,7 @@ void convoi_t::rdwr(loadsave_t *file)
 		file->rdwr_longlong(last_departure_time);
 		const uint8 count = file->get_version() < 103000 ? CONVOI_DISTANCE : MAX_CONVOI_COST;
 		for(uint8 i = 0; i < count; i ++)
-		{	
+		{
 			file->rdwr_long(rolling_average[i]);
 			if (file->get_experimental_version() >= 10)
 			{
@@ -3124,12 +3124,13 @@ void convoi_t::rdwr(loadsave_t *file)
 			else
 			{
 				// Member size lengthened in version 10
-				uint16 tmp = rolling_average_count[i];
+				uint16 tmp = (rolling_average_count[i]);
 				file->rdwr_short(tmp);
 				if(file->is_loading()) {
 					rolling_average_count[i] = tmp;
 				}
 			}
+		}
 	}
 	else if(file->is_loading())
 	{
