@@ -43,7 +43,7 @@ private:
 
 	//@author: neroden
 	//A handle to the most recent embarkation point.
-	halthandle_t embarkation
+	halthandle_t embarkation;
 
 	/**
 	 * die engültige Zielposition,
