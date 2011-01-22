@@ -707,8 +707,6 @@ void vehikel_t::set_convoi(convoi_t *c)
 	}
 }
 
-
-
 /**
  * Unload freight to halt
  * @return sum of unloaded goods
@@ -750,6 +748,42 @@ vehikel_t::unload_freight(halthandle_t halt)
 
 				else if(halt == end_halt || halt == via_halt) 
 				{
+					// Here, compute the journey time and average speed, and book the speed.
+					// Must be done *before* calling liefere_an, which may reset .arrival_time
+					// to arrival time at the halt.
+					// @author neroden
+					const uint32 journey_ticks = welt->get_zeit_ms() - tmp.arrival_time;
+					halthandle_t embarkation_halt = tmp.get_embarkation();
+					const uint32 journey_distance = accurate_distance(halt->get_basis_pos(), embarkation_halt->get_basis_pos());
+					float km_per_tile = welt->get_einstellungen()->get_distance_per_tile();
+					// CLEAN THIS UP after time units cleanup gets into standard.  FIXME!
+					// This is ONLY ugly because of bad unit conversions.  It should be a one-liner.
+					// This is the conceptual code for standard:
+						#if 0
+						const uint64 MICRONS_PER_TILE = 2^12 * 256;
+						const uint64 journey_speed = journey_distance * MICRONS_PER_TILE/ journey_ticks;
+						const uint32 journey_kmh = speed_to_kmh(journey_speed);
+						#endif /* 0 */
+					// However, speed_to_kmh is (speed)*VEHICLE_SPEED_FACTOR / 2^10 rounded to nearest
+					// and VEHICLE_SPEED_FACTOR is 80
+					// so journey_kmh = (journey_distance/journey_ticks) * 2^12 * 256 * 80 / 2^10
+					// cancel out the powers of two and fold constants to get:
+						#if 0
+						const uint32 journey_kmh = journey_distance * 1024 * VEHICLE_SPEED_FACTOR / journey_ticks;
+						#endif /* 0 */
+					// This is *probably the same as the 4096 * 20 factor used previously in experimental....
+					// ...which is horribly, horribly wrong.
+					// This is experimental, so we have to adjust for km_per tile.  This gives tiles per hour,
+					// we want km per hour, so multiply by km_per_tile... and the actual code is:
+						#if 0
+						float magic_factor = km_per_tile * 1024 * VEHICLE_SPEED_FACTOR;
+						#endif /* 0 */
+					// ...except that multiplying by km_per_tile seems to give too-low numbers (why?)
+					// ...so let's not do that.
+					float magic_factor = 1024 * VEHICLE_SPEED_FACTOR;
+					const uint32 journey_kmh = magic_factor * (float)journey_distance / (float)journey_ticks;
+					// Actually book it.  This is frankly an evil way to do things, but it allows for a compilation test.
+					cnv->book_average(journey_kmh, tmp.menge, CONVOI_AVERAGE_SPEED);
 
 					//		    printf("Liefere %d %s nach %s via %s an %s\n",
 					//                           tmp->menge,
@@ -869,10 +903,20 @@ bool vehikel_t::load_freight(halthandle_t halt, bool overcrowd)
 			//hinein = inside (Google)
 
 			ware_t ware = halt->hole_ab(besch->get_ware(), hinein, fpl, cnv->get_besitzer(), cnv, overcrowd);
-			
+
+			// Set embarkation halt for the ware (for timing reasons)
+			ware.set_embarkation(halt);
+
+			// Set departure time ("time of arrival on the convoi") now.
+			// This is defensive coding, we don't want the "arrival time at the halt" to
+			// accidentally get reused.  That number just got read in halt->hole_ab,
+			// and is unimportant now.
+			// @author: neroden
+			ware.arrival_time = welt->get_zeit_ms();
+
 			// Needed here to prevent over-accumulation.
 			ware.reset_accumulated_distance();
-					
+
 			if(ware.menge == 0) 
 			{
 				// now empty, but usually, we can get it here ...
@@ -889,15 +933,25 @@ bool vehikel_t::load_freight(halthandle_t halt, bool overcrowd)
 				// to make sure that this cannot happen.
 				count ++;
 				ware_t &tmp = iter.access_current();
-				
+
 				// New system: only merges if origins are alike.
 				// @author: jamespetts
+				// Newer system: maintains "arrival on train" time in such a way
+				// as to get correct average trip times
+				// @author: neroden
 
 				if(ware.can_merge_with(tmp))
 				{
 					tmp.menge += ware.menge;
 					total_freight += ware.menge;
 					ware.menge = 0;
+
+					// Set departure time correctly for a merge.
+					// The travel time for ware will always be zero.
+					// We fake up the arrival-on-train time to maintain
+					// average travel times correctly, remembering that we only
+					// merge packets with the same origin & destination.
+					tmp.arrival_time = welt->get_zeit_ms() - ((welt->get_zeit_ms() - tmp.arrival_time) * tmp.menge) / (tmp.menge + ware.menge);
 					break;
 				}
 			}

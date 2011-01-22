@@ -2666,6 +2666,7 @@ bool haltestelle_t::vereinige_waren(const ware_t &ware) //"unite were" (Google)
 				if(ware.menge > 0)
 				{
 					//The waiting time for ware will always be zero.
+					// We fake up the arrival time to maintain average waiting times correctly.
 					tmp.arrival_time = welt->get_zeit_ms() - ((welt->get_zeit_ms() - tmp.arrival_time) * tmp.menge) / (tmp.menge + ware.menge);
 				}
 

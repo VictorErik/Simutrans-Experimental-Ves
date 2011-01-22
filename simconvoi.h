@@ -427,7 +427,7 @@ private:
 
 	// @author: jamespetts
 	uint32 rolling_average[MAX_CONVOI_COST];
-	uint16 rolling_average_count[MAX_CONVOI_COST];
+	uint32 rolling_average_count[MAX_CONVOI_COST];
 
 	// To prevent repeat bookings of journey time
 	// and comfort when a vehicle is waiting for
@@ -898,6 +898,13 @@ public:
 	* @author hsiegeln
 	*/
 	void book(sint64 amount, int cost_type);
+
+	/**
+	* book an average, amount * instances / instances
+	* accumulate amount and instances separately
+	* @author neroden
+	*/
+	void book_average(sint64 amount, sint64 instances, int cost_type);
 
 	/**
 	* return a pointer to the financial history

@@ -112,8 +112,13 @@ void ware_t::rdwr(karte_t *welt,loadsave_t *file)
 		zwischenziel_koord.rdwr(file);
 		if(file->get_experimental_version() >= 1)
 		{
-			koord origin_koord = origin.is_bound() ? origin->get_basis_pos() : koord::invalid;	
+			koord origin_koord = origin.is_bound() ? origin->get_basis_pos() : koord::invalid;
 			origin_koord.rdwr(file);
+		}
+		if(file->get_experimental_version()>=10)
+		{
+			koord embarkation_koord = embarkation.is_bound() ? embarkation->get_basis_pos() : koord::invalid;
+			embarkation_koord.rdwr(file);
 		}
 	}
 	else 
@@ -135,17 +140,26 @@ void ware_t::rdwr(karte_t *welt,loadsave_t *file)
 				// Simutrans-Experimental save version 1 had extra parameters
 				// such as "previous transfer" intended for use in the new revenue
 				// system. In the end, the system was designed differently, and
-				// these values are not present in versions 2 and above.
+				// these values are not present in versions 2 and above... until version 10, see below
 				koord dummy;
 				dummy.rdwr(file);
 			}
-			
 			origin = welt->get_halt_koord_index(origin_koord);
-			
 		}
 		else
 		{
 			origin = zwischenziel;
+		}
+		if (file->get_experimental_version()>=10)
+		{
+			koord embarkation_koord;
+			embarkation_koord.rdwr(file);
+			embarkation = welt->get_halt_koord_index(embarkation_koord);
+		}
+		else
+		{
+			embarkation = origin;
+			// Yes, this could create strange behavior.  We'll clean up after it.
 		}
 	}
 	zielpos.rdwr(file);

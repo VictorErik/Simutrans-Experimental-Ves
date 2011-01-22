@@ -196,16 +196,17 @@ public:
 
 	void book(sint64 amount, int cost_type) 
 	{
-		if(cost_type != LINE_AVERAGE_SPEED && cost_type != LINE_COMFORT)
-		{
-			financial_history[0][cost_type] += amount; 
-		}
-		else
-		{
-			rolling_average[cost_type] += (uint32) amount;
-			rolling_average_count[cost_type] ++;
-			financial_history[0][cost_type] = rolling_average[cost_type] / rolling_average_count[cost_type];
-		}
+		assert(cost_type != LINE_AVERAGE_SPEED && cost_type != LINE_COMFORT);
+		financial_history[0][cost_type] += amount;
+	}
+
+	void book_average(sint64 amount, sint64 instances, int cost_type)
+	{
+		assert(cost_type == LINE_AVERAGE_SPEED || cost_type == LINE_COMFORT);
+		rolling_average[cost_type] += (uint32) (amount * instances);
+		rolling_average_count[cost_type] += (uint32)instances;
+		// Overflow at 1000 km/h and 4 million passengers per month, should be OK
+		financial_history[0][cost_type] = rolling_average[cost_type] / rolling_average_count[cost_type];
 	}
 
 	void new_month();
@@ -228,7 +229,7 @@ public:
 
 	// @author: jamespetts
 	uint32 rolling_average[MAX_LINE_COST];
-	uint16 rolling_average_count[MAX_LINE_COST];
+	uint32 rolling_average_count[MAX_LINE_COST];
 
 	//@author: jamespetts
 	bool has_overcrowded() const;
