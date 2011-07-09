@@ -41,7 +41,7 @@ private:
 	bool replace_all;	// True if all convoys like this are to be replaced
 	bool depot;		// True if convoy is to be sent to depot only
 	replace_data_t *rpl;
-	enum {state_replace=0, state_sell, state_skip, n_states};
+	enum {state_replace=0, state_sell, state_skip, state_group, n_states};
 	uint8 state;
 	uint16 replaced_so_far;
 	sint64 money;
@@ -68,15 +68,18 @@ private:
 	gui_label_t		lb_replace;
 	gui_label_t		lb_sell;
 	gui_label_t		lb_skip;
+	gui_label_t		lb_group;
 	gui_label_t		lb_n_replace;
 	gui_label_t		lb_n_sell;
 	gui_label_t		lb_n_skip;
+	gui_label_t		lb_n_group;
 	gui_numberinput_t	numinp[n_states];
 	gui_convoy_assembler_t convoy_assembler;
 	char txt_money[16];
 	char txt_n_replace[8];
 	char txt_n_sell[8];
 	char txt_n_skip[8];
+	char txt_n_group[8];
 
 	uint32 total_width, min_total_width, total_height, min_total_height;
 

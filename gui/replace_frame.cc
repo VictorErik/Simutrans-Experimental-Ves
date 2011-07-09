@@ -32,9 +32,11 @@ replace_frame_t::replace_frame_t(convoihandle_t cnv, const char *name):
 	lb_replace(NULL, COL_BLACK, gui_label_t::left),
 	lb_sell(NULL, COL_BLACK, gui_label_t::left),
 	lb_skip(NULL, COL_BLACK, gui_label_t::left),
+	lb_group(NULL, COL_BLACK, gui_label_t::left),
 	lb_n_replace(NULL, COL_BLACK, gui_label_t::left),
 	lb_n_sell(NULL, COL_BLACK, gui_label_t::left),
 	lb_n_skip(NULL, COL_BLACK, gui_label_t::left),
+	lb_n_group(NULL, COL_BLACK, gui_label_t::left),
 	convoy_assembler(cnv->get_welt(), cnv->get_vehikel(0)->get_besch()->get_waytype(),  cnv->get_besitzer()->get_player_nr(), 
 	cnv->get_welt()->lookup(cnv->get_vehikel(0)->get_pos())->get_weg(cnv->get_vehikel(0)->get_waytype()) == NULL ? 
 	false : cnv->get_welt()->lookup(cnv->get_vehikel(0)->get_pos())->get_weg(cnv->get_vehikel(0)	->get_waytype())->is_electrified() )
@@ -55,6 +57,7 @@ replace_frame_t::replace_frame_t(convoihandle_t cnv, const char *name):
 	lb_replace.set_text_pointer(translator::translate("rpl_cnv_replace"));
 	lb_sell.set_text_pointer(translator::translate("rpl_cnv_sell"));
 	lb_skip.set_text_pointer(translator::translate("rpl_cnv_skip"));
+	lb_group.set_text_pointer(translator::translate("Groups:"));
 	numinp[state_replace].set_value( 1 );
 	numinp[state_replace].set_limits( 0, 99 );
 	numinp[state_replace].set_increment_mode( 1 );
@@ -67,9 +70,14 @@ replace_frame_t::replace_frame_t(convoihandle_t cnv, const char *name):
 	numinp[state_skip].set_limits( 0, 99 );
 	numinp[state_skip].set_increment_mode( 1 );
 	numinp[state_skip].add_listener(this);
+	numinp[state_group].set_value( 0 );
+	numinp[state_group].set_limits( 0, 99 );
+	numinp[state_group].set_increment_mode( 1 );
+	numinp[state_group].add_listener(this);
 	lb_n_replace.set_text_pointer(txt_n_replace);
 	lb_n_sell.set_text_pointer(txt_n_sell);
 	lb_n_skip.set_text_pointer(txt_n_skip);
+	lb_n_skip.set_text_pointer(txt_n_group);
 	add_komponente(&lb_replace_cycle);
 	add_komponente(&lb_replace);
 	add_komponente(&numinp[state_replace]);
@@ -80,6 +88,9 @@ replace_frame_t::replace_frame_t(convoihandle_t cnv, const char *name):
 	add_komponente(&lb_skip);
 	add_komponente(&numinp[state_skip]);
 	add_komponente(&lb_n_skip);
+	add_komponente(&lb_group);
+	add_komponente(&numinp[state_group]);
+	add_komponente(&lb_n_group);
 
 	const vehikel_t *lead_vehicle = cnv->get_vehikel(0);
 	const waytype_t wt = lead_vehicle->get_waytype();
@@ -292,6 +303,12 @@ void replace_frame_t::layout(koord *gr)
 	numinp[state_skip].set_pos( koord( fgr.x-110, current_y ) );
 	numinp[state_skip].set_groesse( koord( 50, a_button_height ) );
 	lb_n_skip.set_pos( koord( fgr.x-50, current_y ) );
+	current_y+=LINESPACE+2;
+
+	lb_group.set_pos(koord(fgr.x-166,current_y));
+	numinp[state_group].set_pos( koord( fgr.x-110, current_y ) );
+	numinp[state_group].set_groesse( koord( 50, a_button_height ) );
+	lb_n_group.set_pos( koord( fgr.x-50, current_y ) );
 
 	current_y+=LINESPACE+margin;
 }
@@ -313,10 +330,12 @@ void replace_frame_t::update_data()
 	txt_n_replace[0]='\0';
 	txt_n_sell[0]='\0';
 	txt_n_skip[0]='\0';
-	uint32 n[3];
+	txt_n_group[0]='\0';
+	uint32 n[4];
 	n[0]=0;
 	n[1]=0;
 	n[2]=0;
+	n[3]=0;
 	money = 0;
 	sint32 base_total_cost = calc_total_cost();
 	if (replace_line || replace_all) {
@@ -364,6 +383,7 @@ void replace_frame_t::update_data()
 		sprintf(txt_n_replace,"%d",n[0]);
 		sprintf(txt_n_sell,"%d",n[1]);
 		sprintf(txt_n_skip,"%d",n[2]);
+		sprintf(txt_n_group,"%d",n[3]);
 	}
 	if (convoy_assembler.get_vehicles()->get_count()>0) {
 		money_to_string(txt_money,money/100.0);
