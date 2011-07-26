@@ -5613,8 +5613,18 @@ bool wkz_change_convoi_t::init( karte_t *welt, spieler_t *sp )
 
 		case 'V': // Reverse button
 		{
-			const bool rs = cnv->get_reverse_schedule();
+			const bool rs = cnv->get_schedule()->get_advance_reverse();
 			cnv->set_reverse_schedule(!rs);
+			// this may affect routing, so update if necessary.
+			if( cnv->get_line().is_bound() ) 
+			{
+				cnv->get_line()->recalc_catg_index();
+			} 
+			else
+			{
+				cnv->get_welt()->set_schedule_counter();
+			}
+
 			break;
 		}
 

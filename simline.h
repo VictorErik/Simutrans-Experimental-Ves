@@ -80,6 +80,13 @@ private:
 	minivec_tpl<uint8> goods_catg_index;
 
 	/*
+	 * lists of goods transported in each direction.
+	 * only calculated for non-mirrored lines.
+	 */
+	minivec_tpl<uint8> fwd_goods_catg_index;
+	minivec_tpl<uint8> rev_goods_catg_index;
+
+	/*
 	 * struct holds new financial history for line
 	 * @author hsiegeln
 	 */
@@ -97,9 +104,21 @@ private:
 	 * reverse_schedule flag set. Only applies to bidirectional schedules.
 	 * @author yobbobandana
 	 */
-	bool start_reversed;
+	bool also_reverse;
 
 	uint16 livery_scheme_index;
+
+	/**
+	 * Return true if the line serves the given direction.
+	 * A specific goods category may optionally be given as well.
+	 * @author yobbobandana
+	 */
+	bool serves_direction(bool reverse, uint8 catg) const;
+	bool serves_direction(bool reverse) const;
+
+	bool get_also_reverse() const { return also_reverse; }
+	void set_also_reverse(bool rev = true) { also_reverse = rev; }
+
 
 public:
 	simline_t(karte_t* welt, spieler_t *sp, linetype type);

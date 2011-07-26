@@ -35,7 +35,7 @@ simline_t::simline_t(karte_t* welt, spieler_t* sp, linetype type)
 		rolling_average[i] = 0;
 		rolling_average_count[i] = 0;
 	}
-	start_reversed = false;
+	also_reverse = false;
 	livery_scheme_index = 0;
 
 	create_schedule();
@@ -93,10 +93,25 @@ void simline_t::create_schedule()
 
 void simline_t::add_convoy(convoihandle_t cnv, bool from_loading)
 {
+	// convoy fpl should be set properly already
+	schedule_t *cnv_fpl = cnv->get_schedule();
+	
 	if (line_managed_convoys.empty()  &&  self.is_bound()) {
 		// first convoi -> ok, now we can announce this connection to the stations
 		// unbound self can happen during loading if this line had line_id=0
 		register_stops(fpl);
+	}
+
+	// if also_reverse is set, set the initial convoy direction
+	if( also_reverse ) {
+		cnv_fpl->set_advance_reverse(fpl->get_advance_reverse());
+		fpl->set_advance_reverse(!fpl->get_advance_reverse());
+	}
+
+	// if the schedule is mirrored, convoys starting at entry 0 and
+	// reversed should start from the other end.
+	if( fpl->is_mirrored() && cnv_fpl->get_advance_reverse() && cnv_fpl->get_aktuell()==0 ) {
+		cnv_fpl->set_aktuell(cnv_fpl->get_count()-1);
 	}
 
 	// first convoi may change line type
@@ -118,22 +133,6 @@ void simline_t::add_convoy(convoihandle_t cnv, bool from_loading)
 	// what goods can this line transport?
 	bool update_schedules = false;
 	if(  cnv->get_state()!=convoi_t::INITIAL  ) {
-		/*
-		// already on the road => need to add them
-		for(  uint8 i=0;  i<cnv->get_vehikel_anzahl();  i++  ) {
-			// Only consider vehicles that really transport something
-			// this helps against routing errors through passenger
-			// trains pulling only freight wagons
-			if(  cnv->get_vehikel(i)->get_fracht_max() == 0  ) {
-				continue;
-			}
-			const ware_besch_t *ware=cnv->get_vehikel(i)->get_fracht_typ();
-			if(  ware!=warenbauer_t::nichts  &&  !goods_catg_index.is_contained(ware->get_catg_index())  ) {
-				goods_catg_index.append( ware->get_catg_index(), 1 );
-				update_schedules = true;
-			}
-		}
-		*/
 
 		// Added by : Knightly
 		const minivec_tpl<uint8> &categories = cnv->get_goods_catg_index();
@@ -148,6 +147,18 @@ void simline_t::add_convoy(convoihandle_t cnv, bool from_loading)
 		}
 	}
 
+	if( !fpl->is_mirrored() ) {
+				if(  cnv_fpl->get_advance_reverse() && !rev_goods_catg_index.is_contained( categories[i] )  ) {
+					rev_goods_catg_index.append( categories[i], 1 );
+					update_schedules = true;
+				}
+				if(  !cnv_fpl->get_advance_reverse() && !fwd_goods_catg_index.is_contained( categories[i] )  ) {
+					fwd_goods_catg_index.append( categories[i], 1 );
+					update_schedules = true;
+				}
+			}
+
+
 	// will not hurt ...
 	financial_history[0][LINE_CONVOIS] = count_convoys();
 	recalc_status();
@@ -161,8 +172,8 @@ void simline_t::add_convoy(convoihandle_t cnv, bool from_loading)
 
 	// if the schedule is flagged as bidirectional, set the initial convoy direction
 	if( fpl->is_bidirectional() && !from_loading ) {
-		cnv->set_reverse_schedule(start_reversed);
-		start_reversed = !start_reversed;
+		cnv->set_reverse_schedule(also_reverse);
+		also_reverse = !also_reverse;
 	}
 }
 
@@ -296,7 +307,7 @@ void simline_t::rdwr(loadsave_t *file)
 
 	if(file->get_experimental_version() >= 9) 
 	{
-		file->rdwr_bool( start_reversed);
+		file->rdwr_bool(also_reverse);
 	}
 
 	// otherwise inintialized to zero if loading ...
@@ -499,10 +510,21 @@ void simline_t::recalc_catg_index()
 {
 	// first copy old
 	minivec_tpl<uint8> old_goods_catg_index(goods_catg_index.get_count());
+	minivec_tpl<uint8> old_fwd_goods_catg_index(fwd_goods_catg_index.get_count());
+	minivec_tpl<uint8> old_rev_goods_catg_index(rev_goods_catg_index.get_count());
 	for(  uint i=0;  i<goods_catg_index.get_count();  i++  ) {
 		old_goods_catg_index.append( goods_catg_index[i] );
+		if( i<fwd_goods_catg_index.get_count() ) {
+			old_fwd_goods_catg_index.append( fwd_goods_catg_index[i] );
+		}
+		if( i<rev_goods_catg_index.get_count() ) {
+			old_rev_goods_catg_index.append( rev_goods_catg_index[i] );
+		}
+
 	}
 	goods_catg_index.clear();
+	fwd_goods_catg_index.clear();
+	rev_goods_catg_index.clear();
 	withdraw = !line_managed_convoys.empty();
 	// then recreate current
 	for(unsigned i=0;  i<line_managed_convoys.get_count();  i++ ) {
@@ -515,6 +537,15 @@ void simline_t::recalc_catg_index()
 		for(  uint8 i = 0;  i < convoys_goods.get_count();  i++  ) {
 			const uint8 catg_index = convoys_goods[i];
 			goods_catg_index.append_unique( catg_index, 1 );
+			goods_catg_index.append_unique( catg_index, 1 );
+			if( !fpl->is_mirrored() ) {
+				if( cnv->get_schedule()->get_advance_reverse() ) {
+					rev_goods_catg_index.append_unique( catg_index, 1 );
+				} else {
+					fwd_goods_catg_index.append_unique( catg_index, 1 );
+				}
+			}
+
 		}
 	}
 	
@@ -541,6 +572,42 @@ void simline_t::recalc_catg_index()
 		}
 	}
 
+	// removed categories : present in old category list but not in new category list
+	for (uint8 i = 0; i < old_fwd_goods_catg_index.get_count(); i++)
+	{
+		if ( ! fwd_goods_catg_index.is_contained( old_fwd_goods_catg_index[i] ) )
+		{
+			differences.append_unique( old_fwd_goods_catg_index[i] );
+		}
+	}
+
+	// added categories : present in new category list but not in old category list
+	for (uint8 i = 0; i < fwd_goods_catg_index.get_count(); i++)
+	{
+		if ( ! old_fwd_goods_catg_index.is_contained( fwd_goods_catg_index[i] ) )
+		{
+			differences.append_unique( fwd_goods_catg_index[i] );
+		}
+	}
+
+	// removed categories : present in old category list but not in new category list
+	for (uint8 i = 0; i < old_rev_goods_catg_index.get_count(); i++)
+	{
+		if ( ! rev_goods_catg_index.is_contained( old_rev_goods_catg_index[i] ) )
+		{
+			differences.append_unique( old_rev_goods_catg_index[i] );
+		}
+	}
+
+	// added categories : present in new category list but not in old category list
+	for (uint8 i = 0; i < fwd_goods_catg_index.get_count(); i++)
+	{
+		if ( ! old_rev_goods_catg_index.is_contained( rev_goods_catg_index[i] ) )
+		{
+			differences.append_unique( rev_goods_catg_index[i] );
+		}
+	}
+
 	// refresh only those categories which are either removed or added to the category list
 	haltestelle_t::refresh_routing(fpl, differences, sp,welt->get_settings().get_default_path_option());
 }
@@ -563,5 +630,25 @@ void simline_t::propogate_livery_scheme()
 	{
 		line_managed_convoys[i]->set_livery_scheme_index(livery_scheme_index);
 		line_managed_convoys[i]->apply_livery_scheme();
+	}
+}
+
+bool simline_t::serves_direction(bool reverse) const {
+	if( fpl->is_mirrored() ) {
+		return line_managed_convoys.get_count() > 0;
+	} else if( reverse ) {
+		return rev_goods_catg_index.get_count() > 0;
+	} else {
+		return fwd_goods_catg_index.get_count() > 0;
+	}
+}
+
+bool simline_t::serves_direction(bool reverse, uint8 catg) const {
+	if( fpl->is_mirrored() ) {
+		return goods_catg_index.is_contained(catg);
+	} else if( reverse ) {
+		return rev_goods_catg_index.is_contained(catg);
+	} else {
+		return fwd_goods_catg_index.is_contained(catg);
 	}
 }

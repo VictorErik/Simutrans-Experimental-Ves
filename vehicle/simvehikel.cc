@@ -3161,18 +3161,19 @@ bool waggon_t::is_weg_frei_longblock_signal( signal_t *sig, uint16 next_block, i
 
 	// now we can use the route seach array
 	// (route until end is already reserved at this point!)
-	uint8 fahrplan_index = cnv->get_schedule()->get_aktuell()+1;
+	schedule_t *fpl = cnv->get_schedule();
+	uint8 fahrplan_index = fpl->get_aktuell()+1;
+	bool fahrplan_reversed = fpl->get_advance_reverse();
 	route_t target_rt;
 	koord3d cur_pos = cnv->get_route()->back();
 	uint16 dummy, next_next_signal;
 	bool success = true;
 	if(fahrplan_index >= cnv->get_schedule()->get_count()) {
-		fahrplan_index = 0;
+		fpl->increment_index(&fahrplan_index, &fahrplan_reversed);
 	}
 	while(  fahrplan_index != cnv->get_schedule()->get_aktuell()  ) {
-		// now search
-		// search for route
-		success = target_rt.calc_route( welt, cur_pos, cnv->get_schedule()->eintrag[fahrplan_index].pos, this, this->get_convoi()->get_heaviest_vehicle(), speed_to_kmh(cnv->get_min_top_speed()));
+		// now search for route
+		success = target_rt.calc_route( welt, cur_pos, fpl->eintrag[fahrplan_index].pos, this, this->get_convoi()->get_heaviest_vehicle(), speed_to_kmh(cnv->get_min_top_speed()));
 		if(  success  ) {
 			success = block_reserver( &target_rt, 1, next_next_signal, dummy, 0, true, false );
 			block_reserver( &target_rt, 1, dummy, dummy, 0, false, false );
