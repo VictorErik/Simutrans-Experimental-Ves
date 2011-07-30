@@ -228,23 +228,6 @@ public:
 
 	const slist_tpl<tile_t> &get_tiles() const { return tiles; };
 
-	/**
-	 * directly reachable halt with its connection weight
-	 * @author Knightly
-	 */
-	struct connection_t
-	{
-		halthandle_t halt;
-		uint16 weight;
-
-		connection_t() : weight(0) { }
-		connection_t(halthandle_t _halt, uint16 _weight=0) : halt(_halt), weight(_weight) { }
-
-		bool operator == (const connection_t &other) const { return halt == other.halt; }
-		bool operator != (const connection_t &other) const { return halt != other.halt; }
-		static bool compare(const connection_t &a, const connection_t &b) { return a.halt.get_id() < b.halt.get_id(); }
-	};
-
 private:
 	slist_tpl<tile_t> tiles;
 
@@ -374,7 +357,7 @@ private:
 	// Record of waiting times. Takes a list of the last 16 waiting times per type of goods.
 	// Getter method will need to average the waiting times. 
 	// @author: jamespetts
-	koordhashtable_tpl<koord, waiting_time_set >* waiting_times;
+	inthashtable_tpl<uint16, waiting_time_set >* waiting_times;
 
 	uint8 check_waiting;
 
@@ -745,18 +728,18 @@ public:
 		{
 			
 			fixed_list_tpl<uint16, 16> *tmp;
-			if(waiting_times[category].access(halt->get_basis_pos()) == NULL)
+			if(waiting_times[category].access(halt.get_id()) == NULL)
 			{
 				tmp = new fixed_list_tpl<uint16, 16>;
 				waiting_time_set *set = new waiting_time_set;
 				set->times = *tmp;
 				set->month = 0;
-				waiting_times[category].put(halt->get_basis_pos(), *set);
+				waiting_times[category].put(halt.get_id(), *set);
 			}
-			waiting_times[category].access(halt->get_basis_pos())->times.add_to_tail(time);
+			waiting_times[category].access(halt.get_id())->times.add_to_tail(time);
 			if(!do_not_reset_month)
 			{
-				waiting_times[category].access(halt->get_basis_pos())->month = 0;
+				waiting_times[category].access(halt.get_id())->month = 0;
 			}
 		}
 	

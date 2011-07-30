@@ -40,7 +40,7 @@ simline_t::simline_t(karte_t* welt, spieler_t* sp, linetype type)
 
 	create_schedule();
 
-	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
+	average_journey_times = new koordhashtable_tpl<id_pair, average_tpl<uint16> >;
 }
 
 
@@ -53,7 +53,7 @@ simline_t::simline_t(karte_t* welt, spieler_t* sp, linetype type, loadsave_t *fi
 	this->fpl = NULL;
 	this->sp = sp;
 	create_schedule();
-	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
+	average_journey_times = new koordhashtable_tpl<id_pair, average_tpl<uint16> >;
 	rdwr(file);
 	// now self has the right id but the this-pointer is not assigned to the quickstone handle yet
 	// do this explicitly
@@ -324,6 +324,47 @@ void simline_t::rdwr(loadsave_t *file)
 	else
 	{
 		livery_scheme_index = 0;
+	}
+
+	if(file->get_experimental_version() >= 10)
+	{
+		if(file->is_saving())
+		{
+			uint32 count = average_journey_times->get_count();
+			file->rdwr_long(count);
+
+			koordhashtable_iterator_tpl<id_pair, average_tpl<uint16> > iter(average_journey_times);
+			while(iter.next())
+			{
+				id_pair idp = iter.get_current_key();
+				file->rdwr_short(idp.x);
+				file->rdwr_short(idp.y);
+				file->rdwr_short(iter.access_current_value().count);
+				file->rdwr_short(iter.access_current_value().total);
+			}
+		}
+		else
+		{
+			uint32 count = 0;
+			file->rdwr_long(count);
+			for(uint32 i = 0; i < count; i ++)
+			{
+				id_pair idp;
+				file->rdwr_short(idp.x);
+				file->rdwr_short(idp.y);
+				
+				uint16 count;
+				uint16 total;
+				file->rdwr_short(count);
+				file->rdwr_short(total);
+
+				average_tpl<uint16> average;
+				average.count = count;
+				average.total = total;
+
+				average_journey_times->put(idp, average);
+			}
+		}
 	}
 }
 
