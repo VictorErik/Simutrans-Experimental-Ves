@@ -39,6 +39,8 @@ simline_t::simline_t(karte_t* welt, spieler_t* sp, linetype type)
 	livery_scheme_index = 0;
 
 	create_schedule();
+
+	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
 }
 
 
@@ -51,6 +53,7 @@ simline_t::simline_t(karte_t* welt, spieler_t* sp, linetype type, loadsave_t *fi
 	this->fpl = NULL;
 	this->sp = sp;
 	create_schedule();
+	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
 	rdwr(file);
 	// now self has the right id but the this-pointer is not assigned to the quickstone handle yet
 	// do this explicitly
@@ -71,6 +74,8 @@ simline_t::~simline_t()
 	delete fpl;
 	self.detach();
 	DBG_MESSAGE("simline_t::~simline_t()", "line %d (%p) destroyed", self.get_id(), this);
+
+	delete average_journey_times;
 }
 
 
@@ -156,7 +161,7 @@ void simline_t::add_convoy(convoihandle_t cnv, bool from_loading)
 	if(  update_schedules  ) {
 
 		// Added by : Knightly
-		haltestelle_t::refresh_routing(fpl, goods_catg_index, sp,welt->get_settings().get_default_path_option());
+		haltestelle_t::refresh_routing(fpl, goods_catg_index, sp);
 	}
 
 	// if the schedule is flagged as bidirectional, set the initial convoy direction
@@ -390,7 +395,7 @@ void simline_t::renew_stops()
 		register_stops( fpl );
 	
 		// Added by Knightly
-		haltestelle_t::refresh_routing(fpl, goods_catg_index, sp,welt->get_settings().get_default_path_option());
+		haltestelle_t::refresh_routing(fpl, goods_catg_index, sp);
 		
 		DBG_DEBUG("simline_t::renew_stops()", "Line id=%d, name='%s'", self.get_id(), name.c_str());
 	}
@@ -400,7 +405,7 @@ void simline_t::set_schedule(schedule_t* fpl)
 {
 	if (this->fpl) 
 	{
-		haltestelle_t::refresh_routing(fpl, goods_catg_index, sp, 0);
+		haltestelle_t::refresh_routing(fpl, goods_catg_index, sp);
 		unregister_stops();
 		delete this->fpl;
 	}
@@ -542,7 +547,7 @@ void simline_t::recalc_catg_index()
 	}
 
 	// refresh only those categories which are either removed or added to the category list
-	haltestelle_t::refresh_routing(fpl, differences, sp,welt->get_settings().get_default_path_option());
+	haltestelle_t::refresh_routing(fpl, differences, sp);
 }
 
 

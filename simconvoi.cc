@@ -209,6 +209,8 @@ void convoi_t::init(karte_t *wl, spieler_t *sp)
 	recalc_data = true;
 
 	livery_scheme_index = 0;
+
+	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
 }
 
 
@@ -217,6 +219,7 @@ convoi_t::convoi_t(karte_t* wl, loadsave_t* file) : fahr(max_vehicle, NULL)
 	self = convoihandle_t(this);
 	init(wl, 0);
 	replace = NULL;
+	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
 	rdwr(file);
 	current_stop = fpl == NULL ? 255 : fpl->get_aktuell() - 1;
 
@@ -242,6 +245,8 @@ convoi_t::convoi_t(spieler_t* sp) : fahr(max_vehicle, NULL)
 	free_seats = 0;
 
 	livery_scheme_index = 0;
+
+	average_journey_times = new koord_pair_hashtable_tpl<koord_pair, average_tpl<uint16> >;
 }
 
 
@@ -279,12 +284,14 @@ DBG_MESSAGE("convoi_t::~convoi_t()", "destroying %d, %p", self.get_id(), this);
 			// New method - recalculate as necessary
 			
 			// Added by : Knightly
-			haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p,welt->get_settings().get_default_path_option());
+			haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p);
 		}
 		delete fpl;
 	}
 
 	clear_replace();
+
+	delete average_journey_times;
 
 	// @author hsiegeln - deregister from line (again) ...
 	unset_line();
@@ -1153,7 +1160,7 @@ end_loop:
 						else
 						{
 							// refresh only those categories which are either removed or added to the category list
-							haltestelle_t::refresh_routing(fpl, differences, besitzer_p,welt->get_settings().get_default_path_option());
+							haltestelle_t::refresh_routing(fpl, differences, besitzer_p);
 						}
 					}
 
@@ -1643,7 +1650,7 @@ void convoi_t::start()
 			// New method - recalculate as necessary
 			
 			// Added by : Knightly
-			haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p,welt->get_settings().get_default_path_option());
+			haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p);
 		}
 		wait_lock = 0;
 
@@ -2039,17 +2046,17 @@ bool convoi_t::set_schedule(schedule_t * f)
 		{
 			if ( !old_fpl->matches(welt, fpl) )
 			{
-				haltestelle_t::refresh_routing(old_fpl, goods_catg_index, besitzer_p, 0);
-				haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p,welt->get_settings().get_default_path_option());
+				haltestelle_t::refresh_routing(old_fpl, goods_catg_index, besitzer_p);
+				haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p);
 			}
 		}
 		else
 		{
 			if (fpl != f)
 			{
-				haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p, 0);
+				haltestelle_t::refresh_routing(fpl, goods_catg_index, besitzer_p);
 			}
-			haltestelle_t::refresh_routing(f, goods_catg_index, besitzer_p,welt->get_settings().get_default_path_option());
+			haltestelle_t::refresh_routing(f, goods_catg_index, besitzer_p);
 		}
 	}
 	
@@ -2084,7 +2091,6 @@ bool convoi_t::set_schedule(schedule_t * f)
 			// Knightly : if line is unset or schedule is changed
 			//				-> register stops from new schedule
 			register_stops();
-			welt->set_schedule_counter();	// must trigger refresh
 		}
 	}
 
@@ -3426,6 +3432,15 @@ void convoi_t::laden() //"load" (Babelfish)
 {
 	//Calculate average speed
 	//@author: jamespetts
+	
+	// This is necessary in order always to return the same pairs of co-ordinates for comparison.
+	const halthandle_t this_halt = welt->get_halt_koord_index(fahr[0]->get_pos().get_2d());
+	const halthandle_t last_halt = welt->get_halt_koord_index(fahr[0]->last_stop_pos);
+	const koord_pair pair(this_halt->get_basis_pos(), last_halt->get_basis_pos());
+	
+	// The calculation of the journey distance does not need to use normalised halt locations for comparison, so
+	// a more accurate distance can be used. Query whether the formula from halt_detail.cc should be used here instead
+	// (That formula has the effect of finding the distance between the nearest points of two halts).
 	const uint32 journey_distance = accurate_distance(fahr[0]->get_pos().get_2d(), fahr[0]->last_stop_pos);
 
 	if(journey_distance > 0)
@@ -3438,7 +3453,32 @@ void convoi_t::laden() //"load" (Babelfish)
 		{
 			book(average_speed, CONVOI_AVERAGE_SPEED);
 		}
+
+		if(!average_journey_times->is_contained(pair))
+		{
+			average_tpl<uint16> average;
+			average.add(journey_time / 13);
+			average_journey_times->put(pair, average);
+		}
+		else
+		{
+			average_journey_times->access(pair)->add(average_speed);
+		}
+		if(line.is_bound())
+		{
+			if(!line->average_journey_times->is_contained(pair))
+			{
+				average_tpl<uint16> average;
+				average.add(journey_time / 13);
+				line->average_journey_times->put(pair, average);
+			}
+			else
+			{
+				line->average_journey_times->access(pair)->add(journey_time);
+			}
+		}
 	}
+
 	last_departure_time = welt->get_zeit_ms();
 		
 	// Recalculate comfort
@@ -3512,18 +3552,18 @@ void convoi_t::laden() //"load" (Babelfish)
 
 sint64 convoi_t::calc_revenue(ware_t& ware)
 {
-	sint64 average_speed;
+	sint64 overall_average_speed;
 	
 	if(!line.is_bound())
 	{
 		// No line - must use convoy
 		if(financial_history[1][CONVOI_AVERAGE_SPEED] == 0)
 		{
-			average_speed = financial_history[0][CONVOI_AVERAGE_SPEED];
+			overall_average_speed = financial_history[0][CONVOI_AVERAGE_SPEED];
 		}
 		else
 		{	
-			average_speed = financial_history[1][CONVOI_AVERAGE_SPEED];
+			overall_average_speed = financial_history[1][CONVOI_AVERAGE_SPEED];
 		}
 	}
 
@@ -3531,11 +3571,11 @@ sint64 convoi_t::calc_revenue(ware_t& ware)
 	{
 		if(line->get_finance_history(1, LINE_AVERAGE_SPEED) == 0)
 		{
-			average_speed = line->get_finance_history(0, LINE_AVERAGE_SPEED);
+			overall_average_speed = line->get_finance_history(0, LINE_AVERAGE_SPEED);
 		}
 		else
 		{	
-			average_speed = line->get_finance_history(1, LINE_AVERAGE_SPEED);
+			overall_average_speed = line->get_finance_history(1, LINE_AVERAGE_SPEED);
 		}
 	}
 
@@ -3550,14 +3590,41 @@ sint64 convoi_t::calc_revenue(ware_t& ware)
 
 	ware.reset_accumulated_distance();
 
-	if(average_speed == 0)
+	if(overall_average_speed == 0)
 	{
-		average_speed = 1;
+		overall_average_speed = 1;
 	}
 	
 	// 100/1667 = 60min/hr / 1000 m/km
-	const uint16 journey_minutes = (((distance * 100) / average_speed) * welt->get_settings().get_meters_per_tile()) / 1667;
+	uint16 journey_minutes = 0;
+	if(ware.get_origin().is_bound())
+	{
+		if(line.is_bound())
+		{
+			journey_minutes = line->average_journey_times->get(koord_pair(ware.get_origin()->get_basis_pos(), welt->get_halt_koord_index(fahr[0]->get_pos().get_2d())->get_basis_pos())).get_average();
+		}
+		else
+		{
+			journey_minutes = average_journey_times->get(koord_pair(ware.get_origin()->get_basis_pos(), welt->get_halt_koord_index(fahr[0]->get_pos().get_2d())->get_basis_pos())).get_average();
+		}
+	}
 
+	sint64 average_speed;
+	if(journey_minutes == 0)
+	{
+		// Fallback to the overall average speed if there are no data for point-to-point timings.
+		journey_minutes = (((distance * 100) / overall_average_speed) * welt->get_settings().get_meters_per_tile()) / 1667;
+		average_speed = overall_average_speed;
+	}
+	else
+	{
+		average_speed = (sint64)(((distance * 10000) / (journey_minutes * 13)) * 20) / 100;
+		if(average_speed == 0)
+		{
+			average_speed = 1;
+		}
+	}
+	
 	const ware_besch_t* goods = ware.get_besch();
 	const sint64 price = (sint64)goods->get_preis();
 	const sint64 min_price = price / 10ll;
@@ -4177,7 +4244,7 @@ void convoi_t::book(sint64 amount, int cost_type)
 		// Average types
 		rolling_average[cost_type] += amount;
 		rolling_average_count[cost_type] ++;
-		sint32 tmp = rolling_average[cost_type] / rolling_average_count[cost_type];
+		const sint32 tmp = rolling_average[cost_type] / rolling_average_count[cost_type];
 		financial_history[0][cost_type] = tmp;
 	}
 	if (line.is_bound()) 
@@ -4246,10 +4313,6 @@ void convoi_t::set_line(linehandle_t org_line)
 	else {
 		// Knightly : originally a lineless convoy -> unregister itself from stops as it now belongs to a line
 		unregister_stops();
-		// must trigger refresh if old schedule was not empty
-		if (fpl  &&  !fpl->empty()) {
-			welt->set_schedule_counter();
-		}
 	}
 	line_update_pending = org_line;
 	check_pending_updates();

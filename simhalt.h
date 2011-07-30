@@ -45,11 +45,6 @@
 #define HALT_CONVOIS_ARRIVED        6 // number of convois arrived this month
 #define HALT_TOO_SLOW		        7 // The number of passengers whose estimated journey time exceeds their tolerance.
 
-#define RECONNECTING (1)
-#define REROUTING (2)
-#define RESCHEDULING (3)
-
-
 class cbuffer_t;
 class grund_t;
 class fabrik_t;
@@ -112,8 +107,6 @@ private:
 	uint32 capacity[3]; // passenger, post, goods
 	uint8 overcrowded[8];	// bit set, when overcrowded
 
-	static uint8 status_step;	// NONE or SCHEDULING or REROUTING
-
 	slist_tpl<convoihandle_t> loading_here;
 	long last_loading_step;
 
@@ -131,8 +124,6 @@ public:
 	 * Handles changes of schedules and the resulting rerouting
 	 */
 	static void step_all();
-
-	static uint8 get_rerouting_status() { return status_step; }
 
 	/**
 	 * Tries to generate some pedestrians on the sqaure and the
@@ -229,61 +220,11 @@ public:
 
 		uint16 alternative_seats; // used in overcrowd calculations in hole_ab, updated by update_alternative_seats
 
-		// Used for the memory pool only.
-#ifdef USE_INDEPENDENT_PATH_POOL
-		connexion* link;
-		connexion() { link = NULL; }
-#endif
-
 		// For the memory pool
 		void* operator new(size_t size);
 		void operator delete(void *p);
 	};
 	bool do_alternative_seats_calculation; //for optimisations purpose 
-
-	// Data on paths to ultimate destinations
-	struct path
-	{
-		halthandle_t halt;
-		uint16 journey_time;
-#ifdef USE_INDEPENDENT_PATH_POOL
-		path* link;
-#endif
-		//TODO: Consider whether to add comfort
-
-		path() { journey_time = 65535; }
-
-		// Necessary for sorting in a binary heap
-		inline bool operator <= (const path &p) const { return journey_time <= p.journey_time; }
-
-		// For the memory pool
-		void* operator new(size_t size);
-		void operator delete(void *p);
-	};
-
-	// Added by : Knightly
-	// For use during path search
-	struct path_node
-	{
-		halthandle_t halt;
-		uint16 journey_time;
-		union
-		{
-			path* link;
-			path_node* node_link;
-		};
-		linehandle_t previous_best_line;
-		convoihandle_t previous_best_convoy;
-
-		path_node() { journey_time = 65535; link = NULL; }
-
-		// Necessary for sorting in a binary heap
-		inline bool operator <= (const path_node &p_node) const { return journey_time <= p_node.journey_time; }
-
-		// For the memory pool
-		void* operator new(size_t size);
-		void operator delete(void *p);
-	};
 
 	const slist_tpl<tile_t> &get_tiles() const { return tiles; };
 
@@ -309,35 +250,10 @@ private:
 
 	koord init_pos;	// for halt without grounds, created during game initialisation
 
-	// Memory pool for paths and connexions
-#ifdef USE_INDEPENDENT_PATH_POOL
-	static bool first_run_path;
-	static bool first_run_connexion;
-	static bool first_run_path_node;
-	static const uint16 chunk_quantity;
-	static path* head_path;
-	static path_node* head_path_node;
-	static connexion* head_connexion;
-
-	inline static void path_pool_push(path* p);
-	inline static path* path_pool_pop();
-
-	inline static void path_node_pool_push(path_node* p);
-	inline static path_node* path_node_pool_pop();
-
-	inline static void connexion_pool_push(connexion* p);
-	inline static connexion* connexion_pool_pop();
-#endif
 	// Table of all direct connexions to this halt, with routing information.
 	// Array: one entry per goods type.
 	// Knightly : Change into an array of pointers to connexion hash tables
 	quickstone_hashtable_tpl<haltestelle_t, connexion*> **connexions;
-
-	quickstone_hashtable_tpl<haltestelle_t, path*> *paths;
-
-	// The number of iterations of paths currently traversed. Used for
-	// detecting when max_transfers has been reached.
-	uint32 *iterations;
 
 	// loest warte_menge ab
 	// "solves wait mixes off" (Babelfish); "solves warte volume from" (Google)
@@ -368,9 +284,6 @@ private:
 	 * @author prissi
 	 */
 	stationtyp station_type;
-
-	uint8 rebuilt_destination_counter;	// new schedule, first rebuilt destinations asynchroniously
-	uint8 reroute_counter;						// then, reroute goods
 
 	// since we do partial routing, we remeber the last offset
 	uint8 last_catg_index;
@@ -463,45 +376,7 @@ private:
 	// @author: jamespetts
 	koordhashtable_tpl<koord, waiting_time_set >* waiting_times;
 
-	// Used for pathfinding. The list is stored on the heap so that it can be re-used
-	// if searching is aborted part-way through.
-	// @author: jamespetts
-	binary_heap_tpl<path_node*> *open_list;
-
-	// void flush_open_list(uint8 category);
-	void flush_paths(uint8 category);
-
-	// Whether the search for the destination has completed: if so, the search will not
-	// re-run unless the results are stale.
-	bool *search_complete;
-
-	// When the connexions were last recalculated. Needed for checking whether they need to
-	// be recalculated again. 
-	// @author: jamespetts
-	uint16 *connexions_timestamp;
-
-	// Likewise for paths
-	// @author: jamespetts
-	uint16 *paths_timestamp;
-
 	uint8 check_waiting;
-
-	uint32 max_iterations;
-
-	// Set to true if a schedule that serves this stop has changed since
-	// the connexions were last recalculated. Used for spreading the load
-	// of the recalculating connexions algorithm with the pathfinding 
-	// algorithm.
-	// @author: jamespetts
-	bool *reschedule;
-
-	// Added by : Knightly
-	// Purpose	: To keep track of any need for re-routing existing goods packets in the halt
-	bool *reroute;
-
-	// Added by : Knightly
-	// Purpose	: To keep track if pathing data structures are present or not
-	bool has_pathing_data_structures;
 
 	// Added by : Knightly
 	// Purpose	: To store the time at which this halt is created
@@ -534,7 +409,7 @@ public:
 	* will distribute the goods to changed routes (if there are any)
 	* @author Hj. Malthaner
 	*/
-	uint32 reroute_goods();
+	//uint32 reroute_goods();
 
 	// Added by : Knightly
 	// Purpose	: Re-routing goods of a single ware category
@@ -568,18 +443,6 @@ public:
 	void verbinde_fabriken();
 	void remove_fabriken(fabrik_t *fab);
 
-	uint8 get_rebuild_destination_counter() const  { return rebuilt_destination_counter; }
-
-	// New routing method: finds shortest route in *time*, not necessarily distance
-	// @ author: jamespetts
-
-	// Direct connexions from this station. Replaces rebuild_destinations()
-	void rebuild_connexions(uint8 category);
-
-	// Ultimate paths from this station. Packets searching for a path need only
-	// grab a pre-calculated path from the hashtable generated by this method.
-	void calculate_paths(const halthandle_t goal, const uint8 category);
-
 	void rotate90( const sint16 y_size );
 
 	spieler_t *get_besitzer() const {return besitzer_p;}
@@ -596,7 +459,7 @@ public:
 	 * @author Hj. Malthaner
 	 */
 
-	void step(sint16 &units_remaining);
+	void step();
 
 	/**
 	 * Called every month/every 24 game hours
@@ -729,10 +592,6 @@ public:
 	 */
 	uint32 liefere_an(ware_t ware);
 	uint32 starte_mit_route(ware_t ware);
-
-	// Adding method for the new routing system. Equivalent to
-	// hat_gehalten with the old system. 
-	void add_connexion(const uint8 category, const convoihandle_t cnv, const linehandle_t line, const minivec_tpl<halthandle_t> &halt_list, const uint8 self_halt_idx);
 
 	const grund_t *find_matching_position(waytype_t wt) const;
 
@@ -905,41 +764,17 @@ public:
 
 	inline uint16 get_waiting_minutes(uint32 waiting_ticks) const;
 
-	quickstone_hashtable_tpl<haltestelle_t, connexion*>* get_connexions(uint8 c); 
-
-	// Finds the best path from here to the goal halt.
-	// Looks up the paths in the hashtable - if the table
-	// is not stale, and the path is in it, use that, or else
-	// search for a new path.
-	path* get_path_to(halthandle_t goal, uint8 category);
+	quickstone_hashtable_tpl<haltestelle_t, connexion*>* get_connexions(uint8 c) { return connexions[c]; }
 
 	linehandle_t get_preferred_line(halthandle_t transfer, uint8 category) const;
 	convoihandle_t get_preferred_convoy(halthandle_t transfer, uint8 category) const;
-
-	// Makes the paths recalculate, even if it would not otherwise be time for
-	// them to do so. Does this by making sure that the timestamp is lower than
-	// the counter.
-	// @author: jamespetts
-	void force_paths_stale(const uint8 category);
 
 	// Added by		: Knightly
 	// Adapted from : Jamespetts' code
 	// Purpose		: To notify relevant halts to rebuild connexions and to notify all halts to recalculate paths
 	// @jamespetts: modified the code to combine with previous method and provide options about partially delayed refreshes for performance.
 
-	static void refresh_routing(const schedule_t *const sched, const minivec_tpl<uint8> &categories, const spieler_t *const player, const uint8 path_option);
-
-	// Added by		: Knightly
-	// Adpated from : rebuild_connexions()
-	// Purpose		: To create a list of reachable halts with a line/convoy
-	// Return		: -1 if self halt is not found; or position of self halt in halt list if found
-	// Caution		: halt_list will be overwritten
-	sint16 create_reachable_halt_list(const schedule_t *const sched, const spieler_t *const sched_owner, minivec_tpl<halthandle_t> &halt_list);
-
-	// Added by : Knightly
-	// Purpose	: For all halts, check if pathing data structures are present; if not, create and initialize them
-	static void prepare_pathing_data_structures();
-
+	static void refresh_routing(const schedule_t *const sched, const minivec_tpl<uint8> &categories, const spieler_t *const player);
 
 	// Added by		: Knightly
 	// Adapted from : haltestelle_t::add_connexion()
@@ -961,12 +796,6 @@ public:
 	* deletes factory references so map rotation won't segfault
 	*/
 	void release_factory_links();
-
-	/**
-	 * Initialise the markers to zero
-	 * @author Knightly
-	 */
-	static void init_markers();
 
 	/**
 	 * Get queue position for spacing. It is *not* same as index in 'loading_here'.
