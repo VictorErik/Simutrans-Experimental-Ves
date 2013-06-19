@@ -405,7 +405,7 @@ stadtauto_t::~stadtauto_t()
 		welt->sync_remove(this);
 	}
 
-	if(current_list)
+	if(current_list && !welt->get_is_shutting_down())
 	{
 		current_list->remove(this);
 	}
