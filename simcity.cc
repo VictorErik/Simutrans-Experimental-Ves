@@ -2905,6 +2905,8 @@ void stadt_t::calc_growth()
 	const sint32 electricity = (sint32) city_history_month[0][HIST_POWER_NEEDED] == 0 ? 0 : (city_history_month[0][HIST_POWER_RECIEVED] * (electricity_proportion<<6)) / (city_history_month[0][HIST_POWER_NEEDED]);
 	const sint32 goods = (sint32) city_history_month[0][HIST_GOODS_NEEDED]==0 ? 0 : (city_history_month[0][HIST_GOODS_RECIEVED] * (s.get_goods_multiplier()<<6)) / (city_history_month[0][HIST_GOODS_NEEDED]);
 
+	const sint32 total_supply_percentage = pas + mail + electricity + goods;
+
 	// smaller towns should growth slower to have villages for a longer time
 	sint32 weight_factor = s.get_growthfactor_large();
 	if(  bev < (sint64)s.get_city_threshold_size()  ) {
@@ -2915,8 +2917,8 @@ void stadt_t::calc_growth()
 	}
 
 	// now give the growth for this step
-	sint32 growth_factor = weight_factor > 0 ? (pas+mail+electricity+goods) / weight_factor : 0;
-	
+	sint32 growth_factor = weight_factor > 0 ? total_supply_percentage / weight_factor : 0;
+
 	//Congestion adversely impacts on growth. At 100% congestion, there will be no growth. 
 	if(city_history_month[0][HIST_CONGESTION] > 0)
 	{
@@ -2924,7 +2926,22 @@ void stadt_t::calc_growth()
 		growth_factor -= (congestion_factor * growth_factor) / 100;
 	}
 
-	unsupplied_city_growth += growth_factor * growth_units_per_person / 4; // the 4 is traditional
+	sint64 new_unsupplied_city_growth = growth_factor * growth_units_per_person / 4; // the 4 is traditional
+
+	// OK.  Now we must adjust for the steps per month.
+	// Cities were growing way too fast without this adjustment.
+	// The original value was based on 18 bit months.
+	// TO DO: implement a more realistic city growth algorithm (exponential not linear)
+	sint64 tpm = welt->get_ticks_per_world_month();
+	sint64 old_ticks_per_world_month = 1LL < 18;
+	if (tpm > old_ticks_per_world_month) {
+		new_unsupplied_city_growth *= (tpm / old_ticks_per_world_month);
+	}
+	else {
+		new_unsupplied_city_growth /= (old_ticks_per_world_month / tpm);
+	}
+
+	unsupplied_city_growth += new_unsupplied_city_growth;
 }
 
 
@@ -2936,7 +2953,9 @@ void stadt_t::step_grow_city(bool new_town)
 
 	// since we use internally a finer value ...
 	const int growth_steps = unsupplied_city_growth / growth_units_per_person;
-	unsupplied_city_growth %= growth_units_per_person;
+	if (growth_steps > 0) {
+		unsupplied_city_growth %= growth_units_per_person;
+	}
 
 	// Hajo: let city grow in steps of 1
 	// @author prissi: No growth without development
