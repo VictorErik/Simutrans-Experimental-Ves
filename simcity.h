@@ -217,7 +217,7 @@ private:
 
 	/**
 	 * Unsupplied city growth needs
-	 * A value of 2^30 means 1 new resident
+	 * A value of 2^32 means 1 new resident
 	 * @author Nathanael Nerode (neroden)
 	 */
 	sint64 unsupplied_city_growth;

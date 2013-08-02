@@ -2444,7 +2444,7 @@ void stadt_t::change_size(sint32 delta_citizen)
 {
 	DBG_MESSAGE("stadt_t::change_size()", "%i + %i", bev, delta_citizen);
 	if (delta_citizen > 0) {
-		unsupplied_city_growth = delta_citizen<<30;
+		unsupplied_city_growth = delta_citizen<<32;
 		step_grow_city();
 	}
 	if (delta_citizen < 0) {
@@ -2931,7 +2931,7 @@ void stadt_t::calc_growth()
 		growth_factor -= (congestion_factor * growth_factor) / 100;
 	}
 
-	unsupplied_city_growth += growth_factor << (30 - 4); // the -4 is traditional
+	unsupplied_city_growth += growth_factor << (32 - 4); // the -4 is traditional
 }
 
 
@@ -2958,8 +2958,8 @@ void stadt_t::step_grow_city()
 		bev = 0;
 	}
 	// since we use internally a finer value ...
-	const int growth_step = (unsupplied_city_growth >> 30);
-	unsupplied_city_growth &= (1LL<<30 - 1);
+	const int growth_step = (unsupplied_city_growth >> 32);
+	unsupplied_city_growth &= (1LL<<32 - 1);
 
 	// Hajo: let city grow in steps of 1
 	// @author prissi: No growth without development
