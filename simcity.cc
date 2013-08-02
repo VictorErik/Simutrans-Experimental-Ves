@@ -1743,7 +1743,7 @@ stadt_t::stadt_t(spieler_t* sp, koord pos, sint32 citizens) :
 
 	unsupplied_city_growth = 0;
 	allow_citygrowth = true;
-	change_size( citizens );
+	change_size( citizens, true );
 
 	// fill with start citizen ...
 	sint64 bew = get_einwohner();
@@ -2216,7 +2216,7 @@ void stadt_t::laden_abschliessen()
 
 	// new city => need to grow
 	if (buildings.empty()) {
-		step_grow_city();
+		step_grow_city(true);
 	}
 
 	// clear the minimaps
@@ -2440,12 +2440,12 @@ void stadt_t::verbinde_fabriken()
 
 /* change size of city
  * @author prissi */
-void stadt_t::change_size(sint32 delta_citizen)
+void stadt_t::change_size(sint32 delta_citizen, bool new_town)
 {
 	DBG_MESSAGE("stadt_t::change_size()", "%i + %i", bev, delta_citizen);
 	if (delta_citizen > 0) {
 		unsupplied_city_growth += delta_citizen * growth_units_per_person;
-		step_grow_city();
+		step_grow_city(new_town);
 	}
 	if (delta_citizen < 0) {
 		if (bev > -delta_citizen) {
@@ -2455,7 +2455,7 @@ void stadt_t::change_size(sint32 delta_citizen)
 //				remove_city();
 			bev = 1;
 		}
-		step_grow_city();
+		step_grow_city(new_town);
 	}
 	DBG_MESSAGE("stadt_t::change_size()", "%i+%i", bev, delta_citizen);
 }
@@ -2929,26 +2929,11 @@ void stadt_t::calc_growth()
 
 
 // does constructions ...
-void stadt_t::step_grow_city()
+void stadt_t::step_grow_city(bool new_town)
 {
-	bool new_town = (bev == 0);
-	if (new_town) {
-		bev = unsupplied_city_growth / growth_units_per_person;
-		bool need_building = true;
-		uint32 buildings_count = buildings.get_count();
-		uint32 try_nr = 0;
-		while (need_building && try_nr < 1000) {
-			baue(false); // it update won
-			if ( buildings_count != buildings.get_count() ) {
-				if(buildings[buildings_count]->get_haustyp() == gebaeude_t::wohnung) {
-					// Stop with the first commercial building.  (Why???)
-					need_building = false;
-				}
-			}
-			try_nr++;
-			buildings_count = buildings.get_count();
-		}
-	}
+	// Try harder to build if this is a new town
+	int num_tries = new_town ? 1000 : 30;
+
 	// since we use internally a finer value ...
 	const int growth_steps = unsupplied_city_growth / growth_units_per_person;
 	unsupplied_city_growth %= growth_units_per_person;
@@ -2956,7 +2941,7 @@ void stadt_t::step_grow_city()
 	// Hajo: let city grow in steps of 1
 	// @author prissi: No growth without development
 	for (int n = 0; n < growth_steps; n++) {
-		bev++; // Hajo: bevoelkerung wachsen lassen ("densely populated grow" - Google)
+		bev++;
 
 		for (int i = 0; i < 30 && bev * 2 > won + arb + 100; i++) {
 			baue(false);
