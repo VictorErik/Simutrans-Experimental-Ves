@@ -2900,12 +2900,59 @@ void stadt_t::calc_growth()
 	const int electricity_proportion = (get_electricity_consumption(welt->get_timeline_year_month()) * electricity_multiplier / 100);
 	const int mail_proportion = 100 - (s.get_passenger_multiplier() + electricity_proportion + s.get_goods_multiplier());
 
-	const sint32 pas = (sint32) ((city_history_month[0][HIST_PAS_TRANSPORTED] + city_history_month[0][HIST_PAS_WALKED] + (city_history_month[0][HIST_CITYCARS] - outgoing_private_cars)) * (s.get_passenger_multiplier()<<6)) / (city_history_month[0][HIST_PAS_GENERATED] + 1);
-	const sint32 mail = (sint32) (city_history_month[0][HIST_MAIL_TRANSPORTED] * (mail_proportion)<<6) / (city_history_month[0][HIST_MAIL_GENERATED] + 1);
-	const sint32 electricity = (sint32) city_history_month[0][HIST_POWER_NEEDED] == 0 ? 0 : (city_history_month[0][HIST_POWER_RECIEVED] * (electricity_proportion<<6)) / (city_history_month[0][HIST_POWER_NEEDED]);
-	const sint32 goods = (sint32) city_history_month[0][HIST_GOODS_NEEDED]==0 ? 0 : (city_history_month[0][HIST_GOODS_RECIEVED] * (s.get_goods_multiplier()<<6)) / (city_history_month[0][HIST_GOODS_NEEDED]);
+	sint32 pas;
+	if (city_history_month[0][HIST_PAS_GENERATED] == 0) {
+		pas = 0;
+	}
+	else {
+		pas = (   city_history_month[0][HIST_PAS_TRANSPORTED]
+		        + city_history_month[0][HIST_PAS_WALKED]
+		        + city_history_month[0][HIST_CITYCARS]
+		        - outgoing_private_cars
+		       ) * (s.get_passenger_multiplier()<<6)
+		       / city_history_month[0][HIST_PAS_GENERATED];
+	}
+	sint32 mail;
+	if (city_history_month[0][HIST_MAIL_GENERATED] == 0) {
+		mail = 0;
+	}
+	else {
+		mail =   city_history_month[0][HIST_MAIL_TRANSPORTED]
+		       * (mail_proportion)<<6)
+		       / city_history_month[0][HIST_MAIL_GENERATED];
+	}
+	sint32 electricity;
+	if (city_history_month[0][HIST_POWER_NEEDED] == 0) {
+		electricity = 0;
+	}
+	else {
+		electricity =   city_history_month[0][HIST_POWER_RECIEVED]
+		              * (electricity_proportion<<6)
+					  / city_history_month[0][HIST_POWER_NEEDED];
+	}
+	sint32 goods;
+	if (city_history_month[0][HIST_GOODS_NEEDED] == 0 {
+		goods = 0;
+	}
+	else {
+		goods =   city_history_month[0][HIST_GOODS_RECIEVED]
+		        * (s.get_goods_multiplier()<<6)
+		        / city_history_month[0][HIST_GOODS_NEEDED];
+	}
 
 	const sint32 total_supply_percentage = pas + mail + electricity + goods;
+	// By construction, this is a percentage times 2^6.
+	// We will divide it by 2^4=16 for traditional reasons, which means
+	// it generates 2^2 (=4) or fewer people at 100%.
+
+	// These "growth factors" are in the range of 100-1000, so they cancel out the percent
+	// effect above, and reduce further.  In pak128.britain, 4/3.5 people for
+	// a capital, and 4/8.95 people for a village.
+
+	// Combined, this raises the specter of underflow roundoff.
+	// There are only two solutions: one is to record unsupplied_city_growth
+	// (rather than resetting it), and the other is to run the steps less frequently.
+	// The better solution is to record it.
 
 	// smaller towns should growth slower to have villages for a longer time
 	sint32 weight_factor = s.get_growthfactor_large();
@@ -2926,7 +2973,7 @@ void stadt_t::calc_growth()
 		growth_factor -= (congestion_factor * growth_factor) / 100;
 	}
 
-	sint64 new_unsupplied_city_growth = growth_factor * growth_units_per_person / 4; // the 4 is traditional
+	sint64 new_unsupplied_city_growth = growth_factor * growth_units_per_person / 16; // the 16 is traditional
 
 	// OK.  Now we must adjust for the steps per month.
 	// Cities were growing way too fast without this adjustment.
