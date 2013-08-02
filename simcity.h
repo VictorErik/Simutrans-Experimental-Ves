@@ -216,11 +216,11 @@ private:
 	sint32 won; // amount with homes
 
 	/**
-	 * Modifier for city growth
-	 * transient data, not saved
-	 * @author Hj. Malthaner
+	 * Unsupplied city growth needs
+	 * A value of 2^30 means 1 new resident
+	 * @author Nathanael Nerode (neroden)
 	 */
-	sint32 wachstum;
+	sint64 unsupplied_city_growth;
 
 	/**
 	* City history

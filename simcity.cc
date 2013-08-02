@@ -1741,7 +1741,7 @@ stadt_t::stadt_t(spieler_t* sp, koord pos, sint32 citizens) :
 	// 1. Rathaus bei 0 Leuten bauen
 	check_bau_rathaus(true);
 
-	wachstum = 0;
+	unsupplied_city_growth = 0;
 	allow_citygrowth = true;
 	change_size( citizens );
 
@@ -1828,7 +1828,7 @@ stadt_t::stadt_t(karte_t* wl, loadsave_t* file) :
 	step_interval = 1;
 	next_growth_step = 0;
 
-	wachstum = 0;
+	unsupplied_city_growth = 0;
 	stadtinfo_options = 3;
 
 	// These things are not yet saved as part of the city's history,
@@ -2444,11 +2444,11 @@ void stadt_t::change_size(sint32 delta_citizen)
 {
 	DBG_MESSAGE("stadt_t::change_size()", "%i + %i", bev, delta_citizen);
 	if (delta_citizen > 0) {
-		wachstum = delta_citizen<<4;
+		unsupplied_city_growth = delta_citizen<<30;
 		step_grow_city();
 	}
 	if (delta_citizen < 0) {
-		wachstum = 0;
+		unsupplied_city_growth = 0;
 		if (bev > -delta_citizen) {
 			bev += delta_citizen;
 		}
@@ -2463,7 +2463,7 @@ void stadt_t::change_size(sint32 delta_citizen)
 		// Cities will experience uncontrollable growth if bev == 0
 		bev = 1;
 	}
-	wachstum = 0;
+	unsupplied_city_growth = 0;
 	DBG_MESSAGE("stadt_t::change_size()", "%i+%i", bev, delta_citizen);
 }
 
@@ -2887,7 +2887,7 @@ void stadt_t::calc_growth()
 
 	// maybe this town should stay static
 	if(  !allow_citygrowth  ) {
-		wachstum = 0;
+		unsupplied_city_growth = 0;
 		return;
 	}
 
@@ -2930,8 +2930,8 @@ void stadt_t::calc_growth()
 		const uint32 congestion_factor = city_history_month[0][HIST_CONGESTION];
 		growth_factor -= (congestion_factor * growth_factor) / 100;
 	}
-	
-	wachstum += growth_factor;
+
+	unsupplied_city_growth += growth_factor << (30 - 4); // the -4 is traditional
 }
 
 
@@ -2940,7 +2940,7 @@ void stadt_t::step_grow_city()
 {
 	bool new_town = (bev == 0);
 	if (new_town) {
-		bev = (wachstum >> 4); // "wachstum" = "growth" (Google)
+		bev = (unsupplied_city_growth >> 16);
 		bool need_building = true;
 		uint32 buildings_count = buildings.get_count();
 		uint32 try_nr = 0;
@@ -2958,8 +2958,8 @@ void stadt_t::step_grow_city()
 		bev = 0;
 	}
 	// since we use internally a finer value ...
-	const int growth_step = (wachstum >> 4);
-	wachstum &= 0x0F;
+	const int growth_step = (unsupplied_city_growth >> 30);
+	unsupplied_city_growth &= (1LL<<30 - 1);
 
 	// Hajo: let city grow in steps of 1
 	// @author prissi: No growth without development
