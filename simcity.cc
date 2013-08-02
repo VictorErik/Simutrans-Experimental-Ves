@@ -1870,6 +1870,17 @@ void stadt_t::rdwr(loadsave_t* file)
 	file->rdwr_long(bev);
 	file->rdwr_long(arb);
 	file->rdwr_long(won);
+
+	if (file->get_version()>=112009) {
+		// Must record the partial (less than 1 citizen) growth factor
+		// Otherwise we will get network desyncs
+		// (it's mostly harmless for non-network games to not record this)
+		// This may also record large negative growth in the future
+		file->rdwr_longlong(unsupplied_city_growth);
+	}
+	else if file->is_loading() {
+		unsupplied_city_growth = 0;
+	}
 	// old values zentrum_namen_cnt : aussen_namen_cnt
 	if(file->get_version()<99018) {
 		sint32 dummy=0;
