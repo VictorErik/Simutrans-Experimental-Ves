@@ -221,6 +221,7 @@ private:
 	 * @author Nathanael Nerode (neroden)
 	 */
 	sint64 unsupplied_city_growth;
+	const sint64 growth_units_per_person = 1LL << 32;
 
 	/**
 	* City history
