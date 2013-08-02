@@ -2932,8 +2932,8 @@ void stadt_t::calc_growth()
 	// Cities were growing way too fast without this adjustment.
 	// The original value was based on 18 bit months.
 	// TO DO: implement a more realistic city growth algorithm (exponential not linear)
-	sint64 tpm = welt->get_ticks_per_world_month();
-	sint64 old_ticks_per_world_month = 1LL < 18;
+	const sint64 tpm = welt->ticks_per_world_month;
+	const sint64 old_ticks_per_world_month = 1LL < 18;
 	if (tpm > old_ticks_per_world_month) {
 		new_unsupplied_city_growth *= (tpm / old_ticks_per_world_month);
 	}
@@ -2962,7 +2962,7 @@ void stadt_t::step_grow_city(bool new_town)
 	for (int n = 0; n < growth_steps; n++) {
 		bev++;
 
-		for (int i = 0; i < 30 && bev * 2 > won + arb + 100; i++) {
+		for (int i = 0; i < num_tries && bev * 2 > won + arb + 100; i++) {
 			baue(false);
 		}
 
