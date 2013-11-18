@@ -187,11 +187,12 @@ private:
 	sint32 won; // amount with homes
 
 	/**
-	 * Modifier for city growth
-	 * transient data, not saved
-	 * @author Hj. Malthaner
+	 * Unsupplied city growth needs
+	 * A value of 2^32 means 1 new resident
+	 * @author Nathanael Nerode (neroden)
 	 */
-	sint32 wachstum;
+	sint64 unsupplied_city_growth;
+	static const sint64 growth_units_per_person = 1LL << 32;
 
 	/**
 	* City history
@@ -323,7 +324,7 @@ private:
 	 * Build new buildings when growing city
 	 * @author Hj. Malthaner
 	 */
-	void step_grow_city();
+	void step_grow_city(bool new_town = false);
 
 	enum pax_return_type { no_return, factory_return, tourist_return, city_return };
 
@@ -546,7 +547,7 @@ public:
 
 	/* change size of city
 	* @author prissi */
-	void change_size( sint32 delta_citizens );
+	void change_size( sint32 delta_citizens, bool new_town = false );
 
 	// when ng is false, no town growth any more
 	void set_citygrowth_yesno( bool ng ) { allow_citygrowth = ng; }

@@ -1422,9 +1422,9 @@ stadt_t::stadt_t(spieler_t* sp, koord pos, sint32 citizens) :
 	// 1. Rathaus bei 0 Leuten bauen
 	check_bau_rathaus(true);
 
-	wachstum = 0;
+	unsupplied_city_growth = 0;
 	allow_citygrowth = true;
-	change_size( citizens );
+	change_size( citizens, true );
 
 	// initialize history array
 	for (uint year = 0; year < MAX_CITY_HISTORY_YEARS; year++) {
@@ -1462,7 +1462,7 @@ stadt_t::stadt_t(karte_t* wl, loadsave_t* file) :
 
 	next_growth_step = 0;
 
-	wachstum = 0;
+	unsupplied_city_growth = 0;
 	stadtinfo_options = 3;
 
 	// These things are not yet saved as part of the city's history,
@@ -1502,6 +1502,18 @@ void stadt_t::rdwr(loadsave_t* file)
 	file->rdwr_long(bev);
 	file->rdwr_long(arb);
 	file->rdwr_long(won);
+
+	if(file->get_experimental_version() >= 12)
+	{
+		// Must record the partial (less than 1 citizen) growth factor
+		// Otherwise we will get network desyncs
+		// (it's mostly harmless for non-network games to not record this)
+		// This may also record large negative growth in the future
+		file->rdwr_longlong(unsupplied_city_growth);
+	}
+	else if (file->is_loading()) {
+		unsupplied_city_growth = 0;
+	}
 	// old values zentrum_namen_cnt : aussen_namen_cnt
 	if(file->get_version()<99018) {
 		sint32 dummy=0;
@@ -1901,11 +1913,6 @@ void stadt_t::rdwr(loadsave_t* file)
 			check_road_connexions = false;
 		}
 	}
-	
-	if(file->get_experimental_version() >= 12)
-	{
-		file->rdwr_long(wachstum);
-	}
 }
 
 
@@ -1925,7 +1932,7 @@ void stadt_t::laden_abschliessen()
 
 	// new city => need to grow
 	if (buildings.empty()) {
-		step_grow_city();
+		step_grow_city(true);
 	}
 
 	// clear the minimaps
@@ -2115,15 +2122,14 @@ void stadt_t::zeige_info(void)
 
 /* change size of city
  * @author prissi */
-void stadt_t::change_size(sint32 delta_citizen)
+void stadt_t::change_size(sint32 delta_citizen, bool new_town)
 {
 	DBG_MESSAGE("stadt_t::change_size()", "%i + %i", bev, delta_citizen);
 	if (delta_citizen > 0) {
-		wachstum = delta_citizen<<4;
-		step_grow_city();
+		unsupplied_city_growth += delta_citizen * growth_units_per_person;
+		step_grow_city(new_town);
 	}
 	if (delta_citizen < 0) {
-		wachstum = 0;
 		if (bev > -delta_citizen) {
 			bev += delta_citizen;
 		}
@@ -2131,24 +2137,14 @@ void stadt_t::change_size(sint32 delta_citizen)
 //				remove_city();
 			bev = 1;
 		}
-		step_grow_city();
+		step_grow_city(new_town);
 	}
-	if(bev == 0)
-	{
-		// Cities will experience uncontrollable growth if bev == 0
-		bev = 1;
-	}
-	wachstum = 0;
 	DBG_MESSAGE("stadt_t::change_size()", "%i+%i", bev, delta_citizen);
 }
 
 
 void stadt_t::step(long delta_t)
 {
-	if(delta_t>20000) {
-		delta_t = 1;
-	}
-
 	settings_t const& s = welt->get_settings();
 
 	// is it time for the next step?
@@ -2526,7 +2522,7 @@ void stadt_t::calc_growth()
 
 	// maybe this town should stay static
 	if(  !allow_citygrowth  ) {
-		wachstum = 0;
+		unsupplied_city_growth = 0;
 		return;
 	}
 
@@ -2546,10 +2542,59 @@ void stadt_t::calc_growth()
 	const int electricity_proportion = (get_electricity_consumption(welt->get_timeline_year_month()) * electricity_multiplier / 100);
 	const int mail_proportion = 100 - (s.get_passenger_multiplier() + electricity_proportion + s.get_goods_multiplier());
 
-	const sint32 pas = (sint32) ((city_history_month[0][HIST_PAS_TRANSPORTED] + city_history_month[0][HIST_PAS_WALKED] + (city_history_month[0][HIST_CITYCARS] - outgoing_private_cars)) * (s.get_passenger_multiplier()<<6)) / (city_history_month[0][HIST_PAS_GENERATED] + 1);
-	const sint32 mail = (sint32) (city_history_month[0][HIST_MAIL_TRANSPORTED] * (mail_proportion)<<6) / (city_history_month[0][HIST_MAIL_GENERATED] + 1);
-	const sint32 electricity = (sint32) city_history_month[0][HIST_POWER_NEEDED] == 0 ? 0 : (city_history_month[0][HIST_POWER_RECIEVED] * (electricity_proportion<<6)) / (city_history_month[0][HIST_POWER_NEEDED]);
-	const sint32 goods = (sint32) city_history_month[0][HIST_GOODS_NEEDED]==0 ? 0 : (city_history_month[0][HIST_GOODS_RECIEVED] * (s.get_goods_multiplier()<<6)) / (city_history_month[0][HIST_GOODS_NEEDED]);
+	sint32 pas;
+	if (city_history_month[0][HIST_PAS_GENERATED] == 0) {
+		pas = 0;
+	}
+	else {
+		pas = (   city_history_month[0][HIST_PAS_TRANSPORTED]
+		        + city_history_month[0][HIST_PAS_WALKED]
+		        + city_history_month[0][HIST_CITYCARS]
+		        - outgoing_private_cars
+		       ) * (s.get_passenger_multiplier()<<6)
+		       / city_history_month[0][HIST_PAS_GENERATED];
+	}
+	sint32 mail;
+	if (city_history_month[0][HIST_MAIL_GENERATED] == 0) {
+		mail = 0;
+	}
+	else {
+		mail =   city_history_month[0][HIST_MAIL_TRANSPORTED]
+		       * (mail_proportion<<6)
+		       / city_history_month[0][HIST_MAIL_GENERATED];
+	}
+	sint32 electricity;
+	if (city_history_month[0][HIST_POWER_NEEDED] == 0) {
+		electricity = 0;
+	}
+	else {
+		electricity =   city_history_month[0][HIST_POWER_RECIEVED]
+		              * (electricity_proportion<<6)
+					  / city_history_month[0][HIST_POWER_NEEDED];
+	}
+	sint32 goods;
+	if (city_history_month[0][HIST_GOODS_NEEDED] == 0) {
+		goods = 0;
+	}
+	else {
+		goods =   city_history_month[0][HIST_GOODS_RECIEVED]
+		        * (s.get_goods_multiplier()<<6)
+		        / city_history_month[0][HIST_GOODS_NEEDED];
+	}
+
+	const sint32 total_supply_percentage = pas + mail + electricity + goods;
+	// By construction, this is a percentage times 2^6.
+	// We will divide it by 2^4=16 for traditional reasons, which means
+	// it generates 2^2 (=4) or fewer people at 100%.
+
+	// These "growth factors" are in the range of 100-1000, so they cancel out the percent
+	// effect above, and reduce further.  In pak128.britain, 4/3.5 people for
+	// a capital, and 4/8.95 people for a village.
+
+	// Combined, this raises the specter of underflow roundoff.
+	// There are only two solutions: one is to record unsupplied_city_growth
+	// (rather than resetting it), and the other is to run the steps less frequently.
+	// The better solution is to record it.
 
 	// smaller towns should growth slower to have villages for a longer time
 	sint32 weight_factor = s.get_growthfactor_large();
@@ -2561,51 +2606,52 @@ void stadt_t::calc_growth()
 	}
 
 	// now give the growth for this step
-	sint32 growth_factor = weight_factor > 0 ? (pas+mail+electricity+goods) / weight_factor : 0;
-	
+	sint32 growth_factor = weight_factor > 0 ? total_supply_percentage / weight_factor : 0;
+
 	//Congestion adversely impacts on growth. At 100% congestion, there will be no growth. 
 	if(city_history_month[0][HIST_CONGESTION] > 0)
 	{
 		const uint32 congestion_factor = city_history_month[0][HIST_CONGESTION];
 		growth_factor -= (congestion_factor * growth_factor) / 100;
 	}
-	
-	wachstum += growth_factor;
+
+	sint64 new_unsupplied_city_growth = growth_factor * growth_units_per_person / 16; // the 16 is traditional
+
+	// OK.  Now we must adjust for the steps per month.
+	// Cities were growing way too fast without this adjustment.
+	// The original value was based on 18 bit months.
+	// TO DO: implement a more realistic city growth algorithm (exponential not linear)
+	const sint64 tpm = welt->ticks_per_world_month;
+	const sint64 old_ticks_per_world_month = 1LL < 18;
+	if (tpm > old_ticks_per_world_month) {
+		new_unsupplied_city_growth *= (tpm / old_ticks_per_world_month);
+	}
+	else {
+		new_unsupplied_city_growth /= (old_ticks_per_world_month / tpm);
+	}
+
+	unsupplied_city_growth += new_unsupplied_city_growth;
 }
 
 
 // does constructions ...
-void stadt_t::step_grow_city()
+void stadt_t::step_grow_city(bool new_town)
 {
-	bool new_town = (bev == 0);
-	if (new_town) {
-		bev = (wachstum >> 4); // "wachstum" = "growth" (Google)
-		bool need_building = true;
-		uint32 buildings_count = buildings.get_count();
-		uint32 try_nr = 0;
-		while (need_building && try_nr < 1000) {
-			baue(false); // it update won
-			if ( buildings_count != buildings.get_count() ) {
-				if(buildings[buildings_count]->get_haustyp() == gebaeude_t::wohnung) {
-					// Stop with the first commercial building.  (Why???)
-					need_building = false;
-				}
-			}
-			try_nr++;
-			buildings_count = buildings.get_count();
-		}
-		bev = 0;
-	}
+	// Try harder to build if this is a new town
+	int num_tries = new_town ? 1000 : 30;
+
 	// since we use internally a finer value ...
-	const int growth_step = (wachstum >> 4);
-	wachstum &= 0x0F;
+	const int growth_steps = unsupplied_city_growth / growth_units_per_person;
+	if (growth_steps > 0) {
+		unsupplied_city_growth %= growth_units_per_person;
+	}
 
 	// Hajo: let city grow in steps of 1
 	// @author prissi: No growth without development
-	for (int n = 0; n < growth_step; n++) {
-		bev ++; // Hajo: bevoelkerung wachsen lassen ("grow population" - Google)
+	for (int n = 0; n < growth_steps; n++) {
+		bev++; // Hajo: bevoelkerung wachsen lassen ("grow population" - Google)
 
-		for (int i = 0; i < 30 && bev * 2 > won + arb + 100; i++) {
+		for (int i = 0; i < num_tries && bev * 2 > won + arb + 100; i++) {
 			baue(false);
 		}
 
@@ -3777,7 +3823,7 @@ void stadt_t::build_city_building(const koord k, bool new_town)
 	if (h == NULL  &&  sum_industrial > sum_residential  &&  sum_industrial > sum_residential) {
 		h = hausbauer_t::get_industrial(0, current_month, cl, new_town, neighbor_building_clusters);
 		if (h != NULL) {
-			arb +=  h->get_level() * 20;
+			want_to_have = gebaeude_t::industrie;
 		}
 	}
 
