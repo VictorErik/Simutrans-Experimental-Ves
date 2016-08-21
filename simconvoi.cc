@@ -1296,22 +1296,47 @@ bool convoi_t::drive_to()
 		}
 
 		const bool rail_type = front()->get_waytype() == track_wt || front()->get_waytype() == tram_wt || front()->get_waytype() == narrowgauge_wt || front()->get_waytype() == maglev_wt || front()->get_waytype() == monorail_wt;
-		
+		rail_vehicle_t* rail_vehicle = NULL;
+		sint32 old_next_stop_index = 0;
+		sint32 old_next_reservation_index = 0;
+		sint32 old_route_count;
+
 		if(rail_type)
 		{
-			rail_vehicle_t* rail_vehicle = (rail_vehicle_t*)front();
-			// If this is token block working, the route must only be unreserved if the token is released.
-			if(rail_vehicle->get_working_method() != token_block && rail_vehicle->get_working_method() != one_train_staff)
+			rail_vehicle = (rail_vehicle_t*)front();
+			
+			// In many cases, the train will have reserved through to the next signal, so releasing the reservation is the wrong behaviour.
+			if(rail_vehicle->get_working_method() != token_block && rail_vehicle->get_working_method() != one_train_staff && rail_vehicle->get_working_method() != absolute_block && rail_vehicle->get_working_method() != track_circuit_block && rail_vehicle->get_working_method() != cab_signalling)
+			{
+				unreserve_route();
+			}
+			if(rail_vehicle->get_working_method() == absolute_block || rail_vehicle->get_working_method() == track_circuit_block || rail_vehicle->get_working_method() == cab_signalling)
+			{
+				old_next_stop_index = get_next_stop_index();
+				old_next_reservation_index = get_next_reservation_index();
+				old_route_count = route.get_count();
+				grund_t* gr = welt->lookup(back()->get_pos_prev());
+				if(gr)
+				{
+					schiene_t* sch = (schiene_t*)gr->get_weg(back()->get_waytype());
+					if(sch)
+					{
+						sch->unreserve(self);
+					}
+				}
+			}
+			else
 			{
 				unreserve_route();
 			}
 		}
-		else
-		{
-			unreserve_route();
-		}
-
+		
 		bool success = calc_route(start, ziel, speed_to_kmh(get_min_top_speed()));
+		if(old_next_stop_index)
+		{
+			next_stop_index = old_next_stop_index - old_route_count;
+			next_reservation_index = old_next_reservation_index - old_route_count;
+		}
 		
 		grund_t* gr = welt->lookup(ziel);
 
