@@ -742,7 +742,7 @@ public:
 	// handles all block stuff and route choosing ...
 	virtual bool can_enter_tile(const grund_t *gr_next, sint32 &restart_speed, uint8);
 
-	enum onward_reservation_type { none = 0, token = 1, absolute = 2 }; 
+	enum onward_reservation_type { none = 0, token = 1, one_train = 2, absolute = 3,  }; 
 
 	// reserves or un-reserves all blocks and returns the handle to the next block (if there)
 	// returns true on successful reservation (the specific number being the number of blocks ahead clear,

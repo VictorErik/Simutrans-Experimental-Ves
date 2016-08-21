@@ -3797,9 +3797,12 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 
 	if(cnv->get_state() == convoi_t::CAN_START)
 	{
-		if(working_method != token_block && working_method != one_train_staff)
+		if(working_method != token_block && working_method != one_train_staff && working_method != absolute_block && working_method != cab_signalling && working_method != track_circuit_block)
 		{
-			working_method = drive_by_sight;
+			if(destination.reverse || working_method == token_block || working_method == one_train_staff)
+			{
+				working_method = drive_by_sight;
+			}
 		}
 		const grund_t* gr = welt->lookup(get_pos()); 
 		if(gr)
@@ -4489,7 +4492,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 						first_one_train_staff_index = i;
 					}
 
-					if(next_signal_working_method == one_train_staff && (first_one_train_staff_index != i || (onward_reservation && first_one_train_staff_index < INVALID_INDEX)))
+					if(next_signal_working_method == one_train_staff && (first_one_train_staff_index != i || (onward_reservation == one_train && first_one_train_staff_index < INVALID_INDEX)))
 					{
 						// A second one train staff cabinet. Is this the same as or a neighbour of the first?
 						const koord3d first_pos = cnv->get_last_signal_pos(); 
@@ -4552,7 +4555,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 										// do not treat it as a distant signal.
 										count --;
 										end_of_block = true;
-										if(!onward_reservation)
+										if(!onward_reservation == token)
 										{
 											next_signal_index = last_stop_signal_index;
 										}
@@ -4685,7 +4688,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 							}
 							if(onward_reservation && (working_method == token_block || working_method == absolute_block || next_signal_working_method == token_block || next_signal_working_method == absolute_block))
 							{
-								// Do not try to reserve beyond the first signal if this is called recursively from a token block signal.
+								// Do not try to reserve beyond the first signal if this is called recursively.
 								count --;
 							}
 						}
@@ -5035,84 +5038,100 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 	const koord3d signal_pos = next_signal_index < INVALID_INDEX ? route->position_bei(next_signal_index) : koord3d::invalid;
 	bool platform_starter = (this_halt.is_bound() && (haltestelle_t::get_halt(signal_pos, get_owner())) == this_halt) && (haltestelle_t::get_halt(get_pos(), get_owner()) == this_halt);
 
-	// If we are in token block or one train staff mode, one train staff mode or making directional reservations, reserve to the end of the route if there is not a prior signal.
-	// However, do not call this if we are in the block reserver already called from this method to prevent
-	// infinite recursion.
+	// If we are in certain working methods or making directional reservations, reserve to the end of the route if there is not a prior signal.
+	// However, do not call this if we are in the block reserver already called from this method to prevent infinite recursion.
 	const bool bidirectional_reservation = (working_method == track_circuit_block || working_method == cab_signalling || working_method == moving_block) 
 		&& last_bidirectional_signal_index < INVALID_INDEX;
-	if(!onward_reservation && !is_from_directional && ((working_method == token_block && last_token_block_signal_index < INVALID_INDEX) || bidirectional_reservation || working_method == one_train_staff) && next_signal_index == INVALID_INDEX)
+	if(!onward_reservation && !is_from_directional && (((working_method == token_block) && last_token_block_signal_index < INVALID_INDEX) || bidirectional_reservation || working_method == one_train_staff || working_method == absolute_block || working_method == track_circuit_block || working_method == cab_signalling) && next_signal_index == INVALID_INDEX)
 	{
 		route_t target_rt;
 		schedule_t *fpl = cnv->get_schedule();
 		uint8 fahrplan_index = fpl->get_aktuell();
 		bool rev = cnv->get_reverse_schedule();
 		bool no_reverse = fpl->eintrag[fahrplan_index].reverse != 1;
-		fpl->increment_index(&fahrplan_index, &rev);
-		koord3d cur_pos = route->back();
-		uint16 next_next_signal;
-		bool route_success;
-		sint32 token_block_blocks = 0;
-		if(no_reverse || working_method == one_train_staff)
+
+		if(no_reverse || !(working_method == absolute_block || working_method == track_circuit_block || working_method == cab_signalling))
 		{
-			do
+			fpl->increment_index(&fahrplan_index, &rev);
+			koord3d cur_pos = route->back();
+			uint16 next_next_signal;
+			bool route_success;
+			sint32 onward_blocks = 0;
+			if(no_reverse || working_method == one_train_staff)
 			{
-				// Search for route until the next signal is found.
-				route_success = target_rt.calc_route(welt, cur_pos, cnv->get_schedule()->eintrag[fahrplan_index].pos, this, speed_to_kmh(cnv->get_min_top_speed()), cnv->get_highest_axle_load(), 8888 + cnv->get_tile_length(), SINT64_MAX_VALUE, cnv->get_weight_summary().weight / 1000);
-
-				if(route_success) 
+				do
 				{
-					token_block_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, (bidirectional_reservation ? token : none), false, bidirectional_reservation, brake_steps);
-				}
+					// Search for route until the next signal is found.
+					route_success = target_rt.calc_route(welt, cur_pos, cnv->get_schedule()->eintrag[fahrplan_index].pos, this, speed_to_kmh(cnv->get_min_top_speed()), cnv->get_highest_axle_load(), 8888 + cnv->get_tile_length(), SINT64_MAX_VALUE, cnv->get_weight_summary().weight / 1000);
 
-				if(token_block_blocks && next_next_signal < INVALID_INDEX) 
-				{
-					// There is a signal in a later part of the route to which we can reserve now.
-					if(bidirectional_reservation)
+					if(route_success) 
 					{
-						if(signal_t* sg = welt->lookup(route->position_bei(next_next_signal))->get_weg(get_waytype())->get_signal(ribi_typ((route->position_bei(next_next_signal - 1)), route->position_bei(next_next_signal))))
+						onward_reservation_type or;
+						switch(working_method)
 						{
-							if(!sg->is_bidirectional() || sg->get_besch()->is_longblock_signal())
+						case token_block:
+							or = token;
+							break;
+						case one_train_staff:
+							or = one_train;
+							break;
+						default:
+							or = absolute;
+						};
+
+						onward_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, (bidirectional_reservation ? none : or), false, bidirectional_reservation, brake_steps);
+					}
+
+					if(onward_blocks && next_next_signal < INVALID_INDEX) 
+					{
+						// There is a signal in a later part of the route to which we can reserve now.
+						if(bidirectional_reservation)
+						{
+							if(signal_t* sg = welt->lookup(route->position_bei(next_next_signal))->get_weg(get_waytype())->get_signal(ribi_typ((route->position_bei(next_next_signal - 1)), route->position_bei(next_next_signal))))
 							{
-								break;
+								if(!sg->is_bidirectional() || sg->get_besch()->is_longblock_signal())
+								{
+									break;
+								}
+							}	
+						}
+						else
+						{
+							if(working_method != one_train_staff)
+							{
+								cnv->set_next_stop_index(cnv->get_route()->get_count() - 1u);
 							}
-						}	
+							break;
+						}
+					}
+
+					no_reverse = fpl->eintrag[fahrplan_index].reverse != 1;
+
+					if(onward_blocks)
+					{
+						// prepare for next leg of schedule
+						cur_pos = target_rt.back();
+						fpl->increment_index(&fahrplan_index, &rev);
 					}
 					else
 					{
-						if(working_method != one_train_staff)
-						{
-							cnv->set_next_stop_index(cnv->get_route()->get_count() - 1u);
-						}
-						break;
+						success = false;
 					}
-				}
+				} while((fahrplan_index != cnv->get_schedule()->get_aktuell()) && onward_blocks && no_reverse);
+			}
 
-				no_reverse = fpl->eintrag[fahrplan_index].reverse != 1;
-
-				if(token_block_blocks)
-				{
-					// prepare for next leg of schedule
-					cur_pos = target_rt.back();
-					fpl->increment_index(&fahrplan_index, &rev);
-				}
-				else
-				{
-					success = false;
-				}
-			} while((fahrplan_index != cnv->get_schedule()->get_aktuell()) && token_block_blocks && no_reverse);
-		}
-
-		if(token_block_blocks && !bidirectional_reservation)
-		{
-			if(cnv->get_next_stop_index() - 1 <= route_index) 
+			if(onward_blocks && !bidirectional_reservation)
 			{
-				if(working_method == one_train_staff && next_signal_index >= INVALID_INDEX)
+				if(cnv->get_next_stop_index() - 1 <= route_index) 
 				{
-					cnv->set_next_stop_index(next_next_signal);
-				}
-				else
-				{
-					cnv->set_next_stop_index(cnv->get_route()->get_count() - 1);
+					if(working_method == one_train_staff && next_signal_index >= INVALID_INDEX)
+					{
+						cnv->set_next_stop_index(next_next_signal);
+					}
+					else
+					{
+						cnv->set_next_stop_index(cnv->get_route()->get_count() - 1);
+					}
 				}
 			}
 		}
