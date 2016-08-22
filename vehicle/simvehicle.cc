@@ -5071,22 +5071,22 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 					// Search for route until the next signal is found.
 					route_success = target_rt.calc_route(welt, cur_pos, cnv->get_schedule()->eintrag[fahrplan_index].pos, this, speed_to_kmh(cnv->get_min_top_speed()), cnv->get_highest_axle_load(), 8888 + cnv->get_tile_length(), SINT64_MAX_VALUE, cnv->get_weight_summary().weight / 1000);
 					
-					onward_reservation_type or;
+					onward_reservation_type ores;
 					if(route_success) 
 					{
 					switch(working_method)
 						{
 						case token_block:
-							or = token;
+							ores = token;
 							break;
 						case one_train_staff:
-							or = one_train;
+							ores = one_train;
 							break;
 						default:
-							or = absolute;
+							ores = absolute;
 						};
 
-						onward_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, (bidirectional_reservation ? none : or), false, bidirectional_reservation, brake_steps);
+						onward_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, (bidirectional_reservation ? none : ores), false, bidirectional_reservation, brake_steps);
 					}
 
 					if(onward_blocks && next_next_signal < INVALID_INDEX) 
