@@ -3967,7 +3967,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	}
 
 	// is there any signal/crossing to be reserved?
-	sint32 next_stop = cnv->get_next_stop_index() - 1;
+	sint32 next_stop = (sint32)cnv->get_next_stop_index() - 1;
 	last_index = route.get_count() - 1;
 	
 	if(next_stop > last_index && !exiting_one_train_staff) // last_index is a waypoint and we need to keep routing.
@@ -4095,7 +4095,11 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		}
 	}
 
-	const sint32 max_element = cnv->get_route_infos().get_count() - 1;
+	const sint32 max_element = cnv->get_route_infos().get_count() - 1u;
+	if(next_stop > max_element)
+	{
+		next_stop = cnv->get_next_stop_index() - 1;
+	}
 	const sint32 route_steps = brake_steps > 0 && route_index <= route_infos.get_count() - 1 ? cnv->get_route_infos().get_element((next_stop > 0 ? min(next_stop - 1, max_element) : 0)).steps_from_start - cnv->get_route_infos().get_element(route_index).steps_from_start : -1;
 	if(route_steps <= brake_steps || brake_steps < 0)
 	{
@@ -4118,7 +4122,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		if(sch1->has_signal()) 
 		{
 			const uint16 check_route_index = next_stop <= 0 ? 0 : next_stop - 1u;
-			ribi_t::ribi ribi = ribi_typ(cnv->get_route()->position_bei(max(1u,check_route_index)-1u), cnv->get_route()->position_bei(min(cnv->get_route()->get_count()-1u,check_route_index+1u)));
+			ribi_t::ribi ribi = ribi_typ(cnv->get_route()->position_bei(max(1u, check_route_index) - 1u), cnv->get_route()->position_bei(min(max_element, check_route_index + 1u)));
 			signal_t* signal = sch1->get_signal(ribi); 
 	
 			if(signal)
