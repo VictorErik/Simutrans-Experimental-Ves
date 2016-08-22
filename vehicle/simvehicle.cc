@@ -4117,7 +4117,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		// next check for signal
 		if(sch1->has_signal()) 
 		{
-			const uint16 check_route_index = next_stop == 0 ? 0 : next_stop - 1u;
+			const uint16 check_route_index = next_stop <= 0 ? 0 : next_stop - 1u;
 			ribi_t::ribi ribi = ribi_typ(cnv->get_route()->position_bei(max(1u,check_route_index)-1u), cnv->get_route()->position_bei(min(cnv->get_route()->get_count()-1u,check_route_index+1u)));
 			signal_t* signal = sch1->get_signal(ribi); 
 	
