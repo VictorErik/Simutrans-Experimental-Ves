@@ -5477,9 +5477,33 @@ void rail_vehicle_t::leave_tile()
 			{
 				rail_vehicle_t* w = cnv ? (rail_vehicle_t*)cnv->front() : NULL;
 				const halthandle_t this_halt = gr->get_halt();
-				const halthandle_t dest_halt = haltestelle_t::get_halt((cnv && cnv->get_schedule() ? cnv->get_schedule()->get_current_eintrag().pos : koord3d::invalid), get_owner()); 
-				const bool at_reversing_destination = dest_halt.is_bound() && this_halt == dest_halt && cnv->get_schedule() && cnv->get_schedule()->get_current_eintrag().reverse; 
-				if((!cnv || cnv->get_state() != convoi_t::REVERSING) && (!w || (w->get_working_method() != token_block && w->get_working_method() != one_train_staff)) && !at_reversing_destination)
+				schedule_t *fpl = cnv ? cnv->get_schedule() : NULL;
+				if(fpl)
+				{
+					const halthandle_t dest_halt = haltestelle_t::get_halt((fpl->get_current_eintrag().pos), get_owner()); 
+		 			uint8 fahrplan_index = fpl->get_aktuell();
+					bool reversing_at_this_stop = fpl->eintrag[fahrplan_index].reverse == 1;
+
+					bool at_destination = false;
+					bool departing_from_stop = false;
+					if(dest_halt.is_bound() && this_halt == dest_halt)
+					{
+						at_destination = true;
+					}
+					else if(this_halt.is_bound())
+					{
+						// If we are departing from a stop, always clear tiles.
+						bool rev = !cnv->get_reverse_schedule();	
+ 						fpl->increment_index(&fahrplan_index, &rev);
+						departing_from_stop = haltestelle_t::get_halt((fpl->eintrag[fahrplan_index].pos), get_owner()) == this_halt;
+					}
+					
+					if((!cnv || cnv->get_state() != convoi_t::REVERSING) && (!w || (w->get_working_method() != token_block && w->get_working_method() != one_train_staff)) && (departing_from_stop || (!reversing_at_this_stop || !at_destination)))
+					{
+						sch0->unreserve(this);
+					}
+				}
+				else
 				{
 					sch0->unreserve(this);
 				}

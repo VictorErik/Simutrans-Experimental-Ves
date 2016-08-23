@@ -1313,8 +1313,8 @@ bool convoi_t::drive_to()
 			if(rail_vehicle->get_working_method() == absolute_block || rail_vehicle->get_working_method() == track_circuit_block || rail_vehicle->get_working_method() == cab_signalling)
 			{
 				old_next_stop_index = get_next_stop_index();
-				old_next_reservation_index = get_next_reservation_index();
 				old_route_count = route.get_count();
+				/*old_next_reservation_index = get_next_reservation_index();
 				grund_t* gr = welt->lookup(back()->get_pos_prev());
 				if(gr)
 				{
@@ -1323,7 +1323,7 @@ bool convoi_t::drive_to()
 					{
 						sch->unreserve(self);
 					}
-				}
+				}*/
 			}
 			else
 			{
