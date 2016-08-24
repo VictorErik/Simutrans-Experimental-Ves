@@ -1314,8 +1314,8 @@ bool convoi_t::drive_to()
 			{
 				old_next_stop_index = get_next_stop_index();
 				old_route_count = route.get_count();
-				/*old_next_reservation_index = get_next_reservation_index();
-				grund_t* gr = welt->lookup(back()->get_pos_prev());
+				old_next_reservation_index = get_next_reservation_index();
+				/*grund_t* gr = welt->lookup(back()->get_pos_prev());
 				if(gr)
 				{
 					schiene_t* sch = (schiene_t*)gr->get_weg(back()->get_waytype());

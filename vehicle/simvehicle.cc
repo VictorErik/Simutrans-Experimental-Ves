@@ -3868,6 +3868,11 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		}
 	}
 
+	if(starting_from_stand && cnv->get_next_stop_index() == 0)
+	{
+		cnv->set_next_stop_index(cnv->get_next_reservation_index());
+	}
+
 	assert(gr);
 
 	if(gr->get_top()>250) {
@@ -3969,6 +3974,8 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	// is there any signal/crossing to be reserved?
 	sint32 next_stop = (sint32)cnv->get_next_stop_index() - 1;
 	last_index = route.get_count() - 1;
+
+	
 	
 	if(next_stop > last_index && !exiting_one_train_staff) // last_index is a waypoint and we need to keep routing.
 	{
@@ -5057,6 +5064,8 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 	const koord3d signal_pos = next_signal_index < INVALID_INDEX ? route->position_bei(next_signal_index) : koord3d::invalid;
 	bool platform_starter = (this_halt.is_bound() && (haltestelle_t::get_halt(signal_pos, get_owner())) == this_halt) && (haltestelle_t::get_halt(get_pos(), get_owner()) == this_halt);
 
+	uint16 next_next_signal = 0;
+
 	// If we are in certain working methods or making directional reservations, reserve to the end of the route if there is not a prior signal.
 	// However, do not call this if we are in the block reserver already called from this method to prevent infinite recursion.
 	const bool bidirectional_reservation = (working_method == track_circuit_block || working_method == cab_signalling || working_method == moving_block) 
@@ -5073,7 +5082,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 		{
 			fpl->increment_index(&fahrplan_index, &rev);
 			koord3d cur_pos = route->back();
-			uint16 next_next_signal;
+			
 			bool route_success;
 			sint32 onward_blocks = 0;
 			if(no_reverse || working_method == one_train_staff)
@@ -5418,7 +5427,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 
 	if(cnv)
 	{
-		cnv->set_next_reservation_index(last_non_directional_index);
+		cnv->set_next_reservation_index(last_non_directional_index + next_next_signal);
 	}
 
 	// Trim route to the early platform index.
