@@ -5426,8 +5426,8 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 	{
 		route->remove_koord_from(early_platform_index);
 	}
-
-	return reached_end_of_loop || working_method != track_circuit_block ? (!combined_signals.empty() && !pre_signals.empty() ? 2 : 1) + choose_return : (sint32)signs.get_count() + choose_return;
+	sint32 onward_minimum = onward_reservation == absolute && success ? 1 : 0;
+	return reached_end_of_loop || working_method != track_circuit_block ? (!combined_signals.empty() && !pre_signals.empty() ? 2 : 1) + choose_return : max((sint32)signs.get_count() + choose_return, onward_minimum);
 }
 
 void rail_vehicle_t::clear_token_reservation(signal_t* sig, rail_vehicle_t* w, schiene_t* sch)
