@@ -4661,7 +4661,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 							}
 						}			
 						
-						if(first_stop_signal_index == INVALID_INDEX)
+						if(first_stop_signal_index >= INVALID_INDEX)
 						{
 							first_stop_signal_index = i;
 							if(next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph)
@@ -4765,6 +4765,14 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 						}
 						// Any junctions previously found no longer apply to the next signal, unless this is a pre-signal
 						no_junctions_to_next_signal = true;
+
+						if(count > 0 && onward_reservation == absolute)
+						{
+							// Do not try to reserve beyond the first signal if this is called recursively from an absolute block signal
+							count --;
+							next_signal_index = i;
+						}
+
 					}
 					else if(!directional_only) // Distant signal or repeater
 					{				
@@ -5178,7 +5186,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 			relevant_index = next_signal_index;
 		}
 
-		if(!directional_only)
+		if(!directional_only && onward_reservation != absolute) // Query whether this should simply be && !onward_reservation
 		{
 			relevant_index ++;
 		}
