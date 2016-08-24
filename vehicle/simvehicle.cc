@@ -4842,6 +4842,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 				if((next_signal_working_method == drive_by_sight || next_signal_working_method == moving_block) && !directional_only && last_choose_signal_index >= INVALID_INDEX && !is_choosing)
 				{
 					next_signal_index = i - 1;
+
 					// The below prevents jittering of stationery drive by sight convoys, but
 					// causes them to stop dead rather than decelerate properly.
 					/*if(working_method == drive_by_sight && i < start_index + 2)
@@ -5144,6 +5145,51 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 					else
 					{
 						success = false;
+						if(ores = absolute)
+						{
+							if(((next_signal_working_method == absolute_block || next_signal_working_method == token_block || next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && first_stop_signal_index < i) && !directional_only)
+							{
+								// Because the distant signal applies to all signals controlled by the same signalbox, the driver cannot know that the route 
+								// will be clear beyond the *first* stop signal after the distant. 
+								do_not_clear_distant = true;
+								if(next_signal_working_method == absolute_block || next_signal_working_method == token_block)
+								{
+									if((pre_signals.empty() && first_stop_signal_index > start_index + modified_sighting_distance_tiles))
+									{
+										next_signal_index = first_stop_signal_index;
+									}
+									if(next_signal_index == start_index)
+									{
+										success = false;
+										directional_reservation_succeeded = false;
+									}
+									break;
+								}
+							}
+
+							if((next_signal_working_method == track_circuit_block
+								|| next_signal_working_method == cab_signalling)
+								&& last_stop_signal_index < INVALID_INDEX
+								&& !directional_only
+								&& ((next_signal_index <= last_stop_signal_before_first_bidirectional_signal_index
+								&& last_stop_signal_before_first_bidirectional_signal_index < INVALID_INDEX)))
+							{
+								next_signal_index = last_stop_signal_index;
+								break;
+							}
+							if((directional_only || next_signal_index > last_stop_signal_before_first_bidirectional_signal_index) && i < first_oneway_sign_index)
+							{
+								// Do not allow the train to proceed along a section of bidirectionally signalled line unless 
+								// a directional reservation can be secured the whole way.
+								next_signal_index = last_stop_signal_before_first_bidirectional_signal_index;
+							}
+							directional_reservation_succeeded = false;
+							if(next_signal_index > first_stop_signal_index && last_stop_signal_before_first_bidirectional_signal_index >= INVALID_INDEX && i < first_oneway_sign_index)
+							{
+								next_signal_index = first_stop_signal_index;
+								break;
+							}
+						}
 					}
 				} while((fahrplan_index != cnv->get_schedule()->get_aktuell()) && onward_blocks && no_reverse);
 			}
@@ -5173,12 +5219,12 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 
 	// free, in case of un-reserve or no success in reservation
 	// or alternatively free that section reserved beyond the last signal to which reservation can take place
-	if(!success || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
+	if(!success || (next_signal_index == INVALID_INDEX && onward_reservation == absolute) || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
 	{
 		const bool will_choose = last_choose_signal_index < INVALID_INDEX && !is_choosing && not_entirely_free;
 		// free reservation
 		uint16 relevant_index;
-		if(!success)
+		if(!success || (next_signal_index == INVALID_INDEX && onward_reservation == absolute))
 		{
 			relevant_index = start_index;
 		}
