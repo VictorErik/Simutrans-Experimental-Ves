@@ -751,6 +751,9 @@ private:
 	// The maximum speed allowed by the current signalling system
 	sint32 max_signal_speed; 
 
+	// Whether the block reserver has run since the last reroute
+	sint8 has_reserved;
+
 public: 
 	/**
 	 * Some precalculated often used infos about a tile of the convoy's route.
@@ -1176,6 +1179,11 @@ public:
 	inline void set_wait_lock(sint32 value) { wait_lock = value; }
 
 	bool check_destination_reverse(route_t* current_route = NULL, route_t* target_rt = NULL); 
+
+	void set_has_reserved(sint8 value) { has_reserved = value; }
+	void increment_has_reserved() { has_reserved ++; }
+	void decrement_has_reserved() { has_reserved -- ; }
+	sint8 get_has_reserved() const { return has_reserved; }
 
 private:
 	journey_times_map average_journey_times;

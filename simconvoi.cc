@@ -206,6 +206,7 @@ convoi_t::convoi_t(loadsave_t* file) : vehicle(max_vehicle, NULL)
 	replace = NULL;
 	is_choosing = false;
 	max_signal_speed = SPEED_UNLIMITED;
+	has_reserved = 0;
 
 	no_route_retry_count = 0;
 	rdwr(file);
@@ -236,6 +237,7 @@ convoi_t::convoi_t(player_t* player) : vehicle(max_vehicle, NULL)
 	init_financial_history();
 	current_stop = 255;
 	is_choosing = false;
+	has_reserved = 0;
 	max_signal_speed = SPEED_UNLIMITED;
 
 	// Added by : Knightly
@@ -1332,7 +1334,7 @@ bool convoi_t::drive_to()
 		}
 		
 		bool success = calc_route(start, ziel, speed_to_kmh(get_min_top_speed()));
-		if(old_next_stop_index)
+		if(old_next_stop_index && has_reserved >= 0)
 		{
 			next_stop_index = old_next_stop_index - old_route_count;
 			next_reservation_index = old_next_reservation_index - old_route_count;
@@ -4439,6 +4441,11 @@ void convoi_t::rdwr(loadsave_t *file)
 
 		file->rdwr_long(max_signal_speed); 
 		last_signal_pos.rdwr(file); 
+
+		if(file->get_experimental_revision() >= 8)
+		{
+			file->rdwr_byte(has_reserved);
+		}
 	}
 
 	// This must come *after* all the loading/saving.

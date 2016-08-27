@@ -3465,6 +3465,7 @@ route_t::route_result_t rail_vehicle_t::calc_route(koord3d start, koord3d ziel, 
 		uint16 dummy;
 		block_reserver(cnv->get_route(), cnv->back()->get_route_index(), dummy, dummy, target_halt.is_bound() ? 100000 : 1, false, true);
 	}
+	cnv->decrement_has_reserved();
 	cnv->set_next_reservation_index( 0 );	// nothing to reserve
 	target_halt = halthandle_t();	// no block reserved
 	// use length > 8888 tiles to advance to the end of terminus stations
@@ -3871,26 +3872,6 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	if(starting_from_stand && cnv->get_next_stop_index() == 0 && (working_method == absolute_block || working_method == track_circuit_block || working_method == cab_signalling))
 	{
 		// Note that there might be another station/stop before the next signal, so we must check this before setting to the next reservation index.
-		// This does not work: the train will not stop, but will slow to 1km/h then eventually continue routing.
-		/*route_t* rt = cnv->get_route();
-		const uint16 ri = cnv->get_next_reservation_index();
-		const koord3d destination_pos = cnv->get_schedule()->get_current_eintrag().pos;
-		bool early_stop = false;
-		for(uint32 n = 0; n < ri; n ++)
-		{
-			if(rt->position_bei(n) == destination_pos)
-			{
-				cnv->set_next_stop_index(n);
-				rt->remove_koord_to(n); 
-				early_stop = true;
-				break;
-			}
-		}*/
-
-		/*if(!early_stop)
-		{
-			cnv->set_next_stop_index(ri);
-		}*/
 		cnv->set_next_stop_index(min(cnv->get_route()->get_count() - 1, cnv->get_next_reservation_index()));
 	}
 
@@ -4261,6 +4242,10 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
  */
 sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16 modified_sighting_distance_tiles, uint16 &next_signal_index, int count, bool reserve, bool force_unreserve, bool is_choosing, onward_reservation_type onward_reservation, bool is_from_starter, bool is_from_directional, uint32 brake_steps)
 {
+	if(reserve)
+	{
+		cnv->set_has_reserved(1);
+	}
 	bool success = true;
 #ifdef MAX_CHOOSE_BLOCK_TILES
 	int max_tiles  =2 * MAX_CHOOSE_BLOCK_TILES; // max tiles to check for choosesignals
