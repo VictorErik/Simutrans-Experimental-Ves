@@ -3891,7 +3891,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		{
 			cnv->set_next_stop_index(ri);
 		}*/
-		cnv->set_next_stop_index(cnv->get_next_reservation_index());
+		cnv->set_next_stop_index(min(cnv->get_route()->get_count() - 1, cnv->get_next_reservation_index()));
 	}
 
 	assert(gr);
