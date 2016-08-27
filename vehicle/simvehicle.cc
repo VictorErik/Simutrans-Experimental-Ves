@@ -5018,7 +5018,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 					}
 					sch1->unreserve(cnv->self);
 					route->remove_koord_from(early_platform_index); 
-					if(next_signal_index > early_platform_index && !onward_reservation && next_signal_working_method != one_train_staff)
+					if(next_signal_index > early_platform_index && onward_reservation != token && next_signal_working_method != one_train_staff)
 					{
 						next_signal_index = INVALID_INDEX;
 					}
