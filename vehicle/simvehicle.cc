@@ -5092,8 +5092,11 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 			
 			bool route_success;
 			sint32 onward_blocks = 0;
+			
 			if(no_reverse || working_method == one_train_staff)
 			{
+				slist_tpl<route_t> route_list;
+				sint32 count = 0;
 				do
 				{
 					// Search for route until the next signal is found.
@@ -5115,6 +5118,15 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 						};
 
 						onward_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, (bidirectional_reservation ? none : ores), false, bidirectional_reservation, brake_steps);
+						if(next_next_signal < INVALID_INDEX)
+						{
+							route_list.clear();
+						}
+						else
+						{
+							route_list.insert(target_rt);
+						}
+						count ++;
 					}
 
 					if(onward_blocks && next_next_signal < INVALID_INDEX) 
@@ -5197,9 +5209,19 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 							}
 						}
 					}
+					
 				} while((fahrplan_index != cnv->get_schedule()->get_aktuell()) && onward_blocks && no_reverse);
-			}
 
+				if(!success)
+				{
+					// This is necessary because, without this, an intermediate onward reservation with no signals in it might fail entirely to unreserve if the part beyond it is not clear and there are no intervening signals.
+					FOR(slist_tpl<route_t>, rt, route_list)
+					{
+						block_reserver(&rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, false, false);
+					}
+				}
+			}
+			
 			if(onward_blocks && !bidirectional_reservation)
 			{
 				if(cnv->get_next_stop_index() - 1 <= route_index) 
@@ -5225,7 +5247,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 
 	// free, in case of un-reserve or no success in reservation
 	// or alternatively free that section reserved beyond the last signal to which reservation can take place
-	if(!success || (next_signal_index == INVALID_INDEX && onward_reservation == absolute) || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
+	if(!success || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
 	{
 		const bool will_choose = last_choose_signal_index < INVALID_INDEX && !is_choosing && not_entirely_free;
 		// free reservation
