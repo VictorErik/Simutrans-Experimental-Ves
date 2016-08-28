@@ -4112,91 +4112,98 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	const sint32 route_steps = brake_steps > 0 && route_index <= route_infos.get_count() - 1 ? cnv->get_route_infos().get_element((next_stop > 0 ? min(next_stop - 1, max_element) : 0)).steps_from_start - cnv->get_route_infos().get_element(route_index).steps_from_start : -1;
 	if(route_steps <= brake_steps || brake_steps < 0)
 	{
-		sint32 check_tile = modify_check_tile ? route_index + 1 : next_stop; // This might otherwise end up as -1 without the ? block, which would be an attempt to check the *previous* tile, which would be silly. 
-		if((check_tile > 0) && check_tile >= route.get_count()) // Checking if check_tile > 0 is necessary because get_count() is a uint32
-		{
-			check_tile = route.get_count() - 1;
-		}
-		koord3d block_pos = route.position_bei(check_tile);
+		const koord3d end_route_pos = route.back();
+		const koord3d next_stop_pos = route.position_bei(next_stop);
+		halthandle_t this_halt = haltestelle_t::get_halt(end_route_pos, get_owner());
 
-		grund_t *gr_next_stop = welt->lookup(block_pos);
-		const schiene_t *sch1 = gr_next_stop ? (const schiene_t *)gr_next_stop->get_weg(get_waytype()) : NULL;
-		if(sch1==NULL) {
-			// way (weg) not existent (likely destroyed)
-			cnv->suche_neue_route();
-			return false;
-		}
-
-		// next check for signal
-		if(sch1->has_signal()) 
+		if(!this_halt.is_bound() || this_halt != haltestelle_t::get_halt(next_stop_pos, get_owner()))
 		{
-			const uint16 check_route_index = next_stop <= 0 ? 0 : next_stop - 1u;
-			ribi_t::ribi ribi = ribi_typ(route.position_bei(max(1u, check_route_index) - 1u), route.position_bei(min(max_element, check_route_index + 1u)));
-			signal_t* signal = sch1->get_signal(ribi); 
-	
-			if(signal)
+			sint32 check_tile = modify_check_tile ? route_index + 1 : next_stop; // This might otherwise end up as -1 without the ? block, which would be an attempt to check the *previous* tile, which would be silly. 
+			if((check_tile > 0) && check_tile >= route.get_count()) // Checking if check_tile > 0 is necessary because get_count() is a uint32
 			{
-				if(working_method != token_block)
-				{
-					if(signal->get_besch()->get_working_method() != one_train_staff || (!do_not_set_one_train_staff && (signal->get_pos() == get_pos()) && (signal->get_state() != roadsign_t::call_on)))
-					{
-						working_method = signal->get_besch()->get_working_method(); 
-					}
-				}
+				check_tile = route.get_count() - 1;
+			}
+			koord3d block_pos = route.position_bei(check_tile);
 
-				if(working_method == cab_signalling 
-					|| signal->get_besch()->is_pre_signal()
-					|| ((working_method == token_block
-					|| working_method == time_interval
-					|| working_method == time_interval_with_telegraph
-					|| working_method == track_circuit_block 
-					|| working_method == absolute_block) && next_stop - route_index <= max(modified_sighting_distance_tiles - 1, 1))
-					|| working_method == one_train_staff && shortest_distance(get_pos().get_2d(), signal->get_pos().get_2d()) < 2)
- 				{
-					// Brake for the signal unless we can see it somehow. -1 because this is checked on entering the tile.
-					const bool allow_block_reserver = (working_method != time_interval && working_method != time_interval_with_telegraph) || !signal->get_no_junctions_to_next_signal() || signal->get_state() != roadsign_t::danger; 
-					if(allow_block_reserver && !block_reserver(&route, next_stop, modified_sighting_distance_tiles, next_signal, 0, true, false, cnv->get_is_choosing()))
-					{					
-						restart_speed = 0;
-						signal->set_state(roadsign_t::danger); 
-						if(starting_from_stand && (working_method == absolute_block || working_method == track_circuit_block || working_method == cab_signalling))
+			grund_t *gr_next_stop = welt->lookup(block_pos);
+			const schiene_t *sch1 = gr_next_stop ? (const schiene_t *)gr_next_stop->get_weg(get_waytype()) : NULL;
+			if(sch1==NULL) {
+				// way (weg) not existent (likely destroyed)
+				cnv->suche_neue_route();
+				return false;
+			}
+
+			// next check for signal
+			if(sch1->has_signal()) 
+			{
+				const uint16 check_route_index = next_stop <= 0 ? 0 : next_stop - 1u;
+				ribi_t::ribi ribi = ribi_typ(route.position_bei(max(1u, check_route_index) - 1u), route.position_bei(min(max_element, check_route_index + 1u)));
+				signal_t* signal = sch1->get_signal(ribi); 
+	
+				if(signal)
+				{
+					if(working_method != token_block)
+					{
+						if(signal->get_besch()->get_working_method() != one_train_staff || (!do_not_set_one_train_staff && (signal->get_pos() == get_pos()) && (signal->get_state() != roadsign_t::call_on)))
 						{
-							// Check for permissive working. Only check here, as the convoy must be brought to a stand before a call on.
-							if(signal->get_besch()->get_permissive() && signal->get_no_junctions_to_next_signal())
-							{
-								// Permissive working allowed: call on.
-								signal->set_state(roadsign_t::call_on);
-								working_method = drive_by_sight;
-							}
-						}
-						cnv->set_next_stop_index(next_signal == INVALID_INDEX ? next_stop : next_signal);
-						if(signal->get_state() != roadsign_t::call_on)
-						{
-							cnv->set_is_choosing(false);							
-							return cnv->get_next_stop_index() > route_index;
+							working_method = signal->get_besch()->get_working_method(); 
 						}
 					}
-					else
-					{
-						if(allow_block_reserver)
-						{
-							cnv->set_next_stop_index(next_signal);
+
+					if(working_method == cab_signalling 
+						|| signal->get_besch()->is_pre_signal()
+						|| ((working_method == token_block
+						|| working_method == time_interval
+						|| working_method == time_interval_with_telegraph
+						|| working_method == track_circuit_block 
+						|| working_method == absolute_block) && next_stop - route_index <= max(modified_sighting_distance_tiles - 1, 1))
+						|| working_method == one_train_staff && shortest_distance(get_pos().get_2d(), signal->get_pos().get_2d()) < 2)
+ 					{
+						// Brake for the signal unless we can see it somehow. -1 because this is checked on entering the tile.
+						const bool allow_block_reserver = (working_method != time_interval && working_method != time_interval_with_telegraph) || !signal->get_no_junctions_to_next_signal() || signal->get_state() != roadsign_t::danger; 
+						if(allow_block_reserver && !block_reserver(&route, next_stop, modified_sighting_distance_tiles, next_signal, 0, true, false, cnv->get_is_choosing()))
+						{					
+							restart_speed = 0;
+							signal->set_state(roadsign_t::danger); 
+							if(starting_from_stand && (working_method == absolute_block || working_method == track_circuit_block || working_method == cab_signalling))
+							{
+								// Check for permissive working. Only check here, as the convoy must be brought to a stand before a call on.
+								if(signal->get_besch()->get_permissive() && signal->get_no_junctions_to_next_signal())
+								{
+									// Permissive working allowed: call on.
+									signal->set_state(roadsign_t::call_on);
+									working_method = drive_by_sight;
+								}
+							}
+							cnv->set_next_stop_index(next_signal == INVALID_INDEX ? next_stop : next_signal);
+							if(signal->get_state() != roadsign_t::call_on)
+							{
+								cnv->set_is_choosing(false);							
+								return cnv->get_next_stop_index() > route_index;
+							}
 						}
 						else
 						{
-							return cnv->get_next_stop_index() > route_index;
+							if(allow_block_reserver)
+							{
+								cnv->set_next_stop_index(next_signal);
+							}
+							else
+							{
+								return cnv->get_next_stop_index() > route_index;
+							}
 						}
-					}
-					if(!signal->get_besch()->is_choose_sign())
-					{
-						cnv->set_is_choosing(false);
+						if(!signal->get_besch()->is_choose_sign())
+						{
+							cnv->set_is_choosing(false);
+						}
 					}
 				}
 			}
-		}
-		else if(working_method == one_train_staff)
-		{
-			cnv->set_next_stop_index(next_signal);
+			else if(working_method == one_train_staff)
+			{
+				cnv->set_next_stop_index(next_signal);
+			}
 		}
 	}
 
