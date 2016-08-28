@@ -4859,6 +4859,10 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 				{
 					// If the very last tile of a block is not free, do not enter the block.
 					next_signal_index = last_stop_signal_index;
+					if(last_choose_signal_index == i)
+					{
+						last_choose_signal_index = INVALID_INDEX;
+					}
 				}
 				if((next_signal_working_method == drive_by_sight || next_signal_working_method == moving_block) && !directional_only && last_choose_signal_index >= INVALID_INDEX && !is_choosing)
 				{
