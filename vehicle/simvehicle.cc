@@ -3976,8 +3976,6 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	// is there any signal/crossing to be reserved?
 	sint32 next_stop = (sint32)cnv->get_next_stop_index() - 1;
 	last_index = route.get_count() - 1;
-
-	
 	
 	if(next_stop > last_index && !exiting_one_train_staff) // last_index is a waypoint and we need to keep routing.
 	{
@@ -4065,7 +4063,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		working_method = working_method != one_train_staff ? drive_by_sight : one_train_staff;
 	}
 
-	if(!starting_from_stand && (working_method == absolute_block || working_method == track_circuit_block || working_method == drive_by_sight || working_method == token_block || working_method == time_interval || working_method == time_interval_with_telegraph))
+	if(!(starting_from_stand && signal_on_current_tile) && (working_method == absolute_block || working_method == track_circuit_block || working_method == drive_by_sight || working_method == token_block || working_method == time_interval || working_method == time_interval_with_telegraph))
 	{
 		// Check for signals at restrictive aspects within the sighting distance to see whether they can now clear whereas they could not before.
 		for(uint16 tiles_to_check = 1; tiles_to_check <= modified_sighting_distance_tiles; tiles_to_check++)
@@ -4091,7 +4089,8 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 				|| ((working_method == time_interval || time_interval_with_telegraph || working_method == track_circuit_block) && signal->get_state() == signal_t::clear_no_choose) 
 				|| signal->get_state() == signal_t::caution_no_choose 
 				|| signal->get_state() == signal_t::preliminary_caution_no_choose
-				|| signal->get_state() == signal_t::advance_caution_no_choose))
+				|| signal->get_state() == signal_t::advance_caution_no_choose
+				|| (starting_from_stand && signal->get_state() == roadsign_t::danger)))
 			{
 				// We come accross a signal at caution: try (again) to free the block ahead.
 				bool ok = block_reserver(&route, route_index, modified_sighting_distance_tiles - (tiles_to_check - 1), next_signal, 0, true, false);
