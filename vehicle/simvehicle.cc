@@ -4048,6 +4048,14 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 			return true;
 	}
 
+	if(starting_from_stand && signal_on_current_tile)
+	{
+		// We need to reserve ahead from this point as there is a signal on the tile.
+		bool ok = block_reserver(&route, route_index, 1, next_signal, 0, true, false);
+		cnv->set_next_stop_index(next_signal);
+		return ok;
+	}
+
 	bool do_not_set_one_train_staff = false;
 	bool modify_check_tile = false;
 	if((next_stop < route_index && (working_method == one_train_staff || next_stop < route_index - 1)))
@@ -4057,7 +4065,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		working_method = working_method != one_train_staff ? drive_by_sight : one_train_staff;
 	}
 
-	if(working_method == absolute_block || working_method == track_circuit_block || working_method == drive_by_sight || working_method == token_block || working_method == time_interval || working_method == time_interval_with_telegraph)
+	if(!starting_from_stand && (working_method == absolute_block || working_method == track_circuit_block || working_method == drive_by_sight || working_method == token_block || working_method == time_interval || working_method == time_interval_with_telegraph))
 	{
 		// Check for signals at restrictive aspects within the sighting distance to see whether they can now clear whereas they could not before.
 		for(uint16 tiles_to_check = 1; tiles_to_check <= modified_sighting_distance_tiles; tiles_to_check++)
@@ -4067,7 +4075,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 			grund_t *gr_ahead = welt->lookup(tile_to_check_ahead);
 			weg_t *way = gr_ahead ? gr_ahead->get_weg(get_waytype()) : NULL;
 			if(!way)
-			{
+			{ 
 				// This may happen if a way has been removed since the route was calculated. Must recalculate the route.
 				cnv->suche_neue_route();
 				return false;
@@ -4113,7 +4121,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	if(route_steps <= brake_steps || brake_steps < 0)
 	{
 		const koord3d end_route_pos = route.back();
-		const koord3d next_stop_pos = route.position_bei(next_stop);
+		const koord3d next_stop_pos = route.position_bei(next_stop < 0 ? 0 : next_stop);
 		halthandle_t this_halt = haltestelle_t::get_halt(end_route_pos, get_owner());
 
 		if(!this_halt.is_bound() || this_halt != haltestelle_t::get_halt(next_stop_pos, get_owner()))
