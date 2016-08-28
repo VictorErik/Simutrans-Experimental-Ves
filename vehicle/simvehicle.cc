@@ -5077,6 +5077,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 	// However, do not call this if we are in the block reserver already called from this method to prevent infinite recursion.
 	const bool bidirectional_reservation = (working_method == track_circuit_block || working_method == cab_signalling || working_method == moving_block) 
 		&& last_bidirectional_signal_index < INVALID_INDEX;
+	bool onward_blocks_not_free = false;
 	if(!onward_reservation && !is_from_directional && (((working_method == token_block) && last_token_block_signal_index < INVALID_INDEX) || bidirectional_reservation || working_method == one_train_staff || working_method == absolute_block || working_method == track_circuit_block || working_method == cab_signalling) && next_signal_index == INVALID_INDEX)
 	{
 		route_t target_rt;
@@ -5162,7 +5163,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 					}
 					else
 					{
-						success = false;
+						onward_blocks_not_free = true;
 						if(ores = absolute)
 						{
 							if(((next_signal_working_method == absolute_block || next_signal_working_method == token_block || next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && first_stop_signal_index < i) && !directional_only)
@@ -5212,7 +5213,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 					
 				} while((fahrplan_index != cnv->get_schedule()->get_aktuell()) && onward_blocks && no_reverse);
 
-				if(!success)
+				if(!onward_blocks)
 				{
 					// This is necessary because, without this, an intermediate onward reservation with no signals in it might fail entirely to unreserve if the part beyond it is not clear and there are no intervening signals.
 					FOR(slist_tpl<route_t>, rt, route_list)
@@ -5247,12 +5248,16 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 
 	// free, in case of un-reserve or no success in reservation
 	// or alternatively free that section reserved beyond the last signal to which reservation can take place
-	if(!success || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
+	if(!success || (onward_blocks_not_free && next_signal_index >= INVALID_INDEX) || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
 	{
 		const bool will_choose = last_choose_signal_index < INVALID_INDEX && !is_choosing && not_entirely_free;
+		if(onward_blocks_not_free && next_signal_index >= INVALID_INDEX)
+		{
+			next_signal_index = last_stop_signal_index;
+		}
 		// free reservation
 		uint16 relevant_index;
-		if(!success || (next_signal_index == INVALID_INDEX && onward_reservation == absolute))
+		if(!success || (next_signal_index >= INVALID_INDEX && onward_reservation == absolute))
 		{
 			relevant_index = start_index;
 		}
