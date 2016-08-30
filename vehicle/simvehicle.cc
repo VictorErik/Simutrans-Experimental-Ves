@@ -4120,7 +4120,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	if(route_steps <= brake_steps || brake_steps < 0)
 	{
 		const koord3d end_route_pos = route.back();
-		const koord3d next_stop_pos = route.position_bei(next_stop < 0 ? 0 : next_stop);
+		const koord3d next_stop_pos = next_stop < INVALID_INDEX ? route.position_bei(next_stop < 0 ? 0 : next_stop) : koord3d::invalid; 
 		halthandle_t this_halt = haltestelle_t::get_halt(end_route_pos, get_owner());
 
 		if(!this_halt.is_bound() || this_halt != haltestelle_t::get_halt(next_stop_pos, get_owner()))
