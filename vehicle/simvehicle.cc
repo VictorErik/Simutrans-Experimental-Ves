@@ -4120,7 +4120,7 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 	if(route_steps <= brake_steps || brake_steps < 0)
 	{
 		const koord3d end_route_pos = route.back();
-		const koord3d next_stop_pos = next_stop < INVALID_INDEX ? route.position_bei(next_stop < 0 ? 0 : next_stop) : koord3d::invalid; 
+		const koord3d next_stop_pos = next_stop < INVALID_INDEX ? route.position_bei(next_stop < 0 ? 0 : next_stop) : end_route_pos; 
 		halthandle_t this_halt = haltestelle_t::get_halt(end_route_pos, get_owner());
 
 		if(!this_halt.is_bound() || this_halt != haltestelle_t::get_halt(next_stop_pos, get_owner()))
@@ -5137,6 +5137,10 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 						};
 
 						onward_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, (bidirectional_reservation ? none : ores), false, bidirectional_reservation, brake_steps);
+						if(onward_blocks && reached_end_of_loop && bidirectional_reservation && working_method != moving_block)
+						{
+							onward_blocks = block_reserver(&target_rt, 1, modified_sighting_distance_tiles, next_next_signal, 0, true, false, false, ores, false, false, brake_steps);
+						}
 						if(next_next_signal < INVALID_INDEX)
 						{
 							route_list.clear();
@@ -5166,6 +5170,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 							if(working_method != one_train_staff)
 							{
 								cnv->set_next_stop_index(cnv->get_route()->get_count() - 1u);
+								//next_signal_index = i + next_next_signal;
 							}
 							break;
 						}
@@ -5209,7 +5214,8 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 								&& last_stop_signal_index < INVALID_INDEX
 								&& !directional_only
 								&& ((next_signal_index <= last_stop_signal_before_first_bidirectional_signal_index
-								&& last_stop_signal_before_first_bidirectional_signal_index < INVALID_INDEX)))
+								&& (last_stop_signal_before_first_bidirectional_signal_index < INVALID_INDEX
+								|| !onward_blocks))))
 							{
 								next_signal_index = last_stop_signal_index;
 								break;
