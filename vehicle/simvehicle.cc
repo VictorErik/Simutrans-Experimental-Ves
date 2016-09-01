@@ -5355,7 +5355,19 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 		if(will_choose)
 		{
 			// This will call the block reserver afresh from the last choose signal with choose logic enabled. 
-			choose_return = activate_choose_signal(last_choose_signal_index, next_signal_index, brake_steps, modified_sighting_distance_tiles, route); 
+
+			sint32 modified_route_index;
+			if(onward_reservation || is_from_directional)
+			{
+				modified_route_index  = route_index - route->get_count(); 
+			}
+			else
+			{
+				modified_route_index = route_index;
+			}
+
+			choose_return = activate_choose_signal(last_choose_signal_index, next_signal_index, brake_steps, modified_sighting_distance_tiles, route/*, modified_route_index*/); 
+
 		}
 
 		if(!success && !choose_return)
@@ -5518,7 +5530,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 		}
 	}
 
-	if(cnv)
+	if(cnv && !onward_reservation && !is_from_directional)
 	{
 		cnv->set_next_reservation_index(last_non_directional_index + next_next_signal);
 	}
