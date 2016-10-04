@@ -24,6 +24,7 @@
 *.obj
 *.rules
 *.log*
+*.sve
 ipch
 /Debug
 /Debug (SDL)
@@ -45,6 +46,7 @@ pak*
 PAK*
 settings.xml
 /simutrans-experimental
+/simutrans/simutrans-experimental Devel-new
 /Debug-makeobj
 Simutrans-Experimental.exe
 _UpgradeReport_Files*

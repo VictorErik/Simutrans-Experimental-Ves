@@ -1,0 +1,273 @@
+<?xml version="1.0"?>
+<Simutrans version="0.120.7.12" pak="cach">
+ <i32>11</i32>
+ <![CDATA[Automatically generated file. Do not edit. An invalid file may crash the game. Deleting is allowed though.]]>
+ <save_game_info>
+  <![CDATA[save/Bug_Trains stop one tile after signal and gets stuck there.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>64228</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Test game 1_e.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160412]]>
+  <i64>1474581738</i64>
+  <i32>409336</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Test game 1_e_Compiled using vs2015.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160412]]>
+  <i64>1474581738</i64>
+  <i32>396567</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Test game 1_f.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160827_a4e42c3]]>
+  <i64>1474581738</i64>
+  <i32>401279</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Test game 1_fb.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160619]]>
+  <i64>1474581738</i64>
+  <i32>469671</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Signals_test_cab_and_moving_block_1.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160111]]>
+  <i64>1474581738</i64>
+  <i32>146298</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Bug_not changing working method on the fly.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_160830_62b794f]]>
+  <i64>1474581738</i64>
+  <i32>55352</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Bug_signal is not set.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>85967</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Swedish Servergame_1.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_160830_62b794f]]>
+  <i64>1474581738</i64>
+  <i32>102387</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/temp-load.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160412]]>
+  <i64>1474581738</i64>
+  <i32>402097</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Time Interval test revised.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2]]>
+  <i64>1474581738</i64>
+  <i32>61400</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Track circuit block test.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_160624]]>
+  <i64>1474581738</i64>
+  <i32>29089</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/bug_Trains ignoring choose signal.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>69627</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/bug_Trains ignoring choose signal.v2.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>73541</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/T-signal_test.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>73905</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/T-signal_test_Absolute_block.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>122063</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Bug_two trains approaching each other cant pass at station with choose signal.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>86422</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/branch-demonstration-signalling.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2]]>
+  <i64>1474581738</i64>
+  <i32>150088</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Server savegame 160823.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160818_8222a73]]>
+  <i64>1474581738</i64>
+  <i32>396771</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Server savegame 160827.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160827_a4e42c3]]>
+  <i64>1474581738</i64>
+  <i32>260648</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Server savegame 160828.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160827_a4e42c3]]>
+  <i64>1474581738</i64>
+  <i32>293711</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Server savegame 160829.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160827_a4e42c3]]>
+  <i64>1474581738</i64>
+  <i32>465281</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Server savegame 160829b.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160827_a4e42c3]]>
+  <i64>1474581738</i64>
+  <i32>473513</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Server savegame 160913.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160827_a4e42c3]]>
+  <i64>1474581738</i64>
+  <i32>491720</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Time interval test.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160619]]>
+  <i64>1474581738</i64>
+  <i32>61698</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Bug_Drive_through_stations_deadlock.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2_160917_0b60d70]]>
+  <i64>1474581738</i64>
+  <i32>514753</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Test.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_160829_62b794f]]>
+  <i64>1474581738</i64>
+  <i32>5288</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Bug_Signals_dissapear.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_160917_d14f2c1]]>
+  <i64>1474581738</i64>
+  <i32>106943</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/time inteval test.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_160701]]>
+  <i64>1474581738</i64>
+  <i32>15775</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Testgame_2-a.sve]]>
+  <![CDATA[Pak128.Britain-Ex-0.9.2.160226]]>
+  <i64>1474581738</i64>
+  <i32>2526975</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Brotest.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>71438</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/Bug_Not changing working method on the fly .version 2.sve]]>
+  <![CDATA[Pak128.Sweden-Ex_Testing_version]]>
+  <i64>1474581738</i64>
+  <i32>71023</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[save/train_one-staff_problems.sve]]>
+  <![CDATA[pak128.Britain-Ex]]>
+  <i64>1475520242</i64>
+  <i32>332297</i32>
+  <i32>120007</i32>
+  <i32>12</i32>
+ </save_game_info>
+ <save_game_info>
+  <![CDATA[]]>
+ </save_game_info>
+
+</Simutrans>
