@@ -23,6 +23,9 @@
 #include "../besch/haus_besch.h"
 #include "../simhalt.h"
 
+#include "../gui/gui_frame.h"
+#include "../gui/components/gui_button.h"
+
 #include "signal.h"
 
 
@@ -116,7 +119,7 @@ signal_t::~signal_t()
  * Observation window is displayed." (Google)
  * @author Hj. Malthaner
  */
-void signal_t::info(cbuffer_t & buf, bool dummy) const
+void signal_t::info(cbuffer_t & buf, bool dummy, scr_coord offset) const
 {
 	// well, needs to be done
 	obj_t::info(buf);
@@ -363,6 +366,22 @@ void signal_t::info(cbuffer_t & buf, bool dummy) const
 			const gebaeude_t* gb = gr->get_building();
 			if(gb)
 			{
+
+				clip_dimension const cd = display_get_clip_wh();
+				const int start = cd.y - LINESPACE - 1;
+				const int end = cd.yy + LINESPACE + 1;
+
+				static cbuffer_t buf;
+				int xoff = offset.x + D_POS_BUTTON_WIDTH + D_H_SPACE;
+				int yoff = offset.y;
+
+			/*	uint32 sel = line_selected;
+				buf.clear();
+				// goto button
+				bool selected = sel == 0 || welt->get_viewport()->is_on_center(gb->get_pos());
+				display_img_aligned(gui_theme_t::pos_button_img[selected], scr_rect(offset.x, yoff, D_POS_BUTTON_WIDTH, LINESPACE), ALIGN_CENTER_V | ALIGN_CENTER_H, true);
+				sel--;
+*/
 				buf.append(translator::translate(gb->get_name()));
 				buf.append(" <");
 				buf.append(sb.x);

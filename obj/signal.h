@@ -9,6 +9,7 @@
 #define obj_signal_h
 
 #include "roadsign.h"
+#include "../gui/components/gui_component.h"
 
 #include "../simobj.h"
 
@@ -24,6 +25,7 @@ class signal_t : public roadsign_t
 {
 private:
 	koord3d signalbox;
+	uint32 line_selected;
 
 	bool no_junctions_to_next_signal;
 
@@ -51,6 +53,8 @@ public:
 	typ get_typ() const { return obj_t::signal; }
 #endif
 	const char *get_name() const { return besch->get_name(); }
+
+	void info(cbuffer_t & buf, bool dummy, scr_coord offset) const;
 
 	/**
 	* berechnet aktuelles image
