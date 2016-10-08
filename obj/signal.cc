@@ -23,6 +23,9 @@
 #include "../besch/haus_besch.h"
 #include "../simhalt.h"
 
+#include "../gui/gui_frame.h"
+#include "../gui/components/gui_button.h"
+
 #include "signal.h"
 
 
@@ -116,8 +119,15 @@ signal_t::~signal_t()
  * Observation window is displayed." (Google)
  * @author Hj. Malthaner
  */
-void signal_t::info(cbuffer_t & buf, bool dummy) const
+void signal_t::info(cbuffer_t & buf, bool dummy, scr_coord offset) const
 {
+
+	uint32 sel = line_selected;
+
+	static cbuffer_t buf;
+	int xoff = offset.x + D_POS_BUTTON_WIDTH + D_H_SPACE;
+	int yoff = offset.y;
+
 	// well, needs to be done
 	obj_t::info(buf);
 	signal_t* sig = (signal_t*)this;
@@ -371,6 +381,10 @@ void signal_t::info(cbuffer_t & buf, bool dummy) const
 				buf.append(",");
 				buf.append(sb.z);
 				buf.append(">"); 
+			
+				bool selected = sel == 0 || welt->get_viewport()->is_on_center(gb->get_pos());
+				display_img_aligned(gui_theme_t::pos_button_img[selected], scr_rect(offset.x, yoff, D_POS_BUTTON_WIDTH, LINESPACE), ALIGN_CENTER_V | ALIGN_CENTER_H, true);
+				sel--;
 			}
 			else
 			{
