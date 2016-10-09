@@ -24,7 +24,6 @@
 *.obj
 *.rules
 *.log*
-*.sve
 ipch
 /Debug
 /Debug (SDL)
@@ -46,7 +45,6 @@ pak*
 PAK*
 settings.xml
 /simutrans-experimental
-/simutrans/simutrans-experimental devel-new
 /Debug-makeobj
 Simutrans-Experimental.exe
 _UpgradeReport_Files*
@@ -154,4 +152,3 @@ text/en/Simutrans-Experimental.vcxproj.lnk
 text/all-help-file-names
 
 /Simutrans-Ex/nbproject/private/
-simutrans/save/_cached_exp.xml
