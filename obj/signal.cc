@@ -124,7 +124,7 @@ void signal_t::info(cbuffer_t & buf, bool dummy, scr_coord offset) const
 
 	uint32 sel = line_selected;
 
-	static cbuffer_t buf;
+//	static cbuffer_t buf_button;
 	int xoff = offset.x + D_POS_BUTTON_WIDTH + D_H_SPACE;
 	int yoff = offset.y;
 
