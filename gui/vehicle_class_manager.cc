@@ -48,6 +48,34 @@ vehicle_class_manager_t::vehicle_class_manager_t(convoihandle_t cnv)
 {
 	this->cnv = cnv;
 
+	pass_class_selector.add_listener(this);
+	add_component(&pass_class_selector);
+	pass_class_selector.clear_elements();
+	pass_class_selector_indices.clear();
+	int pass_class_capacity[255] = { 0 };
+	for (uint8 i = 0; i < goods_manager_t::passengers->get_number_of_classes(); i++)
+	{
+		for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
+		{
+			vehicle_t* v = cnv->get_vehicle(veh);
+			if (v->get_cargo_type()->get_catg_index() == 0)
+			{
+				pass_class_capacity[i] += v->get_capacity(i);
+			}
+		}
+		if (pass_class_capacity[i] > 0)
+		{
+			char class_name_untranslated[32];
+			sprintf(class_name_untranslated, "p_class[%u]", i);
+			pass_class_selector.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(class_name_untranslated), SYSCOL_TEXT));
+			pass_class_selector_indices.append(i);
+			pass_class_selector.set_selection(i);
+			pass_class_selector_index = i;
+		}
+
+	}
+	
+
 	
 	scrolly.set_show_scroll_x(true);
 	add_component(&scrolly);
@@ -70,12 +98,13 @@ void vehicle_class_manager_t::draw(scr_coord pos, scr_size size)
 		// all gui stuff set => display it
 		gui_frame_t::draw(pos, size);
 		int offset_y = pos.y + 2 + 16;
+		int selector_x = pos.x + 100;
+		int selector_y = 0;
 		scrolly.set_pos(scr_coord(0, offset_y));
 		scrolly.set_size(get_client_windowsize() - scrolly.get_pos());
 		// current value
 		if (cnv.is_bound())
 		{
-
 			char number[64];
 			cbuffer_t buf;
 			int pass_class_capacity[255] = { 0 };
@@ -86,6 +115,12 @@ void vehicle_class_manager_t::draw(scr_coord pos, scr_size size)
 			buf.printf("%s:", translator::translate("capacity"));
 			display_proportional_clip(pos.x + 10, offset_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 			offset_y += LINESPACE;
+			selector_y += offset_y;
+
+			pass_class_selector.set_pos(scr_coord(selector_x, offset_y));
+			pass_class_selector.set_size(scr_size(100, LINESPACE));
+			pass_class_selector.set_max_size(scr_size(100, LINESPACE * 8));
+			pass_class_selector.set_highlight_color(1);
 
 			for (uint8 i = 0; i < goods_manager_t::passengers->get_number_of_classes(); i++)
 			{
@@ -107,6 +142,7 @@ void vehicle_class_manager_t::draw(scr_coord pos, scr_size size)
 					buf.printf("%s:  %i", class_name, pass_class_capacity[i]);
 					display_proportional_clip(pos.x + 10, offset_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 					offset_y += LINESPACE;
+					pass_class_selector.set_selection(pass_class_selector_indices.index_of(pass_class_selector_index));
 				}
 			}
 			if (overcrowded_capacity > 0)
@@ -239,13 +275,13 @@ void vehicle_class_manager_t::rdwr(loadsave_t *file)
 }
 
 
+uint16 vehicle_class_manager_t::pass_class_selector_index = 0;
+
 // component for vehicle display
 gui_class_vehicleinfo_t::gui_class_vehicleinfo_t(convoihandle_t cnv)
 {
 	this->cnv = cnv;
 }
-
-
 
 /*
  * Draw the component
@@ -348,36 +384,6 @@ void gui_class_vehicleinfo_t::draw(scr_coord offset)
 							display_proportional_clip(pos.x + w + offset.x, pos.y + offset.y + total_height + extra_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 							extra_y += LINESPACE;
 
-
-							// This commented out section is an attempt to add a selector where player can choose new class. I will revisit this later.
-							buf.clear();
-							gui_combobox_t *class_selector = new gui_combobox_t();
-
-							class_selector->set_pos(scr_coord(pos.x + w + offset.x, pos.y + offset.y + total_height + extra_y));
-							class_selector->set_size(scr_size(185, D_BUTTON_HEIGHT));
-							class_selector->set_max_size(scr_size(D_BUTTON_WIDTH - 8, LINESPACE * 3 + 2 + 16));
-							class_selector->set_highlight_color(1);
-							class_selector->clear_elements();
-
-							class_indices.clear();
-							for (uint8 j = 0; j < v->get_desc()->get_number_of_classes(); j++)
-							{
-								char class_selector_name_untranslated[32];
-								sprintf(class_selector_name_untranslated, "p_class[%u]", j);
-								const char* class_selector_name = translator::translate(class_selector_name_untranslated);
-								class_selector->append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(class_selector_name), SYSCOL_TEXT));
-								class_indices.append(j);
-							}
-
-							cont.add_component(class_selector);
-							// FIXME: The below line does not compile. Reconsider this.
-							//class_selector->add_listener(this);
-							class_selector->set_focusable(false);
-							class_selectors.append(class_selector);
-							extra_y += LINESPACE;
-
-							//pb->add_listener(this);
-	
 
 
 							buf.clear();

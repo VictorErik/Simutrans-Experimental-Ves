@@ -69,14 +69,18 @@ private:
 	gui_scrollpane_t scrolly;
 	gui_class_vehicleinfo_t veh_info;
 
+
 	convoihandle_t cnv;
 	button_t	sale_button;
 	button_t	withdraw_button;
 	button_t	retire_button;
 
-	gui_combobox_t class_selector;
+	gui_combobox_t pass_class_selector;
+	vector_tpl<uint16> pass_class_selector_indices;
+	static uint16 pass_class_selector_index;
 
-
+	gui_combobox_t class_changer;
+	vector_tpl<uint16> class_changer_indices;
 
 public:
 	vehicle_class_manager_t(convoihandle_t cnv);

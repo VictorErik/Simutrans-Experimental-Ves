@@ -557,9 +557,6 @@ void gui_convoy_assembler_t::layout()
 	upgrade_selector.set_highlight_color(1);
 	y += 4 + D_BUTTON_HEIGHT;
 
-	// Class entries location on the window is specified together with their object specification // Ves
-	
-
 
 
 	const livery_scheme_t* const liv = welt->get_settings().get_livery_scheme(livery_scheme_index);
