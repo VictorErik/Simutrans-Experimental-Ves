@@ -4870,13 +4870,13 @@ void convoi_t::get_freight_info(cbuffer_t & buf)
 			}
 			for (int j = 0; j < pass_classes; j++)
 			{
-				if (menge > 0 && ware_desc == goods_manager_t::passengers) {
+				if (v->get_capacity(j) > 0 && ware_desc == goods_manager_t::passengers) {
 					max_loaded_passengers[j] += v->get_capacity(j);
 				}
 			}
 			for (int j = 0; j < mail_classes; j++)
 			{
-				if (menge > 0 && ware_desc == goods_manager_t::mail) {
+				if (v->get_capacity(j) > 0 && ware_desc == goods_manager_t::mail) {
 					max_loaded_mail[j] += v->get_capacity(j);
 				}
 			}
