@@ -565,7 +565,7 @@ void schedule_list_gui_t::display(scr_coord pos)
 	default:
 		break;
 	}
-	display_proportional_clip(pos.x + LINE_NAME_COLUMN_WIDTH, pos.y + 6 + SCL_HEIGHT + D_MARGIN_TOP, buf, ALIGN_LEFT, line->get_state_color(), true);
+	display_proportional_clip(pos.x + LINE_NAME_COLUMN_WIDTH, pos.y + 7 + SCL_HEIGHT + D_MARGIN_TOP, buf, ALIGN_LEFT, line->get_state_color(), true);
 
 	capacity = load = loadfactor = 0; // total capacity and load of line (=sum of all conv's cap/load)
 
