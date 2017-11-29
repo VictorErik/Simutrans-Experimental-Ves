@@ -3716,3 +3716,17 @@ additional_upgrades
 additional upgrades
 reassign_classes
 Reassign classes
+this_line_has_no_convoys_assigned
+This line has no convoys assigned
+this_line_made_a_loss_last_month
+This line made a loss last month
+this_line_did_not_move_any_good_last_month
+This line did not move any good last month
+this_line_is_frequently_overcrowded
+This line is frequently overcrowded
+this_line_missed_scheduled_slots_last_month
+This line missed scheduled slots last month
+this_line_operates_obsolete_vehicles
+This line operates obsolete vehicles
+some_obsolete_vehicles_in_this_line_can_upgrade
+Some obsolete vehicles in this line can upgrade

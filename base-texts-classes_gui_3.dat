@@ -5,14 +5,38 @@
 # Created: April 2013
 #
 obj=program_text
-name=
-note=
+name=this_line_has_no_convoys_assigned
+note=Shown in the line management window (schedule list window)
+-
+obj=program_text
+name=this_line_made_a_loss_last_month
+note=Shown in the line management window (schedule list window)
+-
+obj=program_text
+name=this_line_did_not_move_any_good_last_month
+note=Shown in the line management window (schedule list window)
+-
+obj=program_text
+name=this_line_is_frequently_overcrowded
+note=Shown in the line management window (schedule list window)
+-
+obj=program_text
+name=this_line_missed_scheduled_slots_last_month
+note=Shown in the line management window (schedule list window)
+-
+obj=program_text
+name=this_line_operates_obsolete_vehicles
+note=Shown in the line management window (schedule list window)
+-
+obj=program_text
+name=some_obsolete_vehicles_in_this_line_can_upgrade
+note=Shown in the line management window (schedule list window)
 -
 obj=program_text
 name=
-note=
+note=Shown in the line management window (schedule list window)
 -
 obj=program_text
 name=
-note=
+note=Shown in the line management window (schedule list window)
 -

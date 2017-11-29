@@ -545,7 +545,7 @@ void schedule_list_gui_t::display(scr_coord pos)
 		buf.printf(translator::translate("this_line_has_no_convoys_assigned"));
 		break;
 	case simline_t::loss_making:
-		buf.printf(translator::translate("this_line_make_a_loss_last_month"));
+		buf.printf(translator::translate("this_line_made_a_loss_last_month"));
 		break;
 	case simline_t::nothing_moved:
 		buf.printf(translator::translate("this_line_did_not_move_any_good_last_month"));
@@ -554,13 +554,13 @@ void schedule_list_gui_t::display(scr_coord pos)
 		buf.printf(translator::translate("this_line_is_frequently_overcrowded"));
 		break;
 	case simline_t::is_missing_scheduled_slots:
-		buf.printf(translator::translate("this_line_where_missing_scheduled_slots_last_month"));
+		buf.printf(translator::translate("this_line_missed_scheduled_slots_last_month"));
 		break;
 	case simline_t::has_obsolete_vehicles:
-		buf.printf(translator::translate("this_line_has_obsolete_vehicles"));
+		buf.printf(translator::translate("this_line_operates_obsolete_vehicles"));
 		break;
 	case simline_t::has_obsolete_vehicles_with_upgrades:
-		buf.printf(translator::translate("this_line_has_obsolete_vehicles_with_upgrades"));
+		buf.printf(translator::translate("some_obsolete_vehicles_in_this_line_can_upgrade"));
 		break;
 	default:
 		break;
