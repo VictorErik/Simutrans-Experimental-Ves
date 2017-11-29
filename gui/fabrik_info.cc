@@ -38,7 +38,8 @@ fabrik_info_t::fabrik_info_t(fabrik_t* fab_, const gebaeude_t* gb) :
 	view(gb, scr_size( max(64, get_base_tile_raster_width()), max(56, (get_base_tile_raster_width() * 7) / 8))),
 	scrolly(&fab_info),
 	prod(&prod_buf),
-	txt(&info_buf)
+	txt(&info_buf),
+	lbl_factory_status(factory_status)
 {
 	lieferbuttons = supplierbuttons = NULL;
 
@@ -84,6 +85,9 @@ fabrik_info_t::fabrik_info_t(fabrik_t* fab_, const gebaeude_t* gb) :
 	fab->info_conn(info_buf);
 	txt.recalc_size();
 	update_info();
+
+	// The status label
+	add_component(&lbl_factory_status);
 
 	scrolly.set_pos(scr_coord(0, offset_below_viewport+D_BUTTON_HEIGHT+D_V_SPACE+12));
 	add_component(&scrolly);
@@ -134,6 +138,7 @@ void fabrik_info_t::set_windowsize(scr_size size)
 	// would be only needed in case of enabling horizontal resizes
 	input.set_size(scr_size(get_windowsize().w-D_MARGIN_LEFT-D_MARGIN_RIGHT, D_BUTTON_HEIGHT));
 	view.set_pos(scr_coord(get_windowsize().w - view.get_size().w - D_MARGIN_RIGHT , D_MARGIN_TOP+D_BUTTON_HEIGHT+D_V_SPACE ));
+	lbl_factory_status.set_pos(scr_coord(get_windowsize().w - view.get_size().w - D_MARGIN_RIGHT, D_MARGIN_TOP + D_BUTTON_HEIGHT + D_V_SPACE + view.get_size().h + 8 + D_V_SPACE));
 
 	scrolly.set_size(get_client_windowsize()-scrolly.get_pos());
 }
@@ -203,6 +208,38 @@ void fabrik_info_t::draw(scr_coord pos, scr_size size)
 			display_color_img( skinverwaltung_t::mail->get_image_id(0), pos.x + x_prod_pos, pos.y + view.get_pos().y + D_TITLEBAR_HEIGHT, 0, false, false);
 		}
 	}
+	// Status line written text	
+	factory_status.clear();
+	switch (fab->get_status())
+	{
+	case fabrik_t::bad:
+		factory_status.append(translator::translate("bad"));
+		break;
+
+	case fabrik_t::medium:
+		factory_status.append(translator::translate("medium"));
+		break;
+
+	case fabrik_t::good:
+		break;
+
+	case fabrik_t::inactive:
+		factory_status.append(translator::translate("inactive"));
+		break;
+
+	case fabrik_t::nothing:
+		factory_status.append(translator::translate("nothing"));
+		break;
+
+	case fabrik_t::staff_shortage:
+		factory_status.append(translator::translate("staff_shortage"));
+		break;
+
+	default:
+		break;
+	}
+	lbl_factory_status.set_color(indikatorfarbe);
+
 }
 
 

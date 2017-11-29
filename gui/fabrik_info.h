@@ -59,6 +59,8 @@ class fabrik_info_t : public gui_frame_t, public action_listener_t
 
 	factory_chart_t chart;
 	button_t chart_button;
+	gui_label_t lbl_factory_status;
+	cbuffer_t factory_status;
 
 	button_t details_button;
 
@@ -76,6 +78,7 @@ class fabrik_info_t : public gui_frame_t, public action_listener_t
 	gui_textarea_t prod, txt;
 
 	void rename_factory();
+
 
 public:
 	// refreshes all text and location pointers
