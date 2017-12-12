@@ -52,10 +52,12 @@ public:
 		by_origin_sum = 5, 
 		by_destination_detail = 6, 
 		by_wealth_detail = 7, 
-		by_wealth_via = 8, 
-		by_accommodation_detail = 9,
-		by_accommodation_via = 10,
-		SORT_MODES = 11
+		by_wealth_via = 8,
+		by_visit_comm_detail = 9,
+		by_visit_comm_via = 10,
+		by_accommodation_detail = 11,
+		by_accommodation_via = 12,
+		SORT_MODES = 13
 	};
 
 private:

@@ -121,6 +121,8 @@ const char *convoi_info_t::sort_text[SORT_MODES] =
 	"destination (detail)",
 	"wealth (detail)",
 	"wealth (via)",
+	"trip type (detail)",
+	"trip type (via)",
 	"accommodation (detail)",
 	"accommodation (via)"
 };

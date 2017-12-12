@@ -168,6 +168,65 @@ bool freight_list_sorter_t::compare_ware(ware_t const& w1, ware_t const& w2)
 		}
 		/* FALLTHROUGH */
 	}
+	case by_visit_comm_detail: // Initial sorting is done already in simconvoi.cc
+	{
+
+		grund_t* gr = welt->lookup_kartenboden(w1.get_zielpos());
+		const gebaeude_t* const gb1 = gr ? gr->find<gebaeude_t>() : NULL;
+		gr = welt->lookup_kartenboden(w2.get_zielpos());
+		const gebaeude_t* const gb2 = gr ? gr->find<gebaeude_t>() : NULL;
+		if (gb1 && gb2)
+		{
+			int const visit_order = w2.is_commuting_trip - w1.is_commuting_trip;
+			if (visit_order == 0)
+			{
+				const fabrik_t *fab = NULL;
+				// TODO -oBG, 29.12.2013: optimize:
+				const char *const name1 = (fabrik_t::get_fab(w1.get_zielpos()) && sortby != by_origin ? ((fab = fabrik_t::get_fab(w1.get_zielpos())) ? fab->get_name() : "Invalid Factory") : translator::translate(gb1->get_tile()->get_desc()->get_name()));
+				const char *const name2 = (fabrik_t::get_fab(w2.get_zielpos()) && sortby != by_origin ? ((fab = fabrik_t::get_fab(w2.get_zielpos())) ? fab->get_name() : "Invalid Factory") : translator::translate(gb2->get_tile()->get_desc()->get_name()));
+				return strcmp(name1, name2) < 0;
+			}
+			else
+			{
+				return visit_order < 0;
+			}
+		}
+		else if (gb1)
+		{
+			return false;
+		}
+		else if (gb2)
+		{
+			return true;
+		}
+	}
+	case by_visit_comm_via: {
+		halthandle_t const v1 = w1.get_zwischenziel();
+		halthandle_t const v2 = w2.get_zwischenziel();
+		if (v1.is_bound() && v2.is_bound())
+		{
+			int const visit_order = w2.is_commuting_trip - w1.is_commuting_trip;
+			if (visit_order == 0)
+			{
+				int const via_order = strcmp(v1->get_name(), v2->get_name());
+				if (via_order != 0)
+				{
+					return via_order < 0;
+				}
+			}
+			else
+			{
+				return visit_order < 0;
+			}
+		}
+		else if (v1.is_bound()) {
+			return false;
+		}
+		else if (v2.is_bound()) {
+			return true;
+		}
+		/* FALLTHROUGH */
+	}
 						/*case by_transfer_time: // Should only be used with transfer goods
 						{
 						const sint64 current_time = welt->get_ticks();
@@ -193,7 +252,7 @@ bool freight_list_sorter_t::compare_ware(ware_t const& w1, ware_t const& w2)
 
 
 
-void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class, uint32 total_pass_mail, bool show_empty)
+void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class, uint32 total_pass_mail, bool show_empty, bool is_commuting_trip)
 {
 	goods_desc_t const& desc = *ware->get_desc();
 	char const*  const  name = translator::translate(ware->get_catg() != 0 ? desc.get_catg_name() : desc.get_name());
@@ -202,12 +261,14 @@ void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 
 	char const*  unit = translator::translate(desc.get_mass());
 	bool sorting_by_wealth = sortby == by_wealth_detail || sortby == by_wealth_via ? true : false;
 	bool sorting_by_accommodation = sortby == by_accommodation_detail || sortby == by_accommodation_via ? true : false;
+	bool sorting_by_visit_comm = sortby == by_visit_comm_detail || sortby == by_visit_comm_via ? true : false;
 	bool is_class_cargo = ware->get_index() == goods_manager_t::INDEX_PAS || ware->get_index() == goods_manager_t::INDEX_MAIL ? true : false;
+	bool is_visit_comm_cargo = ware->get_index() == goods_manager_t::INDEX_PAS ? true : false;
 
 	if (buf.len() > 0) {
 		buf.append("\n");
 	}
-	if (is_class_cargo && sorting_by_wealth && max > 0)
+	if (((is_class_cargo && sorting_by_wealth) || (is_visit_comm_cargo && sorting_by_visit_comm))&& max > 0)
 	{// When sorting by wealth, there would be no maximum capacity per "wealth" entry, therefore we need to show one extra entry with maximum capacity for the pass or mail.
 		if (total_pass_mail > 0 || sum == 0)
 		{// This is apperently the first entry of either pass or mail, and therefore needs the maximum freight indicator.
@@ -241,8 +302,14 @@ void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 
 		sprintf(class_name, ware->get_index() == goods_manager_t::INDEX_PAS ? "p_class[%u]" : "m_class[%u]", g_class);
 		sprintf(class_entry, "(%s) ", translator::translate(class_name));
 	}
+	if (is_visit_comm_cargo && sorting_by_visit_comm)
+	{
+		char class_name[32];
+		sprintf(class_name, is_commuting_trip ? "commuting" : "visiting");
+		sprintf(class_entry, "(%s) ", translator::translate(class_name));
+	}
 	// Ensure consistent spacing
-	if (sorting_by_wealth && sum>0 || !sorting_by_wealth || !is_class_cargo)
+	if (((sorting_by_wealth && sum>0) || (sorting_by_visit_comm && sum>0)) || !sorting_by_wealth || !sorting_by_visit_comm || !is_class_cargo)
 	{// Ensure that, if we sort by wealth, we only show this section below if there actually is something to show, alternatively if this is not a freight type with classes at all.
 		if (ware->get_index() == goods_manager_t::INDEX_PAS)
 		{
@@ -394,6 +461,35 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 					wlist[i].menge += wlist[pos--].menge;
 				}
 			}
+
+		}
+		if (sort_mode == by_visit_comm_detail && pos > 0)
+		{
+			for (int i = 0; i < pos; i++)
+			{
+				if (wlist[i].get_index() == wlist[pos].get_index() &&
+					//(accommodation == all_classes || wlist[i].get_class() == accommodation) &&
+					wlist[i].is_commuting_trip == wlist[pos].is_commuting_trip &&
+					wlist[i].get_zielpos() == wlist[pos].get_zielpos())
+				{
+					wlist[i].menge += wlist[pos--].menge;
+					break;
+				}
+			}
+		}
+		if (sort_mode == by_visit_comm_via && pos > 0)
+		{
+			for (int i = 0; i < pos; i++)
+			{
+				if (wlist[i].get_index() == wlist[pos].get_index() &&
+					wlist[i].get_zwischenziel() == wlist[pos].get_zwischenziel() &&
+					//(accommodation == all_classes || wlist[i].get_class() == accommodation) &&
+					(wlist[i].get_ziel() == wlist[i].get_zwischenziel()) == (wlist[pos].get_ziel() == wlist[pos].get_zwischenziel()) &&
+					wlist[i].is_commuting_trip == wlist[pos].is_commuting_trip)
+				{
+					wlist[i].menge += wlist[pos--].menge;
+				}
+			}
 		}
 
 		/*	if (sort_mode == by_transfer_time && pos > 0)
@@ -428,12 +524,14 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 		int last_goods_index = -1;
 		int last_ware_catg = -1;
 		int last_ware_class = -1;
+		int last_ware_commuter = -1;
 		bool new_section = false;
 		uint32 total_pass_mail = 0;
 		uint32 last_capacity = 0;
 		ware_t last;
 		const bool sorting_by_wealth = sortby == by_wealth_detail || sortby == by_wealth_via ? true : false;
 		const bool sorting_by_accommodation = sortby == by_accommodation_detail || sortby == by_accommodation_via ? true : false;
+		const bool sorting_by_visit_comm = sortby == by_visit_comm_detail || sortby == by_visit_comm_via ? true : false;
 
 		for (int j = 0; j < pos; j++)
 		{
@@ -448,6 +546,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 
 			ware_t const& ware = wlist[j];
 			bool is_class_cargo = ware.get_index() == goods_manager_t::INDEX_PAS || ware.get_index() == goods_manager_t::INDEX_MAIL ? true : false;
+			bool is_visit_comm_cargo = ware.get_index() == goods_manager_t::INDEX_PAS ? true : false;
 			//if(ware.get_class() != accommodation && accommodation != all_classes)
 			//{
 			//	continue;
@@ -460,7 +559,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				last_ware_catg = (ware.get_catg() != 0) ? ware.get_catg() : -1;
 				// First, if we are dealing with passengers and mail, we might need to know how many i total we have on board
 				total_pass_mail = 0;
-				if (sorting_by_wealth && (ware.get_index() == goods_manager_t::INDEX_PAS || ware.get_index() == goods_manager_t::INDEX_MAIL))
+				if ((sorting_by_wealth && (ware.get_index() == goods_manager_t::INDEX_PAS || ware.get_index() == goods_manager_t::INDEX_MAIL)) || (sorting_by_visit_comm && is_visit_comm_cargo))
 				{
 					for (int i = j; i < pos; i++) {
 						ware_t const& sumware = wlist[i];
@@ -478,6 +577,11 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				new_section = true;
 				last_ware_class = ware.get_class();
 			}
+			if (sorting_by_visit_comm && last_ware_commuter != ware.is_commuting_trip)
+			{
+				new_section = true;
+				last_ware_commuter = ware.is_commuting_trip;
+			}
 
 			if (new_section)
 			{
@@ -493,7 +597,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 							break;	// next category reached ...
 						}
 					}
-					if (!sorting_by_wealth || sumware.get_class() == last_ware_class)
+					if ((!sorting_by_wealth || sumware.get_class() == last_ware_class) && (!sorting_by_visit_comm || sumware.is_commuting_trip == last_ware_commuter))
 					{
 						sum += sumware.menge;
 					}
@@ -506,7 +610,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				// display all ware
 				if (full_list == NULL || full_list->get_count() == 0)
 				{
-					add_ware_heading(buf, sum, accommodation_capacity, &ware, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty);
+					add_ware_heading(buf, sum, accommodation_capacity, &ware, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty, last_ware_commuter);
 					total_pass_mail = 0;
 				}
 				else
@@ -515,9 +619,9 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 					bool heading_added = false;
 
 					// For the entries to show up properly with classes, we need to take some precautions
-					if (!total_pass_mail && sorting_by_wealth && is_class_cargo)
+					if (!total_pass_mail && ((sorting_by_wealth && is_class_cargo) || (sorting_by_visit_comm && is_visit_comm_cargo)))
 					{
-						add_ware_heading(buf, sum, 0, &ware, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty);
+						add_ware_heading(buf, sum, 0, &ware, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty, last_ware_commuter);
 						last_capacity = ware.menge;
 						heading_added = true;
 						total_pass_mail = 0;
@@ -530,7 +634,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 							last = current;
 							if (last_goods_index == current.get_index() || last_ware_catg == current.get_catg() /*|| last_ware_class == current.get_class()*/)
 							{
-								add_ware_heading(buf, sum, current.menge, &current, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty);
+								add_ware_heading(buf, sum, current.menge, &current, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty, last_ware_commuter);
 								last_capacity = current.menge;
 								heading_added = true;
 								total_pass_mail = 0;
@@ -538,7 +642,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 							}
 							else
 							{
-								add_ware_heading(buf, 0, current.menge, &current, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty);
+								add_ware_heading(buf, 0, current.menge, &current, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty, last_ware_commuter);
 								last_capacity = current.menge;
 								heading_added = true;
 								total_pass_mail = 0;
@@ -547,7 +651,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 					}
 					if (new_section && !heading_added)
 					{
-						add_ware_heading(buf, sum, last_capacity, &last, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty);
+						add_ware_heading(buf, sum, last_capacity, &last, what_doing, sorting_by_accommodation ? accommodation : last_ware_class, total_pass_mail, show_empty, last_ware_commuter);
 						total_pass_mail = 0;
 					}
 				}
@@ -560,7 +664,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 			char g_class_untranslated[32] = "\0";
 			char g_class_text[32] = "\0";
 			char g_class_alone[32] = "\0";
-			if (!sorting_by_wealth)
+			if (!sorting_by_wealth && is_class_cargo)
 			{
 				if (ware.is_passenger())
 				{
@@ -572,11 +676,21 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				}
 				sprintf(g_class_text, "; %s", translator::translate(g_class_untranslated));
 				sprintf(g_class_alone, " (%s)", translator::translate(g_class_untranslated));
-
+			}
+			char trip_type_untranslated[32] = "\0";
+			char trip_type[32] = "\0";
+			char trip_type_start[32] = "\0";
+			char trip_type_alone[32] = "\0";
+			if (!sorting_by_visit_comm && is_visit_comm_cargo)
+			{
+				sprintf(trip_type_untranslated, ware.is_commuting_trip ? "commuting" : "visiting");
+				sprintf(trip_type, "; %s", translator::translate(trip_type_untranslated));
+				sprintf(trip_type_start, "%s", translator::translate(trip_type_untranslated));
+				sprintf(trip_type_alone, " (%s)", translator::translate(trip_type_untranslated));
 			}
 			// detail amount
 			goods_desc_t const& desc = *ware.get_desc();
-			buf.printf("   %u%s %s %c ", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()), ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
+			buf.printf("   %u%s %s %c ", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()), ">>>>><>>>>>>>"[sortby]); // one ">" per sort mode..
 
 			{
 			/*	const sint64 current_time = welt->get_ticks();
@@ -593,7 +707,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 			}
 
 			 // the target name is not correct for the via sort
-			if (sortby != by_via_sum && sortby != by_origin_amount && sortby != by_wealth_via && sortby != by_accommodation_via)
+			if (sortby != by_via_sum && sortby != by_origin_amount && sortby != by_wealth_via && sortby != by_accommodation_via &&  sortby != by_accommodation_via)
 			{
 				koord zielpos = ware.get_zielpos();
 				const grund_t* gr = welt->lookup_kartenboden(zielpos);
@@ -609,17 +723,17 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				}
 				const stadt_t* city = welt->get_city(zielpos);
 
-				if (ware.is_passenger() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail))
+				if (ware.is_passenger() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail || sortby == by_visit_comm_detail))
 				{
-					const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
+					//const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
 
 					if (city)
 					{
-						buf.printf("%s <%i, %i> (%s; %s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name(), trip_type, g_class_text);
+						buf.printf("%s <%i, %i> (%s%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name(), trip_type, g_class_text);
 					}
 					else
 					{
-						buf.printf("%s <%i, %i> (%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, trip_type, g_class_text);
+						buf.printf("%s <%i, %i> (%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, trip_type_start, g_class_text);
 					}
 				}
 				else if (ware.is_mail() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail))
@@ -646,14 +760,14 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				}
 			}
 
-			if (sortby == by_name || sortby == by_destination_detail || sortby == by_amount || sortby == by_origin || (sortby == by_via_sum && via_halt == halt) || sortby == by_via || sortby == by_wealth_detail || (sortby == by_wealth_via && via_halt == halt) || sortby == by_accommodation_detail || (sortby == by_accommodation_via && via_halt == halt))
+			if (sortby == by_name || sortby == by_destination_detail || sortby == by_amount || sortby == by_origin || (sortby == by_via_sum && via_halt == halt) || sortby == by_via || sortby == by_wealth_detail || (sortby == by_wealth_via && via_halt == halt) || sortby == by_accommodation_detail || (sortby == by_accommodation_via && via_halt == halt) || sortby == by_visit_comm_detail || (sortby == by_visit_comm_via && via_halt == halt))
 			{
 				const char *destination_name = translator::translate("unknown");
 				if (halt.is_bound())
 				{
 					destination_name = halt->get_name();
 				}
-				if (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail)
+				if (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail || sortby == by_visit_comm_detail)
 				{
 					buf.printf(translator::translate(" via %s"), destination_name);
 				}
@@ -673,7 +787,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				buf.printf(origin_name);
 			}
 
-			if (via_halt != halt && (sortby == by_via || sortby == by_via_sum || sortby == by_wealth_via || sortby == by_accommodation_via))
+			if (via_halt != halt && (sortby == by_via || sortby == by_via_sum || sortby == by_wealth_via || sortby == by_accommodation_via || sortby == by_visit_comm_via))
 			{
 				const char *via_name = translator::translate("unknown");
 				if (via_halt.is_bound())
@@ -691,9 +805,9 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				}
 				if (ware.is_passenger())
 				{
-					const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
+					//const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
 
-					buf.printf(translator::translate(" from %s (%s%s)"), origin_name, trip_type, g_class_text); // With class entries
+					buf.printf(translator::translate(" from %s (%s%s)"), origin_name, trip_type_start, g_class_text); // With class entries
 				}
 				else if (ware.is_mail())
 				{
@@ -708,13 +822,13 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 	// Is there any empty accommodation in the convoy?
 	else if (accommodation_capacity > 0)
 	{
-		add_ware_heading(buf, 0, accommodation_capacity, accommodation_ware, what_doing, accommodation, 0, show_empty);
+		add_ware_heading(buf, 0, accommodation_capacity, accommodation_ware, what_doing, accommodation, 0, show_empty, 0);
 	}
 
 	// still entires left?
 	for (; full_i != full_end; ++full_i) {
 		ware_t const& g = *full_i;
-		add_ware_heading(buf, 0, g.menge, &g, what_doing, g.get_class(), 0, show_empty);
+		add_ware_heading(buf, 0, g.menge, &g, what_doing, g.get_class(), 0, show_empty, 0);
 	}
 
 
