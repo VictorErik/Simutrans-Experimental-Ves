@@ -110,8 +110,7 @@ static const bool cost_type_money[BUTTON_COUNT] =
  *					6 = destination (detail)
  * @author prissi - amended by jamespetts (origins)
  */
-const char *convoi_info_t::sort_text[SORT_MODES] = 
-{
+const char *convoi_info_t::sort_text[SORT_MODES] = {
 	"Zielort",
 	"via",
 	"via Menge",
@@ -127,6 +126,21 @@ const char *convoi_info_t::sort_text[SORT_MODES] =
 	"accommodation (via)"
 };
 
+const char *convoi_info_t::sort_text_tooltips[SORT_MODES] = {
+	"sort_good_by_the_name_of_the_destination",
+	"sort_good_by_the_name_of_its_next_intermediate_stop_detailed_view",
+	"sort_good_by_the_biggest_amount_to_its_next_intermediate_stop",
+	"sort_good_by_the_biggest_amount",
+	"display_the_origin_of_the_good_detailed_view",
+	"display_the_origin_of_the_good",
+	"sort_good_by_its_destination_detailed_view",
+	"sort_passengers_and_mail_by_their_classes_detailed_view",
+	"sort_passengers_and_mail_by_their_classes_and_then_by_their_intermediate_stop",
+	"sort_passengers_by_their_trip_type_detailed_view",
+	"sort_passengers_by_their_trip_type_and_then_by_their_intermediate_stop",
+	"sort_passengers_and_mail_by_in_which_accommodation_they_are_traveling_detailed_view",
+	"sort_passengers_and_mail_by_in_which_accommodation_they_are_traveling_and_then_by_their_intermediate_stop"
+};
 
 convoi_info_t::convoi_info_t(convoihandle_t cnv)
 :	gui_frame_t( cnv->get_name(), cnv->get_owner() ),
@@ -228,9 +242,10 @@ convoi_info_t::convoi_info_t(convoihandle_t cnv)
 
 	add_component(&chart);
 
+	sprintf(sort_label_tooltip, "%s: %s", translator::translate(sort_text[env_t::default_sortmode]), translator::translate(sort_text_tooltips[env_t::default_sortmode]));
+	sort_label.set_tooltip(sort_label_tooltip);
 	add_component(&sort_label);
-
-
+	
 	freight_sort_selector.clear_elements();
 	for (int i = 0; i < SORT_MODES; i++)
 	{
@@ -243,6 +258,7 @@ convoi_info_t::convoi_info_t(convoihandle_t cnv)
 	freight_sort_selector.set_max_size(scr_size(D_BUTTON_WIDTH * 2, LINESPACE * 5 + 2 + 16));
 	freight_sort_selector.add_listener(this);
 	add_component(&freight_sort_selector);
+
 
 	toggler.init(button_t::roundbox_state, "Chart", dummy, D_BUTTON_SIZE);
 	toggler.set_tooltip("Show/hide statistics");
@@ -337,6 +353,8 @@ void convoi_info_t::draw(scr_coord pos, scr_size size)
 			}
 		}
 #endif
+		sprintf(sort_label_tooltip, "%s: %s", translator::translate(sort_text[env_t::default_sortmode]), translator::translate(sort_text_tooltips[env_t::default_sortmode]));
+		sort_label.set_tooltip(sort_label_tooltip);
 
 		// Bernd Gabriel, 01.07.2009: show some colored texts and indicator
 		input.set_color(cnv->has_obsolete_vehicles() ? COL_DARK_BLUE : SYSCOL_TEXT);

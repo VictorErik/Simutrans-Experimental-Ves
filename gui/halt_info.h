@@ -31,8 +31,26 @@
 
 class halt_info_t : public gui_frame_t, private action_listener_t
 {
+public:
+	enum sort_mode_t {
+		by_destination = 0,
+		by_via = 1,
+		by_amount_via = 2,
+		by_amount = 3,
+		by_origin = 4,
+		by_origin_sum = 5,
+		by_destination_detil = 6,
+		by_class_detail = 7,
+		by_class_via = 8,
+		by_visit_comm_detail = 9,
+		by_visit_comm_via = 10,
+		SORT_MODES = 11
+	};
 private:
 
+	static const char *sort_text[SORT_MODES];
+	static const char *sort_text_tooltips[SORT_MODES];
+	char sort_label_tooltip[255];
 	/**
 	* Buffer for freight info text string.
 	* @author Hj. Malthaner
@@ -85,20 +103,8 @@ private:
 
 	void show_hide_departures( bool show );
 
+
 public:
-	enum sort_mode_t { 
-		by_destination = 0, 
-		by_via = 1, 
-		by_amount_via = 2, 
-		by_amount = 3, 
-		by_origin = 4, 
-		by_origin_sum = 5, 
-		by_destination_detil = 6, 
-		by_class_detail = 7, 
-		by_class_via = 8, 
-		by_visit_comm_detail = 9,
-		by_visit_comm_via = 10,
-		SORT_MODES = 11 };
 
 	halt_info_t(halthandle_t halt);
 

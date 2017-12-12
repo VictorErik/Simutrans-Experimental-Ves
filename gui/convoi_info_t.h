@@ -119,6 +119,8 @@ private:
 	//static bool route_search_in_progress;
 
 	static const char *sort_text[SORT_MODES];
+	static const char *sort_text_tooltips[SORT_MODES];
+	char sort_label_tooltip[255];
 
 	void show_hide_statistics( bool show );
 
