@@ -268,7 +268,7 @@ void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 
 	if (buf.len() > 0) {
 		buf.append("\n");
 	}
-	if (((is_class_cargo && sorting_by_wealth) || (is_visit_comm_cargo && sorting_by_visit_comm))&& max > 0)
+	if (((is_class_cargo && sorting_by_wealth) || (is_visit_comm_cargo && sorting_by_visit_comm)) && max > 0)
 	{// When sorting by wealth, there would be no maximum capacity per "wealth" entry, therefore we need to show one extra entry with maximum capacity for the pass or mail.
 		if (total_pass_mail > 0 || sum == 0)
 		{// This is apperently the first entry of either pass or mail, and therefore needs the maximum freight indicator.
@@ -309,7 +309,7 @@ void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 
 		sprintf(class_entry, "(%s) ", translator::translate(class_name));
 	}
 	// Ensure consistent spacing
-	if (((sorting_by_wealth && sum>0) || (sorting_by_visit_comm && sum>0)) || !sorting_by_wealth || !sorting_by_visit_comm || !is_class_cargo)
+	if (((sorting_by_wealth && sum>0) || (sorting_by_visit_comm && sum>0)) || (!sorting_by_wealth && !sorting_by_visit_comm) || !is_class_cargo)
 	{// Ensure that, if we sort by wealth, we only show this section below if there actually is something to show, alternatively if this is not a freight type with classes at all.
 		if (ware->get_index() == goods_manager_t::INDEX_PAS)
 		{
@@ -681,7 +681,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 			char trip_type[32] = "\0";
 			char trip_type_start[32] = "\0";
 			char trip_type_alone[32] = "\0";
-			if (!sorting_by_visit_comm && is_visit_comm_cargo)
+			//if (!sorting_by_visit_comm && is_visit_comm_cargo)
 			{
 				sprintf(trip_type_untranslated, ware.is_commuting_trip ? "commuting" : "visiting");
 				sprintf(trip_type, "; %s", translator::translate(trip_type_untranslated));
