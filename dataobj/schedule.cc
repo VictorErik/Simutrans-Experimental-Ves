@@ -806,7 +806,7 @@ uint16 schedule_t::get_next_free_unique_id() const
 			break;
 		}
 
-		if (entries[i].unique_entry_id > next_free_unique_id)
+		if (entries[i].unique_entry_id >= next_free_unique_id)
 		{
 			next_free_unique_id = entries[i].unique_entry_id + 1;
 		}
