@@ -848,7 +848,14 @@ DBG_MESSAGE("schedule_gui_t::action_triggered()","comp=%p combo=%p",comp,&line_s
 	{
 		if(!schedule->empty())
 		{
-			schedule->entries[schedule->get_current_stop()].wait_for_time = bt_wait_for_time.pressed;
+			if (bt_wait_for_time.pressed)
+			{
+				schedule->entries[schedule->get_current_stop()].set_flag(schedule_entry_t::wait_for_time);
+			}
+			else
+			{
+				schedule->entries[schedule->get_current_stop()].clear_flag(schedule_entry_t::wait_for_time);
+			}
 			update_selection();
 		}
 	}

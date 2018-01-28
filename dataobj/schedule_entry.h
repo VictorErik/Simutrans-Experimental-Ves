@@ -12,13 +12,30 @@ struct schedule_entry_t
 public:
 	schedule_entry_t() {}
 
-	schedule_entry_t(koord3d const& pos, uint16 const minimum_loading, sint8 const waiting_time_shift, sint16 spacing_shift, sint8 reverse, bool wait_for_time) :
+	schedule_entry_t(koord3d const& pos, 
+		uint16 const minimum_loading, 
+		sint8 const waiting_time_shift, 
+		sint16 spacing_shift, 
+		sint8 reverse, 
+		uint16 flags, 
+		uint16 unique_entry_id, 
+		uint16 condition_bitfield, 
+		uint16 target_id_condition_trigger, 
+		uint16 target_id_couple, 
+		uint16 target_id_uncouple, 
+		uint16 target_unique_entry_uncouple) :
 		pos(pos),
 		minimum_loading(minimum_loading),
 		waiting_time_shift(waiting_time_shift),
 		spacing_shift(spacing_shift),
 		reverse(reverse),
-		wait_for_time(wait_for_time)
+		flags(flags),
+		unique_entry_id(unique_entry_id),
+		condition_bitfield(condition_bitfield),
+		target_id_condition_trigger(target_id_condition_trigger),
+		target_id_couple(target_id_couple),
+		target_id_uncouple(target_id_uncouple),
+		target_unique_entry_uncouple(target_unique_entry_uncouple)
 	{}
 
 	/**
@@ -29,7 +46,7 @@ public:
 
 	enum schedule_entry_flag
 	{
-		wait_for_time_X					= (1u << 0),
+		wait_for_time					= (1u << 0),
 		lay_over						= (1u << 1),
 		ignore_choose					= (1u << 2),
 		force_range_stop				= (1u << 3),
@@ -128,14 +145,6 @@ public:
 	 * @author: jamespetts
 	 */
 	sint8 reverse;
-	
-	/**
-	 * Whether a convoy must wait for a 
-	 * time slot at this entry.
-	 * DEPRECATED ONCE THE FLAGS ARE PUT INTO SERVICE
-	 * @author: jamespetts
-	 */
-	bool wait_for_time;
 
 	bool is_flag_set(schedule_entry_flag flag) const { return flag & flags; }
 

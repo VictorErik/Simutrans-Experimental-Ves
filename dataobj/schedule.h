@@ -80,6 +80,8 @@ private:
 		}
 	}
 
+	uint16 get_next_free_unique_id() const;
+
 public:
 	/**
 	 * set the current stop of the schedule (schedule)
@@ -153,22 +155,23 @@ public:
 	halthandle_t get_prev_halt( player_t *player ) const;
 
 	/**
-	 * fügt eine koordinate an stelle current_stop in den Fahrplan ein
-	 * all folgenden Koordinaten verschieben sich dadurch
-	 */
+	* Inserts a coordinate at current_stop into the schedule.
+	*/
 	bool insert(const grund_t* gr, uint16 minimum_loading = 0, uint8 waiting_time_shift = 0, sint16 spacing_shift = 0, bool wait_for_time = false, bool show_failure = false);
+
 	/**
-	 * hängt eine koordinate an den schedule an
-	 */
+	* Appends a coordinate to the schedule.
+	*/
 	bool append(const grund_t* gr, uint16 minimum_loading = 0, uint8 waiting_time_shift = 0, sint16 spacing_shift = 0, bool wait_for_time = false);
 
-	// cleanup a schedule, removes double entries
+	/**
+	* Cleanup a schedule, removes double entries.
+	*/
 	void cleanup();
 
 	/**
-	 * entfern entries[current_stop] aus dem schedule
-	 * all folgenden Koordinaten verschieben sich dadurch
-	 */
+	* Remove current_stop entry from the schedule.
+	*/
 	bool remove();
 
 	void rdwr(loadsave_t *file);

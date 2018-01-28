@@ -23,7 +23,7 @@
 
 #include "../tpl/slist_tpl.h"
 
-schedule_entry_t schedule_t::dummy_entry(koord3d::invalid, 0, 0, 0, -1, false);
+schedule_entry_t schedule_t::dummy_entry(koord3d::invalid, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0);
 
 schedule_t::schedule_t(loadsave_t* const file)
 {
@@ -146,8 +146,21 @@ bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 		return false;
 	}
 
+	// TODO: Provide an interface to set these
+	uint16 flags = 0;
+	uint16 condition_bitfield = 0;
+	uint16 target_id_condition_trigger = 0;
+	uint16 target_id_couple = 0;
+	uint16 target_id_uncouple = 0;
+	uint16 target_unique_entry_uncouple = 0;
+
+	if (wait_for_time)
+	{
+		flags |= schedule_entry_t::wait_for_time;
+	}
+
 	if(  is_stop_allowed(gr)  ) {
-		entries.insert_at(current_stop, schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, wait_for_time));
+		entries.insert_at(current_stop, schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, flags, get_next_free_unique_id(), condition_bitfield, target_id_condition_trigger, target_id_couple, target_id_uncouple, target_unique_entry_uncouple));
 		current_stop ++;
 		make_current_stop_valid();
 		return true;
@@ -184,8 +197,21 @@ bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 		minimum_loading = 0;
 	}
 
+	// TODO: Provide an interface to set these
+	uint16 flags = 0;
+	uint16 condition_bitfield = 0;
+	uint16 target_id_condition_trigger = 0;
+	uint16 target_id_couple = 0;
+	uint16 target_id_uncouple = 0;
+	uint16 target_unique_entry_uncouple = 0;
+
+	if (wait_for_time)
+	{
+		flags |= schedule_entry_t::wait_for_time;
+	}
+
 	if(is_stop_allowed(gr)) {
-		entries.append(schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, wait_for_time), 4);
+		entries.append(schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, flags, get_next_free_unique_id(), condition_bitfield, target_id_condition_trigger, target_id_couple, target_id_uncouple, target_unique_entry_uncouple), 4);
 		return true;
 	}
 	else {
@@ -232,7 +258,7 @@ void schedule_t::cleanup()
 			lastpos = entries[i].pos;
 		}
 
-		if(i > 0 && entries[i].wait_for_time)
+		if(i > 0 && entries[i].is_flag_set(schedule_entry_t::wait_for_time))
 		{
 			// "minimum_loading" (wait for load) and wait_for_time are not compatible.
 			entries[i].minimum_loading = 0;
@@ -290,7 +316,7 @@ void schedule_t::rdwr(loadsave_t *file)
 			uint32 dummy;
 			pos.rdwr(file);
 			file->rdwr_long(dummy);
-			entries.append(schedule_entry_t(pos, (uint8)dummy, 0, 0, true, false));
+			entries.append(schedule_entry_t(pos, (uint8)dummy, 0, 0, 0, 0, get_next_free_unique_id(), 0, 0, 0, 0, 0));
 		}
 	}
 	else {
@@ -316,9 +342,9 @@ void schedule_t::rdwr(loadsave_t *file)
 			else
 			{
 				// Previous versions had minimum_loading as a uint8. 
-				uint8 old_ladegrad = (uint8)entries[i].minimum_loading;
-				file->rdwr_byte(old_ladegrad);
-				entries[i].minimum_loading = (uint16)old_ladegrad;
+				uint8 old_minimum_loading = (uint8)entries[i].minimum_loading;
+				file->rdwr_byte(old_minimum_loading);
+				entries[i].minimum_loading = (uint16)old_minimum_loading;
 
 			}
 			if(file->get_version()>=99018) {
@@ -345,17 +371,52 @@ void schedule_t::rdwr(loadsave_t *file)
 #ifdef SPECIAL_RESCUE_12 // For testers who want to load games saved with earlier unreleased versions.
 				if(file->get_extended_version() >= 12 && file->is_saving())
 #else
-				if(file->get_extended_version() >= 12)
+				if (file->get_extended_version() < 14)
 #endif
 				{
-					file->rdwr_bool(entries[i].wait_for_time);
-				}
-				else if(file->is_loading())
-				{
-					entries[i].wait_for_time = entries[i].minimum_loading > 100 && spacing;
+					if (file->get_extended_version() >= 12)
+					{
+						// In older versions, there was a single wait_for_time boolean value,
+						// rather than a bitfield of flags
+
+						bool old_wait_for_time = entries[i].is_flag_set(schedule_entry_t::wait_for_time);
+
+						file->rdwr_bool(old_wait_for_time);
+
+						if (old_wait_for_time)
+						{
+							entries[i].set_flag(schedule_entry_t::wait_for_time);
+						}
+						else
+						{
+							entries[i].clear_flag(schedule_entry_t::wait_for_time);
+						}
+					}
+					else if (file->is_loading())
+					{
+						if (entries[i].minimum_loading > 100 && spacing)
+						{
+							entries[i].set_flag(schedule_entry_t::wait_for_time);
+						}
+						else
+						{
+							entries[i].clear_flag(schedule_entry_t::wait_for_time);
+						}
+					}
 				}
 			}
-			if(entries[i].wait_for_time)
+			else // Newer version (>14) with bitfield and new data
+			{
+				file->rdwr_short(entries[i].flags);
+				file->rdwr_short(entries[i].unique_entry_id);
+				file->rdwr_short(entries[i].condition_bitfield);
+				file->rdwr_short(entries[i].target_id_condition_trigger);
+				file->rdwr_short(entries[i].target_id_couple);
+				file->rdwr_short(entries[i].target_id_uncouple);
+				file->rdwr_short(entries[i].target_unique_entry_uncouple);
+			}
+
+			if(entries[i].is_flag_set(schedule_entry_t::wait_for_time))
 			{
 				// "minimum_loading" (wait for load) and wait_for_time are not compatible.
 				// Resolve this in games saved before this fix was implemented
@@ -382,8 +443,6 @@ void schedule_t::rdwr(loadsave_t *file)
 	{
 		file->rdwr_bool(same_spacing_shift);
 	}
-
-
 }
 
 
@@ -436,7 +495,13 @@ bool schedule_t::matches(karte_t *welt, const schedule_t *schedule)
 			&& schedule->entries[(uint16)f2].minimum_loading == entries[(uint16)f1].minimum_loading 
 			&& schedule->entries[(uint8)f2].waiting_time_shift == entries[(uint8)f1].waiting_time_shift 
 			&& schedule->entries[(uint8)f2].spacing_shift == entries[(uint8)f1].spacing_shift
-			&& schedule->entries[(uint8)f2].wait_for_time == entries[(uint8)f1].wait_for_time
+			&& schedule->entries[(uint16)f2].flags == entries[(uint16)f1].flags
+			&& schedule->entries[(uint16)f2].unique_entry_id == entries[(uint16)f1].unique_entry_id
+			&& schedule->entries[(uint16)f2].condition_bitfield == entries[(uint16)f1].condition_bitfield
+			&& schedule->entries[(uint16)f2].target_id_condition_trigger == entries[(uint16)f1].target_id_condition_trigger
+			&& schedule->entries[(uint16)f2].target_id_couple == entries[(uint16)f1].target_id_couple
+			&& schedule->entries[(uint16)f2].target_id_uncouple == entries[(uint16)f1].target_id_uncouple
+			&& schedule->entries[(uint16)f2].target_unique_entry_uncouple == entries[(uint16)f1].target_unique_entry_uncouple
 		  ) {
 			// minimum_loading/waiting ignored: identical
 			f1++;
@@ -599,7 +664,7 @@ void schedule_t::sprintf_schedule( cbuffer_t &buf ) const
 	buf.append( "|" );
 	FOR(minivec_tpl<schedule_entry_t>, const& i, entries) 
 	{
-		buf.printf( "%s,%i,%i,%i,%i,%i|", i.pos.get_str(), i.minimum_loading, (int)i.waiting_time_shift, (int)i.spacing_shift, (int)i.reverse, (int)i.wait_for_time );
+		buf.printf( "%s,%i,%i,%i,%i,%i,,%i,%i,%i,%i,%i,%i|", i.pos.get_str(), i.minimum_loading, (int)i.waiting_time_shift, (int)i.spacing_shift, (int)i.reverse, (int)i.flags, (int)i.unique_entry_id, (int)i.condition_bitfield, (int)i.target_id_condition_trigger, (int)i.target_id_couple, (int)i.target_id_uncouple, (int)i.target_unique_entry_uncouple);
 	}
 }
 
@@ -656,26 +721,27 @@ bool schedule_t::sscanf_schedule( const char *ptr )
 		return false;
 	}
 	p++;
+	const uint32 number_of_data_per_entry = 12 + 2; // +2 is necessary as a koord3d takes 3 values
 	// now scan the entries
 	while(  *p>0  ) {
-		sint16 values[8];
-		for(  sint8 i=0;  i<8;  i++  ) {
+		sint16 values[number_of_data_per_entry];
+		for(  sint8 i=0;  i<number_of_data_per_entry;  i++  ) {
 			values[i] = atoi( p );
 			while(  *p  &&  (*p!=','  &&  *p!='|')  ) {
 				p++;
 			}
-			if(  i<7  &&  *p!=','  ) {
+			if(  i<number_of_data_per_entry - 1  &&  *p!=','  ) {
 				dbg->error( "schedule_t::sscanf_schedule()","incomplete string!" );
 				return false;
 			}
-			if(  i==7  &&  *p!='|'  ) {
+			if(  i==number_of_data_per_entry - 1  &&  *p!='|'  ) {
 				dbg->error( "schedule_t::sscanf_schedule()","incomplete entry termination!" );
 				return false;
 			}
 			p++;
 		}
 		// ok, now we have a complete entry
-		entries.append(schedule_entry_t(koord3d(values[0], values[1], values[2]), values[3], values[4], values[5], values[6], (bool)values[7]));
+		entries.append(schedule_entry_t(koord3d(values[0], values[1], values[2]), values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13]));
 	}
 	return true;
 }
@@ -727,4 +793,42 @@ uint32 times_history_data_t::get_average_seconds() const {
 	}
 	if (count == 0) return 0;
 	return total / count;
+}
+
+uint16 schedule_t::get_next_free_unique_id() const
+{
+	uint16 next_free_unique_id = 0;
+	bool reached_limit = false;
+
+	for (uint8 i = 0; i < entries.get_count(); i++)
+	{
+		reached_limit = entries[i].unique_entry_id == 65535;
+
+		if (reached_limit)
+		{
+			// https://www.youtube.com/watch?v=9D-QD_HIfjA
+			break;
+		}
+
+		if (entries[i].unique_entry_id > next_free_unique_id)
+		{
+			next_free_unique_id = entries[i].unique_entry_id + 1;
+		}
+	}
+
+	if (reached_limit)
+	{
+		next_free_unique_id = 0;
+		// Search again, this time for any free entry.
+		for (uint8 i = 0; i < entries.get_count(); i++)
+		{
+			if (entries[i].unique_entry_id)
+			{
+				next_free_unique_id ++;
+				i = 0; // Restart the search for every clash
+			}
+		}
+	}
+
+	return next_free_unique_id;
 }
