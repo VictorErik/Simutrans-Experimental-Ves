@@ -561,11 +561,14 @@ bool depot_t::start_convoi(convoihandle_t cnv, bool local_execution)
 		return false;
 	}
 
-	if (cnv.is_bound() && cnv->get_schedule() && !cnv->get_schedule()->empty()) {
+	if (cnv.is_bound() && cnv->get_schedule() && !cnv->get_schedule()->empty()) 
+	{
 		// if next schedule entry is this depot => advance to next entry
-		const koord3d& cur_pos = cnv->get_schedule()->get_current_eintrag().pos;
-		if (cur_pos == get_pos()) {
+		koord3d cur_pos = cnv->get_schedule()->get_current_eintrag().pos;
+		if (cur_pos == get_pos()) 
+		{
 			cnv->get_schedule()->advance();
+			cur_pos = cnv->get_schedule()->get_current_eintrag().pos;
 		}
 
 		bool convoy_unpowered = cnv->get_sum_power() == 0 || cnv->calc_max_speed(cnv->get_weight_summary()) == 0;

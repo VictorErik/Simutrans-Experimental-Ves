@@ -3098,6 +3098,15 @@ schedule_t *convoi_t::create_schedule()
 
 		if (v != NULL) {
 			schedule = v->generate_new_schedule();
+			if (!welt->get_settings().get_simplified_maintenance())
+			{
+				const grund_t* gr = welt->lookup(get_pos());
+				const depot_t* this_depot = gr->get_depot();
+				if (this_depot)
+				{
+					schedule->append(gr, 0, 0, 0, false);
+				}
+			}
 			schedule->finish_editing();
 		}
 	}
@@ -5921,7 +5930,6 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 	bool can_go = false;
 	
 	can_go = loading_level >= loading_limit && (now >= go_on_ticks || !wait_for_time);
-	//can_go = can_go || (now >= go_on_ticks_waiting && !wait_for_time); // This is pre-14 August 2016 code
 	can_go = can_go || (now >= go_on_ticks && !wait_for_time);
 	can_go = can_go || running_late; 
 	can_go = can_go || no_load;

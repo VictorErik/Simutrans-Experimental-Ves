@@ -8515,7 +8515,7 @@ bool tool_change_depot_t::init( player_t *player )
 	// ok now do our stuff
 	switch(  tool  ) {
 		case 'l': { // create line schedule window
-			linehandle_t selected_line = depot->get_owner()->simlinemgmt.create_line(depot->get_line_type(),depot->get_owner());
+			linehandle_t selected_line = depot->get_owner()->simlinemgmt.create_line(depot->get_line_type(), depot->get_owner());
 			// no need to check schedule for scenario conditions, as schedule is only copied
 			selected_line->get_schedule()->sscanf_schedule( p );
 
@@ -8523,6 +8523,11 @@ bool tool_change_depot_t::init( player_t *player )
 			if(cnv.is_bound())
 			{
 				selected_line->set_livery_scheme_index(cnv->get_livery_scheme_index());
+				if (!welt->get_settings().get_simplified_maintenance())
+				{
+					const grund_t* gr_depot = welt->lookup(depot->get_pos()); 
+					selected_line->get_schedule()->append(gr_depot, 0, 0, 0, false); 
+				}
 			}
 			if(  is_local_execution()  ) {
 				if(  welt->get_active_player()==player  &&  depot_frame  ) {
