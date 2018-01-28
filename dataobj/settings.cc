@@ -530,6 +530,8 @@ settings_t::settings_t() :
 	max_comfort_preference_percentage = 500;
 
 	rural_industries_no_staff_shortage = true;
+
+	simplified_maintenance = false;
 }
 
 void settings_t::set_default_climates()
@@ -1710,6 +1712,15 @@ void settings_t::rdwr(loadsave_t *file)
 		{
 			rural_industries_no_staff_shortage = true;
 		}
+
+		if (file->get_extended_version() >= 14)
+		{
+			file->rdwr_bool(simplified_maintenance);
+		}
+		else if(file->is_loading())
+		{
+			simplified_maintenance = true;
+		}
 	}
 
 #ifdef DEBUG_SIMRAND_CALLS
@@ -2574,6 +2585,8 @@ void settings_t::parse_simuconf(tabfile_t& simuconf, sint16& disp_width, sint16&
 	max_comfort_preference_percentage = contents.get_int("max_comfort_preference_percentage", max_comfort_preference_percentage);
 
 	rural_industries_no_staff_shortage = contents.get_int("rural_industries_no_staff_shortage", rural_industries_no_staff_shortage); 
+
+	simplified_maintenance = contents.get_int("simplified_maintenance", simplified_maintenance);
 
 	// OK, this is a bit complex.  We are at risk of loading the same livery schemes repeatedly, which
 	// gives duplicate livery schemes and utter confusion.
