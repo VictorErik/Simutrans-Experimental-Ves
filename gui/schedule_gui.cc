@@ -470,6 +470,15 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 	bt_mirror.add_listener(this);
 	add_component(&bt_mirror);
 
+	ypos += D_BUTTON_HEIGHT;
+
+	// Ignore choose sign/signal
+	bt_ignore_choose.init(button_t::square_automatic, "Ignore choose", scr_coord(BUTTON3_X, ypos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	bt_ignore_choose.set_tooltip("If this is set, choose signals will be ignored while this convoy is heading to this destination.");
+	bt_ignore_choose.pressed = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::ignore_choose);
+	bt_ignore_choose.add_listener(this);
+	add_component(&bt_ignore_choose);
+
 	ypos += LINESPACE;
 
 	ypos += D_BUTTON_HEIGHT;
@@ -617,6 +626,7 @@ void schedule_gui_t::update_selection()
 		schedule->set_current_stop( min(schedule->get_count()-1,schedule->get_current_stop()) );
 		const uint8 current_stop = schedule->get_current_stop();
 		bt_wait_for_time.pressed = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time);
+		bt_ignore_choose.pressed = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::ignore_choose);
 		if(  haltestelle_t::get_halt(schedule->entries[current_stop].pos, player).is_bound()  ) {
 			if(!schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time))
 			{
@@ -855,6 +865,21 @@ DBG_MESSAGE("schedule_gui_t::action_triggered()","comp=%p combo=%p",comp,&line_s
 			else
 			{
 				schedule->entries[schedule->get_current_stop()].clear_flag(schedule_entry_t::wait_for_time);
+			}
+			update_selection();
+		}
+	}
+	else if (comp == &bt_ignore_choose)
+	{
+		if (!schedule->empty())
+		{
+			if (bt_ignore_choose.pressed)
+			{
+				schedule->entries[schedule->get_current_stop()].set_flag(schedule_entry_t::ignore_choose);
+			}
+			else
+			{
+				schedule->entries[schedule->get_current_stop()].clear_flag(schedule_entry_t::ignore_choose);
 			}
 			update_selection();
 		}
