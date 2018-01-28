@@ -3104,7 +3104,7 @@ schedule_t *convoi_t::create_schedule()
 				const depot_t* this_depot = gr->get_depot();
 				if (this_depot)
 				{
-					schedule->append(gr, 0, 0, 0, false);
+					schedule->append(gr, 0, 0, 0, schedule_entry_t::conditional_skip);
 				}
 			}
 			schedule->finish_editing();
@@ -3129,7 +3129,6 @@ bool convoi_t::can_go_alte_direction()
 
 	// going backwards? then recalculate all
 	ribi_t::ribi neue_direction_rwr = ribi_t::backward(front()->calc_direction(route.front().get_2d(), route.at(min(2, route.get_count() - 1)).get_2d()));
-//	DBG_MESSAGE("convoi_t::go_alte_direction()","neu=%i,rwr_neu=%i,alt=%i",neue_direction_rwr,ribi_t::backward(neue_direction_rwr),alte_direction);
 	if(neue_direction_rwr&alte_direction) {
 		set_akt_speed(8);
 		return false;

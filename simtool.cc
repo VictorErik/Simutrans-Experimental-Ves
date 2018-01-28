@@ -8526,7 +8526,7 @@ bool tool_change_depot_t::init( player_t *player )
 				if (!welt->get_settings().get_simplified_maintenance())
 				{
 					const grund_t* gr_depot = welt->lookup(depot->get_pos()); 
-					selected_line->get_schedule()->append(gr_depot, 0, 0, 0, false); 
+					selected_line->get_schedule()->append(gr_depot, 0, 0, 0, schedule_entry_t::conditional_skip);
 				}
 			}
 			if(  is_local_execution()  ) {
