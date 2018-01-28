@@ -122,7 +122,7 @@ halthandle_t schedule_t::get_prev_halt( player_t *player ) const
 }
 
 
-bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, bool wait_for_time, bool show_failure)
+bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, uint16 flags, uint16 condition_bitfield, uint16 target_id_condition_trigger, uint16 target_id_couple, uint16 target_id_uncouple, uint16 target_unique_entry_uncouple, bool show_failure)
 {
 	// stored in minivec, so we have to avoid adding too many
 	if(entries.get_count() >= 254) 
@@ -134,7 +134,7 @@ bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 		return false;
 	}
 
-	if(wait_for_time)
+	if (flags & schedule_entry_t::wait_for_time)
 	{
 		// "minimum_loading" (wait for load) and wait_for_time are not compatible.
 		minimum_loading = 0;
@@ -144,19 +144,6 @@ bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 	{
 		// This can occur in some cases if a depot is not found.
 		return false;
-	}
-
-	// TODO: Provide an interface to set these
-	uint16 flags = 0;
-	uint16 condition_bitfield = 0;
-	uint16 target_id_condition_trigger = 0;
-	uint16 target_id_couple = 0;
-	uint16 target_id_uncouple = 0;
-	uint16 target_unique_entry_uncouple = 0;
-
-	if (wait_for_time)
-	{
-		flags |= schedule_entry_t::wait_for_time;
 	}
 
 	if(  is_stop_allowed(gr)  ) {
@@ -177,7 +164,7 @@ bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 
 
 
-bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, bool wait_for_time)
+bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, uint16 flags, uint16 condition_bitfield, uint16 target_id_condition_trigger, uint16 target_id_couple, uint16 target_id_uncouple, uint16 target_unique_entry_uncouple)
 {
 	// stored in minivec, so we have to avoid adding too many
 	if(entries.get_count()>=254) {
@@ -191,23 +178,10 @@ bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 		return false;
 	}
 
-	if(wait_for_time)
+	if(flags & schedule_entry_t::wait_for_time)
 	{
 		// "minimum_loading" (wait for load) and wait_for_time are not compatible.
 		minimum_loading = 0;
-	}
-
-	// TODO: Provide an interface to set these
-	uint16 flags = 0;
-	uint16 condition_bitfield = 0;
-	uint16 target_id_condition_trigger = 0;
-	uint16 target_id_couple = 0;
-	uint16 target_id_uncouple = 0;
-	uint16 target_unique_entry_uncouple = 0;
-
-	if (wait_for_time)
-	{
-		flags |= schedule_entry_t::wait_for_time;
 	}
 
 	if(is_stop_allowed(gr)) {
