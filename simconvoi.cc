@@ -5781,7 +5781,7 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 	// any loading went on?
 	calc_loading();
 	loading_limit = schedule->get_current_eintrag().minimum_loading; // minimum_loading = max. load.
-	const bool wait_for_time = schedule->get_current_eintrag().wait_for_time; 
+	const bool wait_for_time = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time);
 	highest_axle_load = calc_highest_axle_load(); // Bernd Gabriel, Mar 10, 2010: was missing.
 	if(  old_last_stop_pos != front()->get_pos()  )
 	{

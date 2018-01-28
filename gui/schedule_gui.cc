@@ -170,7 +170,7 @@ void schedule_gui_t::gimme_short_stop_name(cbuffer_t& buf, player_t const* const
 	}
 
 	// Finally start to append the entry. Start with the most complicated...
-	if (entry.wait_for_time && entry.reverse == 1)
+	if (entry.is_flag_set(schedule_entry_t::wait_for_time) && entry.reverse == 1)
 	{
 		if (strlen(p) > (unsigned)max_chars - 8)
 		{
@@ -183,7 +183,7 @@ void schedule_gui_t::gimme_short_stop_name(cbuffer_t& buf, player_t const* const
 			buf.append(" [<<]");
 		}
 	}
-	else if (entry.wait_for_time)
+	else if (entry.is_flag_set(schedule_entry_t::wait_for_time))
 	{
 		if (strlen(p) > (unsigned)max_chars - 4)
 		{
@@ -458,7 +458,7 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 		// Wait for time
 		bt_wait_for_time.init(button_t::square_automatic, "Wait for time", scr_coord( BUTTON1_X, ypos+12 ), scr_size(D_BUTTON_WIDTH*2,D_BUTTON_HEIGHT) );
 		bt_wait_for_time.set_tooltip("If this is set, convoys will wait until one of the specified times before departing, the specified times being fractions of a month.");
-		bt_wait_for_time.pressed = schedule->get_current_eintrag().wait_for_time;
+		bt_wait_for_time.pressed = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time);
 		bt_wait_for_time.add_listener(this);
 		add_component(&bt_wait_for_time);
 	}
@@ -616,9 +616,9 @@ void schedule_gui_t::update_selection()
 	if(  !schedule->empty()  ) {
 		schedule->set_current_stop( min(schedule->get_count()-1,schedule->get_current_stop()) );
 		const uint8 current_stop = schedule->get_current_stop();
-		bt_wait_for_time.pressed = schedule->get_current_eintrag().wait_for_time;
+		bt_wait_for_time.pressed = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time);
 		if(  haltestelle_t::get_halt(schedule->entries[current_stop].pos, player).is_bound()  ) {
-			if(!schedule->get_current_eintrag().wait_for_time)
+			if(!schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time))
 			{
 				lb_load.set_color( SYSCOL_TEXT );
 				numimp_load.enable();
@@ -631,7 +631,7 @@ void schedule_gui_t::update_selection()
 				numimp_spacing.set_value(1);
 			}
 			
-			if(  schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].wait_for_time ) {
+			if(  schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].is_flag_set(schedule_entry_t::wait_for_time)) {
 				bt_wait_prev.enable();
 				lb_wait.set_color( SYSCOL_TEXT );
 				lb_spacing.set_color( SYSCOL_TEXT );
@@ -650,7 +650,7 @@ void schedule_gui_t::update_selection()
 				lb_waitlevel_as_clock.set_color( SYSCOL_TEXT_HIGHLIGHT );
 				bt_wait_next.enable();
 			}
-			if(  (schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].wait_for_time) &&  schedule->entries[current_stop].waiting_time_shift>0  ) {
+			if(  (schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].is_flag_set(schedule_entry_t::wait_for_time)) &&  schedule->entries[current_stop].waiting_time_shift>0  ) {
 				sprintf( str_parts_month, "1/%d",  1<<(16-schedule->entries[current_stop].waiting_time_shift) );
 				sint64 ticks_waiting = welt->ticks_per_world_month >> (16-schedule->get_current_eintrag().waiting_time_shift);
 				welt->sprintf_ticks(str_parts_month_as_clock, sizeof(str_parts_month_as_clock), ticks_waiting + 1);
