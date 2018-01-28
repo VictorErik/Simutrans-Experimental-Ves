@@ -881,11 +881,7 @@ void signal_t::calc_image()
 
 void signal_t::rdwr_signal(loadsave_t *file)
 {
-#ifdef SPECIAL_RESCUE_12_5
-	if(file->get_extended_version() >= 12 && file->is_saving())
-#else
 	if(file->get_extended_version() >= 12)
-#endif
 	{
 		signalbox.rdwr(file);
 
@@ -896,15 +892,8 @@ void signal_t::rdwr_signal(loadsave_t *file)
 		bool ignore_choose_full = ignore_choose;
 		file->rdwr_bool(ignore_choose_full);
 		ignore_choose = ignore_choose_full; 
-#ifdef SPECIAL_RESCUE_12_6
-		if(file->is_saving())
-		{
-#endif
 		file->rdwr_bool(no_junctions_to_next_signal);
 		file->rdwr_longlong(train_last_passed); 
-#ifdef SPECIAL_RESCUE_12_6
-		}
-#endif
 	}
 
 	if(no_junctions_to_next_signal && desc && (desc->get_working_method() == time_interval || desc->get_working_method() == time_interval_with_telegraph) && (state == caution || state == caution_no_choose || state == danger))

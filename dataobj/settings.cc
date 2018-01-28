@@ -1232,20 +1232,9 @@ void settings_t::rdwr(loadsave_t *file)
 
 				if(file->get_extended_version() >= 12)
 				{
-#ifdef SPECIAL_RESCUE_12_4
-					if(file->is_saving())
-					{
-#endif
 						file->rdwr_long(corner_force_divider[waytype_t(wt)]);
-#ifdef SPECIAL_RESCUE_12_4
-					}
-#endif
 				}
-#ifdef SPECIAL_RESCUE_12_4
-				if(file->is_loading())
-#else
 				else
-#endif
 				{
 					// Former cornering settings. Were numerous.
 					sint32 dummy = 0;
@@ -1272,11 +1261,7 @@ void settings_t::rdwr(loadsave_t *file)
 					file->rdwr_byte(curve_friction_factor[waytype_t(wt)]);
 				}
 			}
-#ifdef SPECIAL_RESCUE_12_4
-			if(file->get_extended_version() >= 12 && file->is_saving())
-#else
 			if(file->get_extended_version() >= 12)
-#endif
 			{
 				file->rdwr_long(tilting_min_radius_effect);
 			}
@@ -1649,16 +1634,6 @@ void settings_t::rdwr(loadsave_t *file)
 			file->rdwr_short(parallel_ways_forge_cost_percentage_air);
 
 			file->rdwr_long(max_diversion_tiles);
-#ifdef SPECIAL_RESCUE_12_3
-			if(file->is_saving())
-			{
-				file->rdwr_long(way_degradation_fraction);
-				file->rdwr_long(way_wear_power_factor_road_type);
-				file->rdwr_long(way_wear_power_factor_rail_type);
-				file->rdwr_short(standard_axle_load);
-				file->rdwr_long(citycar_way_wear_factor);
-			}
-#else
 			file->rdwr_long(way_degradation_fraction);
 			file->rdwr_long(way_wear_power_factor_road_type);
 			file->rdwr_long(way_wear_power_factor_rail_type);
@@ -1675,7 +1650,6 @@ void settings_t::rdwr(loadsave_t *file)
 				file->rdwr_long(max_speed_drive_by_sight_kmh); 
 				max_speed_drive_by_sight = kmh_to_speed(max_speed_drive_by_sight_kmh);
 			}
-#endif
 			if(file->get_extended_revision() >= 5 || file->get_extended_version() >= 13)
 			{
 				file->rdwr_short(global_force_factor_percent);

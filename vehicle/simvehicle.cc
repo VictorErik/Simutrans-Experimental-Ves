@@ -8489,11 +8489,7 @@ void rail_vehicle_t::rdwr_from_convoi(loadsave_t* file)
 	xml_tag_t t( file, "rail_vehicle_t" );
 	
 	vehicle_t::rdwr_from_convoi(file);
-#ifdef SPECIAL_RESCUE_12_5
-	if(file->get_extended_version() >= 12 && file->is_saving())
-#else
 	if(file->get_extended_version() >= 12)
-#endif
 	{
 		uint8 wm = (uint8)working_method;
 		file->rdwr_byte(wm);

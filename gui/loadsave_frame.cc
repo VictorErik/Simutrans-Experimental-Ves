@@ -128,7 +128,6 @@ loadsave_frame_t::loadsave_frame_t(bool do_load) : savegame_frame_t(".sve", fals
 	}
 
 	// load cached entries
-#ifndef SPECIAL_RESCUE_12_6
 	if (cached_info.empty()) {
 		loadsave_t file;
 		const char *cache_file = SAVE_PATH_X "_cached_exp.xml";
@@ -158,7 +157,6 @@ loadsave_frame_t::loadsave_frame_t(bool do_load) : savegame_frame_t(".sve", fals
 			file.close();
 		}
 	}
-#endif
 }
 
 

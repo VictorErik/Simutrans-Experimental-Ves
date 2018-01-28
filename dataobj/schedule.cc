@@ -368,11 +368,7 @@ void schedule_t::rdwr(loadsave_t *file)
 				{
 					entries[i].reverse = -1;
 				}
-#ifdef SPECIAL_RESCUE_12 // For testers who want to load games saved with earlier unreleased versions.
-				if(file->get_extended_version() >= 12 && file->is_saving())
-#else
 				if (file->get_extended_version() < 14)
-#endif
 				{
 					if (file->get_extended_version() >= 12)
 					{

@@ -4813,20 +4813,12 @@ void convoi_t::rdwr(loadsave_t *file)
 		file->rdwr_short( next_reservation_index );
 	}
 
-#ifdef SPECIAL_RESCUE_12_5
-	if(file->get_extended_version() >= 12 && file->is_saving()) 
-#else
 	if(file->get_extended_version() >= 12)
-#endif
 	{
 		file->rdwr_bool(needs_full_route_flush);
 	}
 
-#ifdef SPECIAL_RESCUE_12_6
-	if(file->get_extended_version() >= 12 && file->is_saving()) 
-#else
 	if(file->get_extended_version() >= 12)
-#endif
 	{
 		bool ic = is_choosing;
 		file->rdwr_bool(ic);
