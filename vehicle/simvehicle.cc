@@ -3825,7 +3825,7 @@ bool road_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 								return false;
 							}
 							// Check whether if we reached a choose point
-							else if (rs->get_desc()->is_choose_sign()) 
+							else if (rs->get_desc()->is_choose_sign() && !cnv->get_schedule()->get_current_eintrag().is_flag_set(schedule_entry_t::ignore_choose))
 							{
 								// route position after road sign
 								const koord pos_next_next = r.at(route_index + 1u).get_2d();
@@ -4374,6 +4374,13 @@ bool rail_vehicle_t::is_target(const grund_t *gr,const grund_t *prev_gr)
 sint32 rail_vehicle_t::activate_choose_signal(const uint16 start_block, uint16 &next_signal_index, uint32 brake_steps, uint16 modified_sighting_distance_tiles, route_t* route, sint32 modified_route_index)
 {
 	const schedule_t* schedule = cnv->get_schedule(); 	
+
+	if (schedule->get_current_eintrag().is_flag_set(schedule_entry_t::ignore_choose))
+	{
+		// The schedule dictates that we must ignore this choose signal
+		return 0;
+	}
+
 	grund_t const* target = welt->lookup(schedule->get_current_eintrag().pos); 
 
 	if(target == NULL) 
@@ -4383,8 +4390,6 @@ sint32 rail_vehicle_t::activate_choose_signal(const uint16 start_block, uint16 &
 	}
 
 	bool choose_ok = true;
-
-	// TODO: Add option in the convoy's schedule to skip choose signals, and implement this here.
 
 	// check whether there is another choose signal or end_of_choose on the route
 	uint32 break_index = start_block + 1;
@@ -6381,7 +6386,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 	// or alternatively free that section reserved beyond the last signal to which reservation can take place
 	if(!success || !directional_reservation_succeeded || ((next_signal_index < INVALID_INDEX) && (next_signal_working_method == absolute_block || next_signal_working_method == token_block || next_signal_working_method == track_circuit_block || next_signal_working_method == cab_signalling || ((next_signal_working_method == time_interval || next_signal_working_method == time_interval_with_telegraph) && !next_signal_protects_no_junctions))))
 	{
-		const bool will_choose = last_choose_signal_index < INVALID_INDEX && !is_choosing && not_entirely_free;
+		const bool will_choose = last_choose_signal_index < INVALID_INDEX && !is_choosing && not_entirely_free && !cnv->get_schedule()->get_current_eintrag().is_flag_set(schedule_entry_t::ignore_choose);
 		// free reservation
 		uint16 curtailment_index;
 		bool do_not_increment_curtailment_index_directional = false;
