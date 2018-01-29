@@ -630,7 +630,7 @@ void schedule_list_gui_t::display(scr_coord pos)
 	if(icnv && spacing > 0)
 	{
 		// Check whether the spacing setting affects things.
-		sint64 spacing_ticks = welt->ticks_per_world_month / (sint64)spacing;
+		sint64 spacing_ticks = welt->ticks_per_world_month * 10u / (sint64)spacing; // *10 because spacing is now in 10ths
 		const uint32 spacing_time = welt->ticks_to_tenths_of_minutes(spacing_ticks);
 		service_frequency = max(spacing_time, service_frequency);
 	}

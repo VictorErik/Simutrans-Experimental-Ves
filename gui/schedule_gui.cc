@@ -485,25 +485,24 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 
 	// Spacing
 	if ( !cnv.is_bound() ) {
-		lb_spacing.set_pos( scr_coord( 10, ypos+2 ) );
+		lb_spacing.set_pos(scr_coord(10, ypos+2 ));
 		add_component(&lb_spacing);
-		numimp_spacing.set_pos( scr_coord( BUTTON3_X, ypos+2 ) );
-		//numimp_spacing.set_width( 60 );
-		numimp_spacing.set_width_by_len(3);
-		numimp_spacing.set_value( schedule->get_spacing() );
-		numimp_spacing.set_limits( 0, 999 );
-		numimp_spacing.set_increment_mode( 1 );
+		numimp_spacing.set_pos(scr_coord(BUTTON3_X, ypos+2));
+		numimp_spacing.set_width_by_len(4);
+		numimp_spacing.set_value(schedule->get_spacing());
+		numimp_spacing.set_limits(0, 9999);
+		// TODO: Make it clearer to the player that this is set in increments of 10ths of a fraction of a month.
+		numimp_spacing.set_increment_mode(10);
 		numimp_spacing.add_listener(this);
 		add_component(&numimp_spacing);
 
 		// Spacing shift
 		int spacing_shift_mode = welt->get_settings().get_spacing_shift_mode();
 		if ( spacing_shift_mode > settings_t::SPACING_SHIFT_DISABLED) {
-			numimp_spacing_shift.set_pos( scr_coord( numimp_spacing.get_pos().x + numimp_spacing.get_size().w + D_H_SPACE, ypos+2 ) );
-			//numimp_spacing_shift.set_width( 60 );
-			numimp_spacing_shift.set_width_by_len(3);
-			numimp_spacing_shift.set_value( schedule->get_current_eintrag().spacing_shift  );
-			numimp_spacing_shift.set_limits( 0,welt->get_settings().get_spacing_shift_divisor() );
+			numimp_spacing_shift.set_pos(scr_coord( numimp_spacing.get_pos().x + numimp_spacing.get_size().w + D_H_SPACE, ypos+2 ));
+			numimp_spacing_shift.set_width_by_len(4);
+			numimp_spacing_shift.set_value(schedule->get_current_eintrag().spacing_shift);
+			numimp_spacing_shift.set_limits(0, welt->get_settings().get_spacing_shift_divisor());
 			numimp_spacing_shift.set_increment_mode( 1 ); 
 			numimp_spacing_shift.add_listener(this);
 			add_component(&numimp_spacing_shift);
@@ -637,8 +636,8 @@ void schedule_gui_t::update_selection()
 			else if(!schedule->get_spacing())
 			{
 				// Cannot have wait for time without some spacing. 
-				schedule->set_spacing(1);
-				numimp_spacing.set_value(1);
+				schedule->set_spacing(10);
+				numimp_spacing.set_value(10);
 			}
 			
 			if(  schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].is_flag_set(schedule_entry_t::wait_for_time)) {
@@ -652,9 +651,9 @@ void schedule_gui_t::update_selection()
 					lb_spacing_shift.set_color( SYSCOL_TEXT );
 					lb_spacing_as_clock.set_color( SYSCOL_TEXT );
 					lb_spacing_shift_as_clock.set_color( SYSCOL_TEXT );
-					welt->sprintf_ticks(str_spacing_as_clock, sizeof(str_spacing_as_clock), welt->ticks_per_world_month/schedule->get_spacing());
+					welt->sprintf_ticks(str_spacing_as_clock, sizeof(str_spacing_as_clock), (welt->ticks_per_world_month * 10u) / schedule->get_spacing());
 					welt->sprintf_ticks(str_spacing_shift_as_clock, sizeof(str_spacing_as_clock),
-							schedule->entries[current_stop].spacing_shift * welt->ticks_per_world_month/welt->get_settings().get_spacing_shift_divisor()+1
+							schedule->entries[current_stop].spacing_shift * welt->ticks_per_world_month / welt->get_settings().get_spacing_shift_divisor() + 1
 							);
 				}
 				lb_waitlevel_as_clock.set_color( SYSCOL_TEXT_HIGHLIGHT );
@@ -662,7 +661,7 @@ void schedule_gui_t::update_selection()
 			}
 			if(  (schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].is_flag_set(schedule_entry_t::wait_for_time)) &&  schedule->entries[current_stop].waiting_time_shift>0  ) {
 				sprintf( str_parts_month, "1/%d",  1<<(16-schedule->entries[current_stop].waiting_time_shift) );
-				sint64 ticks_waiting = welt->ticks_per_world_month >> (16-schedule->get_current_eintrag().waiting_time_shift);
+				sint64 ticks_waiting = welt->ticks_per_world_month >> (16-schedule->get_current_eintrag().waiting_time_shift); 
 				welt->sprintf_ticks(str_parts_month_as_clock, sizeof(str_parts_month_as_clock), ticks_waiting + 1);
 			}
 			else {

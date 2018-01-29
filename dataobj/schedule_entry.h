@@ -131,7 +131,6 @@ public:
 	*/
 	uint16 target_unique_entry_uncouple;
 
-
 	/**
 	* maximum waiting time in 1/2^(16-n) parts of a month
 	* (only active if minimum_loading!=0)

@@ -226,6 +226,13 @@ private:
 	bool mirrored;
 	bool same_spacing_shift;
 	uint8 current_stop;
+
+	/*
+	* The number of convoys per month, now in 10ths:
+	* g.g., if this number is 10, there will be 1
+	* departure per game month (10/10 = 1) per
+	* timed stop in this schedule. 
+	*/
 	sint16 spacing;
 
 	static schedule_entry_t dummy_entry;
