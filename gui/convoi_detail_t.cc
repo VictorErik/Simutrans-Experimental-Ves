@@ -440,10 +440,24 @@ void gui_vehicleinfo_t::draw(scr_coord offset)
 
 			// age
 			buf.clear();
+			const sint32 month = v->get_purchase_time();
+			buf.printf("%s %s %i", translator::translate("Manufactured:"), translator::get_month_name(month % 12), month / 12);
+
+			display_proportional_clip(pos.x + w + offset.x, pos.y + offset.y + total_height + extra_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
+			extra_y += LINESPACE;
+
+			// Time since last overhaul
+			buf.clear();
+			const sint32 month_overhaul = v->get_overhaul_time();
+			if (month_overhaul)
 			{
-				const sint32 month = v->get_purchase_time();
-				buf.printf("%s %s %i", translator::translate("Manufactured:"), translator::get_month_name(month % 12), month / 12);
+				buf.printf("%s %s %i", translator::translate("Last overhauled:"), translator::get_month_name(month_overhaul % 12), month_overhaul / 12);
 			}
+			else
+			{
+				buf.printf("%s ", translator::translate("Never overhauled")); 
+			}
+
 			display_proportional_clip(pos.x + w + offset.x, pos.y + offset.y + total_height + extra_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 			extra_y += LINESPACE;
 

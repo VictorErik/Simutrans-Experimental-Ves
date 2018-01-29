@@ -1336,6 +1336,7 @@ vehicle_t::vehicle_t(koord3d pos, const vehicle_desc_t* desc, player_t* player) 
 
 	set_owner( player );
 	purchase_time = welt->get_current_month();
+	overhaul_time = 0;
 	cnv = NULL;
 	speed_limit = speed_unlimited();
 
@@ -3025,6 +3026,11 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 				total_freight += c.menge;
 			}
 		}
+	}
+
+	if (file->get_extended_version() >= 14)
+	{
+		file->rdwr_long(overhaul_time);
 	}
 
 	delete[]fracht_count;

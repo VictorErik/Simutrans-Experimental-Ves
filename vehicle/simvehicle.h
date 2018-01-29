@@ -264,6 +264,12 @@ private:
 	*/
 	sint32 purchase_time;
 
+	/**
+	* Date of last overhaul in months
+	* @author: jamespetts
+	*/
+	sint32 overhaul_time;
+
 	/* For the more physical acceleration model friction is introduced
 	* frictionforce = gamma*speed*weight
 	* since the total weight is needed a lot of times, we save it
@@ -402,6 +408,8 @@ public:
 	virtual ribi_t::ribi get_ribi(const grund_t* gr) const { return gr->get_weg_ribi(get_waytype()); }
 
 	sint32 get_purchase_time() const {return purchase_time;}
+
+	sint32 get_overhaul_time() const { return overhaul_time; }
 
 	void get_smoke(bool yesno ) { smoke = yesno;}
 
