@@ -3105,6 +3105,7 @@ schedule_t *convoi_t::create_schedule()
 				if (this_depot)
 				{
 					schedule->append(gr, 0, 0, 0, schedule_entry_t::conditional_skip);
+					schedule->set_reverse(1, 0);
 				}
 			}
 			schedule->finish_editing();
