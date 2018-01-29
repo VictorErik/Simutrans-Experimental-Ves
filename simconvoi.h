@@ -736,6 +736,12 @@ private:
 	minivec_tpl<uint8> passenger_classes_carried;
 	minivec_tpl<uint8> mail_classes_carried;
 
+	/*
+	* A bitfield of up to 16 conditions that have been
+	* triggered for this convoy.
+	*/
+	uint16 conditions_bitfield;
+
 public: 
 	/**
 	 * Some precalculated often used infos about a tile of the convoy's route.
@@ -1548,6 +1554,14 @@ public:
 			return NULL;
 		}
 	} 
+
+	bool check_triggered_condition(uint16 value) const { return value & conditions_bitfield; }
+
+	void set_triggered_condition(uint16 value) { conditions_bitfield |= value; }
+
+	void clear_triggered_condition(uint16 value) { conditions_bitfield &= ~value; }
+
+	void reset_all_triggers() { conditions_bitfield = 0; }
 };
 
 #endif

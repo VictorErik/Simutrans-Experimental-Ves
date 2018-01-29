@@ -146,6 +146,8 @@ void convoi_t::reset()
 		rolling_average[i] = 0;
 		rolling_average_count[i] = 0;
 	}
+
+	conditions_bitfield = 0;
 }
 
 void convoi_t::init(player_t *player)
@@ -4845,6 +4847,11 @@ void convoi_t::rdwr(loadsave_t *file)
 			uint8 has_reserved = 0;
 			file->rdwr_byte(has_reserved);
 		}
+	}
+
+	if (file->get_extended_version() >= 14)
+	{
+		file->rdwr_short(conditions_bitfield);
 	}
 
 	// This must come *after* all the loading/saving.
