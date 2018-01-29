@@ -361,6 +361,11 @@ protected:
 	bool check_for_finish:1;		// true, if on the last tile
 	bool has_driven:1;
 
+	uint32 km_since_new;
+	uint32 km_since_last_overhaul;
+	uint32 km_since_last_maintenance;
+	uint32 km_since_last_refuel;
+
 	virtual void calc_image();
 
 	bool check_access(const weg_t* way) const;
@@ -374,7 +379,6 @@ public:
 
 	uint8 hop_count;
 
-//public:
 	// the coordinates, where the vehicle was loaded the last time
 	koord3d last_stop_pos;
 
@@ -407,8 +411,14 @@ public:
 	*/
 	virtual ribi_t::ribi get_ribi(const grund_t* gr) const { return gr->get_weg_ribi(get_waytype()); }
 
+	/*
+	* The date (months) when this vehicle was first purchased.
+	*/
 	sint32 get_purchase_time() const {return purchase_time;}
-
+	
+	/* 
+	* The date (months) when this vehicle was last overhauled.
+	*/
 	sint32 get_overhaul_time() const { return overhaul_time; }
 
 	void get_smoke(bool yesno ) { smoke = yesno;}
@@ -975,6 +985,8 @@ private:
 
 	sint16 altitude_level; // for AFHP
 	sint16 landing_distance; // for AFHP
+
+	uint32 number_of_takeoffs;
 
 	void calc_altitude_level(sint32 speed_limit_kmh){
 		altitude_level = max(5, speed_limit_kmh/33);

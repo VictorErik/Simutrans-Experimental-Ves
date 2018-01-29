@@ -1423,6 +1423,11 @@ vehicle_t::vehicle_t() :
 	number_of_classes = 0;
 	fracht = NULL;	
 	class_reassignments = NULL;
+
+	km_since_new = 0;
+	km_since_last_overhaul = 0;
+	km_since_last_maintenance = 0;
+	km_since_last_refuel = 0;
 }
 
 void vehicle_t::set_desc(const vehicle_desc_t* value)
@@ -3031,6 +3036,18 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 	if (file->get_extended_version() >= 14)
 	{
 		file->rdwr_long(overhaul_time);
+		
+		file->rdwr_long(km_since_new);
+		file->rdwr_long(km_since_last_overhaul);
+		file->rdwr_long(km_since_last_maintenance);
+		file->rdwr_long(km_since_last_refuel);
+	}
+	else
+	{
+		km_since_new = 0;
+		km_since_last_overhaul = 0;
+		km_since_last_maintenance = 0;
+		km_since_last_refuel = 0;
 	}
 
 	delete[]fracht_count;
@@ -8527,6 +8544,15 @@ void air_vehicle_t::rdwr_from_convoi(loadsave_t *file)
 	file->rdwr_long(search_for_stop);
 	file->rdwr_long(touchdown);
 	file->rdwr_long(takeoff);
+
+	if (file->get_extended_version() >= 14)
+	{
+		file->rdwr_long(number_of_takeoffs);
+	}
+	else
+	{
+		number_of_takeoffs = 0;
+	}
 }
 
 
