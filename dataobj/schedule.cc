@@ -373,7 +373,9 @@ void schedule_t::rdwr(loadsave_t *file)
 							entries[i].clear_flag(schedule_entry_t::wait_for_time);
 						}
 					}
-				}
+
+					entries[i].unique_entry_id = get_next_free_unique_id();
+				}	
 			}
 			else // Newer version (>14) with bitfield and new data
 			{
