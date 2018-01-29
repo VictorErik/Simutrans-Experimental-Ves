@@ -3065,6 +3065,7 @@ uint32 vehicle_t::calc_sale_value() const
 		value /= 1000;
 	}
 	// General depreciation
+	// TODO: Modify this to take into account overhauls
 	// after 20 years, it has only half value
 	// Multiply by .997**number of months
 	// Make sure to use OUR version of pow().
@@ -8607,6 +8608,7 @@ void air_vehicle_t::hop(grund_t* gr)
 			) {
 				state = flying;
 				play_sound();
+				number_of_takeoffs ++;
 				new_friction = 1;
 				block_reserver( takeoff, takeoff+100, false );
 				calc_altitude_level( desc->get_topspeed() );

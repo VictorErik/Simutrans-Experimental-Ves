@@ -478,6 +478,8 @@ public:
 
 	void set_direction_steps(sint16 value) { direction_steps = value; }
 
+	void step_km(uint32 km) { km_since_new += km; km_since_last_overhaul += km; km_since_last_maintenance += km; km_since_last_refuel += km; }
+
 #ifdef INLINE_OBJ_TYPE
 protected:
 	vehicle_t(typ type);

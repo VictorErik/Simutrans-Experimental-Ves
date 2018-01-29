@@ -894,7 +894,10 @@ void convoi_t::increment_odometer(uint32 steps)
 	bool must_add = false;
 	for(uint8 i= 0; i < vehicle_count; i++) 
 	{
-		const vehicle_t& v = *vehicle[i];
+		vehicle_t& v = *vehicle[i];
+
+		v.step_km(km);
+
 		if (v.get_pos() != pos)
 		{
 			if (must_add)
