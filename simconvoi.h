@@ -1557,9 +1557,9 @@ public:
 
 	bool check_triggered_condition(uint16 value) const { return value & conditions_bitfield; }
 
-	void set_triggered_condition(uint16 value) { conditions_bitfield |= value; }
+	void set_triggered_conditions(uint16 value) { conditions_bitfield |= value; }
 
-	void clear_triggered_condition(uint16 value) { conditions_bitfield &= ~value; }
+	void clear_triggered_conditions(uint16 value) { conditions_bitfield &= ~value; }
 
 	void reset_all_triggers() { conditions_bitfield = 0; }
 };
