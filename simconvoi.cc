@@ -2314,9 +2314,7 @@ void convoi_t::advance_schedule()
 	bool skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip); 
 
 	while(skip)
-	{
-		// TODO: Implement logic for general, non-depot conditional skip
-		
+	{		
 		// Is the destination a depot? If so, use the depot skip logic for maintenance.
 		const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);
 		if (gr && gr->get_depot())
@@ -2334,8 +2332,16 @@ void convoi_t::advance_schedule()
 		}
 		else
 		{
-			// TODO: Modify this when non-depot skip logic is implemented
-			skip = false;
+			// Is this convoy empty? If so, skip a non-depot stop.
+			if (get_loading_level() == 0)
+			{
+				advance_schedule_internal();
+				skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip);
+			}
+			else
+			{
+				skip = false;
+			}
 		}
 	}
 }
