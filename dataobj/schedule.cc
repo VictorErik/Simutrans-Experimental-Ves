@@ -321,7 +321,9 @@ void schedule_t::rdwr(loadsave_t *file)
 				entries[i].minimum_loading = (uint16)old_minimum_loading;
 
 			}
-			if(file->get_version()>=99018) {
+
+			if(file->get_version()>=99018)
+			{
 				file->rdwr_byte(entries[i].waiting_time_shift);
 
 				if(file->get_extended_version() >= 9 && file->get_version() >= 110006) 
@@ -374,18 +376,27 @@ void schedule_t::rdwr(loadsave_t *file)
 						}
 					}
 
-					entries[i].unique_entry_id = get_next_free_unique_id();
+					if (file->is_loading())
+					{
+						entries[i].unique_entry_id = get_next_free_unique_id();
+						entries[i].flags = 0;
+						entries[i].condition_bitfield = 0;
+						entries[i].target_id_condition_trigger = 0;
+						entries[i].target_id_couple = 0;
+						entries[i].target_id_uncouple = 0;
+						entries[i].target_unique_entry_uncouple = 0;
+					}
 				}	
-			}
-			else // Newer version (>14) with bitfield and new data
-			{
-				file->rdwr_short(entries[i].flags);
-				file->rdwr_short(entries[i].unique_entry_id);
-				file->rdwr_short(entries[i].condition_bitfield);
-				file->rdwr_short(entries[i].target_id_condition_trigger);
-				file->rdwr_short(entries[i].target_id_couple);
-				file->rdwr_short(entries[i].target_id_uncouple);
-				file->rdwr_short(entries[i].target_unique_entry_uncouple);
+				else // Newer version (>14) with bitfield and new data
+				{
+					file->rdwr_short(entries[i].flags);
+					file->rdwr_short(entries[i].unique_entry_id);
+					file->rdwr_short(entries[i].condition_bitfield);
+					file->rdwr_short(entries[i].target_id_condition_trigger);
+					file->rdwr_short(entries[i].target_id_couple);
+					file->rdwr_short(entries[i].target_id_uncouple);
+					file->rdwr_short(entries[i].target_unique_entry_uncouple);
+				}
 			}
 
 			if(entries[i].is_flag_set(schedule_entry_t::wait_for_time))
