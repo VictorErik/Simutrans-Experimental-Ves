@@ -110,7 +110,7 @@ void schedule_gui_t::gimme_stop_name(cbuffer_t & buf, const player_t *player, co
 			sprintf(modified_name, "%s", halt->get_name());
 		}
 
-		if(entry.wait_for_time)
+		if(entry.is_flag_set(schedule_entry_t::wait_for_time))
 		{
 			buf.printf("[*] ");
 		}
