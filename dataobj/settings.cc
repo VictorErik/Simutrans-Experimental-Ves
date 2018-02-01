@@ -450,6 +450,8 @@ settings_t::settings_t() :
 	max_small_city_size = 1000;
 	max_city_size = 5000;
 
+	power_revenue_factor_percentage=100;
+	
 	allow_making_public = true;
 
 	reroute_check_interval_steps = 8192;
@@ -1704,7 +1706,7 @@ void settings_t::rdwr(loadsave_t *file)
 			max_comfort_preference_percentage = 500;
 		}
 
-		if (file->get_extended_version() >= 13 && file->get_extended_revision() >= 3)
+		if ((file->get_extended_version() == 13 && file->get_extended_revision() >= 3) || file->get_extended_version() >= 14)
 		{
 			file->rdwr_bool(rural_industries_no_staff_shortage);
 		}
@@ -1713,14 +1715,19 @@ void settings_t::rdwr(loadsave_t *file)
 			rural_industries_no_staff_shortage = true;
 		}
 
+		if ((file->get_extended_version() == 13 && file->get_extended_revision() >= 4) || file->get_extended_version() >= 14)
+		{
+			file->rdwr_long(power_revenue_factor_percentage);
+		}
+
 		if (file->get_extended_version() >= 14)
 		{
 			file->rdwr_bool(simplified_maintenance);
 		}
-		else if(file->is_loading())
+		else if (file->is_loading())
 		{
 			simplified_maintenance = true;
-		}
+		}	
 	}
 
 #ifdef DEBUG_SIMRAND_CALLS
