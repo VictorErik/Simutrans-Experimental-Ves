@@ -699,6 +699,7 @@ private:
 	* @author yobbobandana
 	*/
 	void advance_schedule();
+	void advance_schedule_internal();
 
 	/**
 	 * Measure and record the times that
@@ -1562,6 +1563,9 @@ public:
 	void clear_triggered_conditions(uint16 value) { conditions_bitfield &= ~value; }
 
 	void reset_all_triggers() { conditions_bitfield = 0; }
+
+	bool is_maintenance_needed() const;
+	bool is_maintenance_urgently_needed() const;
 };
 
 #endif

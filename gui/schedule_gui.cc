@@ -635,7 +635,8 @@ void schedule_gui_t::update_selection()
 			}
 			else if(!schedule->get_spacing())
 			{
-				// Cannot have wait for time without some spacing. 
+				// Cannot have wait for time without some spacing.
+				// 12 because the spacing is in 12ths of a fraction of a month.
 				schedule->set_spacing(12);
 				numimp_spacing.set_value(12);
 			}

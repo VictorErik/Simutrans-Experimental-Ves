@@ -690,6 +690,12 @@ public:
 
 	virtual sint32 get_takeoff_route_index() const { return INVALID_INDEX; }
 	virtual sint32 get_touchdown_route_index() const { return INVALID_INDEX; }
+
+	// TODO: Implement proper logic for this. Aircraft need different logic to other vehicles, hence
+	// virtual. Query: do we need different logic for other vehicles, too? 
+	// This should always return true when is_maintenance_urgently_needed() would be true.
+	virtual bool is_maintenance_needed() const { return false; }
+	virtual bool is_maintenance_urgently_needed() const { return false; }
 };
 
 

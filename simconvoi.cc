@@ -2305,22 +2305,65 @@ end_loop:
 	}
 }
 
-void convoi_t::advance_schedule() {
-	if(schedule->get_current_stop() == 0) {
+void convoi_t::advance_schedule()
+{
+	advance_schedule_internal();
+	
+	// Is there a conditional skip order here? 
+	// If so, check whether the condition is satisfied and perform the skip.
+	bool skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip); 
+
+	while(skip)
+	{
+		// TODO: Implement logic for general, non-depot conditional skip
+		
+		// Is the destination a depot? If so, use the depot skip logic for maintenance.
+		const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);
+		if (gr && gr->get_depot())
+		{
+			if (!is_maintenance_needed())
+			{
+				// If no maintenance is required and this is a conditionally skipped depot, skip the depot call
+				advance_schedule_internal();
+				skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip);
+			}
+			else
+			{
+				skip = false;
+			}
+		}
+		else
+		{
+			// TODO: Modify this when non-depot skip logic is implemented
+			skip = false;
+		}
+	}
+}
+
+void convoi_t::advance_schedule_internal()
+{
+	if (schedule->get_current_stop() == 0)
+	{
 		arrival_to_first_stop.add_to_tail(welt->get_ticks());
 	}
 
-	// check if the convoi should switch direction
-	if(  schedule->is_mirrored() && schedule->get_current_stop()==schedule->get_count()-1  ) {
+	// Check whether we should switch direction
+	if (schedule->is_mirrored() && schedule->get_current_stop() == schedule->get_count() - 1)
+	{
 		reverse_schedule = true;
 	}
-	else if( schedule->is_mirrored() && schedule->get_current_stop()==0  ) {
+	else if (schedule->is_mirrored() && schedule->get_current_stop() == 0)
+	{
 		reverse_schedule = false;
 	}
-	// advance the schedule cursor
-	if (reverse_schedule) {
+
+	// advance the schedule position
+	if (reverse_schedule)
+	{
 		schedule->advance_reverse();
-	} else {
+	}
+	else
+	{
 		schedule->advance();
 	}
 }
@@ -6920,12 +6963,12 @@ DBG_MESSAGE("convoi_t::go_to_depot()","convoi state %i => cannot change schedule
 		}
 		else 
 		{
-			schedule_t* f = schedule->copy();
-			bool schedule_insertion_succeeded = f->insert(welt->lookup(depot_pos));
+			schedule_t* sch = schedule->copy();
+			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos));
 			// Insert will move the pointer past the inserted item; move back to it
-			f->advance_reverse();
+			sch->advance_reverse();
 			// We still have to call set_schedule
-			bool schedule_setting_succeeded = set_schedule(f);
+			bool schedule_setting_succeeded = set_schedule(sch);
 			transport_success = schedule_insertion_succeeded && schedule_setting_succeeded;
 		}
 	}
@@ -8023,5 +8066,31 @@ bool convoi_t::check_fresh_carries_class(uint8 catg, uint8 g_class) const
 		}
 	}
 
+	return false;
+}
+
+bool convoi_t::is_maintenance_needed() const
+{
+	for (const_iterator i = begin(); i != end(); ++i)
+	{
+		const vehicle_t &v = **i;
+		if (v.is_maintenance_needed())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool convoi_t::is_maintenance_urgently_needed() const
+{
+	for (const_iterator i = begin(); i != end(); ++i)
+	{
+		const vehicle_t &v = **i;
+		if (v.is_maintenance_urgently_needed())
+		{
+			return true;
+		}
+	}
 	return false;
 }
