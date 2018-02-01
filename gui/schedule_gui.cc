@@ -491,8 +491,8 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 		numimp_spacing.set_width_by_len(4);
 		numimp_spacing.set_value(schedule->get_spacing());
 		numimp_spacing.set_limits(0, 9999);
-		// TODO: Make it clearer to the player that this is set in increments of 10ths of a fraction of a month.
-		numimp_spacing.set_increment_mode(10);
+		// TODO: Make it clearer to the player that this is set in increments of 12ths of a fraction of a month.
+		numimp_spacing.set_increment_mode(12);
 		numimp_spacing.add_listener(this);
 		add_component(&numimp_spacing);
 
@@ -636,8 +636,8 @@ void schedule_gui_t::update_selection()
 			else if(!schedule->get_spacing())
 			{
 				// Cannot have wait for time without some spacing. 
-				schedule->set_spacing(10);
-				numimp_spacing.set_value(10);
+				schedule->set_spacing(12);
+				numimp_spacing.set_value(12);
 			}
 			
 			if(  schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].is_flag_set(schedule_entry_t::wait_for_time)) {
@@ -651,7 +651,7 @@ void schedule_gui_t::update_selection()
 					lb_spacing_shift.set_color( SYSCOL_TEXT );
 					lb_spacing_as_clock.set_color( SYSCOL_TEXT );
 					lb_spacing_shift_as_clock.set_color( SYSCOL_TEXT );
-					welt->sprintf_ticks(str_spacing_as_clock, sizeof(str_spacing_as_clock), (welt->ticks_per_world_month * 10u) / schedule->get_spacing());
+					welt->sprintf_ticks(str_spacing_as_clock, sizeof(str_spacing_as_clock), (welt->ticks_per_world_month * 12u) / schedule->get_spacing());
 					welt->sprintf_ticks(str_spacing_shift_as_clock, sizeof(str_spacing_as_clock),
 							schedule->entries[current_stop].spacing_shift * welt->ticks_per_world_month / welt->get_settings().get_spacing_shift_divisor() + 1
 							);

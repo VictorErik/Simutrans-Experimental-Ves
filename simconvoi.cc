@@ -5902,7 +5902,7 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 			if(line.is_bound() && schedule->get_spacing() && line->count_convoys())
 			{
 				// Departures/month
-				const sint64 spacing = (welt->ticks_per_world_month * 10u) / (sint64)schedule->get_spacing(); // *10 because the spacing setting is now in 10ths of a fraction of a month.
+				const sint64 spacing = (welt->ticks_per_world_month * 12u) / (sint64)schedule->get_spacing(); // *12 because the spacing setting is now in 12ths of a fraction of a month.
 				const sint64 spacing_shift = (sint64)schedule->get_current_eintrag().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
 				const sint64 wait_from_ticks = ((now + reversing_time - spacing_shift) / spacing) * spacing + spacing_shift; // remember, it is integer division
 				sint64 queue_pos = halt.is_bound() ? halt->get_queue_pos(self) : 1ll;
@@ -7583,7 +7583,7 @@ void convoi_t::clear_replace()
 				if((schedule->entries[schedule_entry].minimum_loading > 0 || schedule->entries[schedule_entry].wait_for_time) && schedule->get_spacing() > 0)
 				{				
 					// Add spacing time. 
-					const sint64 spacing = (welt->ticks_per_world_month * 10u) / (sint64)schedule->get_spacing(); // *10 because spacing is now in 10ths of a fraction of a month.
+					const sint64 spacing = (welt->ticks_per_world_month * 12u) / (sint64)schedule->get_spacing(); // *12 because spacing is now in 10ths of a fraction of a month.
 					const sint64 spacing_shift = (sint64)schedule->get_current_eintrag().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
 					const sint64 wait_from_ticks = ((eta - spacing_shift) / spacing) * spacing + spacing_shift; // remember, it is integer division
 					const sint64 spaced_departure = min(max_waiting_time, (wait_from_ticks + spacing)) - reverse_delay;

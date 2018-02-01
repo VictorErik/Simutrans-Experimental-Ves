@@ -409,11 +409,11 @@ void schedule_t::rdwr(loadsave_t *file)
 	if(file->get_extended_version() >= 9 && file->get_extended_version() < 14)
 	{
 		// Older versions stored the spacing as whole numbers, rather than tenths.
-		sint16 sp = spacing / 10;
+		sint16 sp = spacing / 12;
 		file->rdwr_short(sp);
 		if (file->is_loading())
 		{
-			sp = spacing * 10;
+			sp = spacing * 12;
 		}
 	}
 	if (file->get_extended_version() >= 14)
