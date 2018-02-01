@@ -3050,7 +3050,7 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		km_since_last_overhaul = 0;
 		km_since_last_maintenance = 0;
 		km_since_last_refuel = 0;
-		last_maintenance_time = 0ll;
+		last_maintenance_time = welt->get_ticks();
 	}
 
 	delete[]fracht_count;
