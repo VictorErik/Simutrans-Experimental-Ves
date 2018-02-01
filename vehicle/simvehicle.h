@@ -365,6 +365,7 @@ protected:
 	uint32 km_since_last_overhaul;
 	uint32 km_since_last_maintenance;
 	uint32 km_since_last_refuel;
+	sint64 last_maintenance_time;
 
 	virtual void calc_image();
 
