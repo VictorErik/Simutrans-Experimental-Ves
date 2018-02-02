@@ -494,7 +494,7 @@ void convoi_t::finish_rd()
 	}
 	else {
 		// restore next schedule target for non-stop waypoint handling
-		const koord3d ziel = schedule->get_current_eintrag().pos;
+		const koord3d ziel = schedule->get_current_entry().pos;
 		if(  is_waypoint(ziel)  ) {
 			fpl_target = ziel;
 		}
@@ -691,7 +691,7 @@ DBG_MESSAGE("convoi_t::finish_rd()","next_stop_index=%d", next_stop_index );
 		vehicle[i]->remove_stale_cargo();
 	}
 
-	loading_limit = schedule->get_current_eintrag().minimum_loading;
+	loading_limit = schedule->get_current_entry().minimum_loading;
 	if(state == LOADING)
 	{
 		laden();
@@ -1342,7 +1342,7 @@ bool convoi_t::prepare_for_routing()
 	if (vehicle_count > 0 && schedule)
 	{
 		koord3d start = front()->get_pos();
-		koord3d ziel = schedule->get_current_eintrag().pos;
+		koord3d ziel = schedule->get_current_entry().pos;
 		const koord3d original_ziel = ziel;
 
 		// Check whether the next stop is within range.
@@ -1356,7 +1356,7 @@ bool convoi_t::prepare_for_routing()
 			{
 				// The next stop is a waypoint - advance 
 				reverse_schedule ? schedule->advance_reverse() : schedule->advance();
-				ziel = schedule->get_current_eintrag().pos;
+				ziel = schedule->get_current_entry().pos;
 				count++;
 			}
 			uint16 distance;
@@ -1391,7 +1391,7 @@ bool convoi_t::prepare_for_routing()
 		{
 			// For some reason, the schedule has failed to advance. Advance it before calculating the route.
 			reverse_schedule ? schedule->advance_reverse() : schedule->advance();
-			ziel = schedule->get_current_eintrag().pos;
+			ziel = schedule->get_current_entry().pos;
 		}
 
 		// avoid stopping midhalt
@@ -1440,7 +1440,7 @@ bool convoi_t::prepare_for_routing()
 bool convoi_t::drive_to()
 {
 	koord3d start = front()->get_pos();
-	koord3d ziel = schedule->get_current_eintrag().pos;
+	koord3d ziel = schedule->get_current_entry().pos;
 	const koord3d original_ziel = ziel;
 
 	const bool check_onwards = front()->get_waytype() == road_wt || front()->get_waytype() == track_wt || front()->get_waytype() == tram_wt || front()->get_waytype() == narrowgauge_wt || front()->get_waytype() == maglev_wt || front()->get_waytype() == monorail_wt;
@@ -1541,7 +1541,7 @@ bool convoi_t::drive_to()
 				plane->get_event_index( plane_state, takeoff, search, landing );
 			}
 
-			ziel = schedule->get_current_eintrag().pos;
+			ziel = schedule->get_current_entry().pos;
 
 			// set next schedule target position if next is a waypoint
 			if(  is_waypoint(ziel)  ) {
@@ -1552,7 +1552,7 @@ bool convoi_t::drive_to()
 			while(  is_waypoint(ziel)  ) {
 				start = ziel;
 				schedule->advance();
-				ziel = schedule->get_current_eintrag().pos;
+				ziel = schedule->get_current_entry().pos;
 
 				if(  schedule->get_current_stop() == current_stop  ) {
 					// looped around without finding a halt => entire schedule is waypoints.
@@ -1988,12 +1988,12 @@ end_loop:
 					// The schedule window might be closed whilst this vehicle is still loading.
 					// Do not allow the player to cheat by sending the vehicle on its way before it has finished.
 					bool can_go = true;
-					const uint32 reversing_time = schedule->get_current_eintrag().reverse == 1 ? calc_reverse_delay() : 0;
+					const uint32 reversing_time = schedule->get_current_entry().reverse == 1 ? calc_reverse_delay() : 0;
 					can_go = can_go || welt->get_ticks() > go_on_ticks;
 					can_go = can_go && welt->get_ticks() > arrival_time + ((sint64)current_loading_time - (sint64)reversing_time);
 					can_go = can_go || no_load;
 
-					grund_t *gr = welt->lookup(schedule->get_current_eintrag().pos);
+					grund_t *gr = welt->lookup(schedule->get_current_entry().pos);
 					depot_t * this_depot = NULL;
 					bool go_to_depot = false;
 					if (gr)
@@ -2001,7 +2001,7 @@ end_loop:
 						this_depot = gr->get_depot();
 						if (this_depot && this_depot->is_suitable_for(front()))
 						{
-							if (schedule->get_current_eintrag().pos == get_pos())
+							if (schedule->get_current_entry().pos == get_pos())
 							{
 								// If it's a suitable depot, move into the depot
 								// This check must come before the station check, because for
@@ -2020,7 +2020,7 @@ end_loop:
 					}
 
 					halthandle_t h = haltestelle_t::get_halt(get_pos(), get_owner());
-					if (!go_to_depot && h.is_bound() && h == haltestelle_t::get_halt(schedule->get_current_eintrag().pos, get_owner()))
+					if (!go_to_depot && h.is_bound() && h == haltestelle_t::get_halt(schedule->get_current_entry().pos, get_owner()))
 					{
 						// We are at the station we are scheduled to be at
 						// (possibly a different platform)
@@ -2087,7 +2087,7 @@ end_loop:
 			else {
 				// check first, if we are already there:
 				assert(schedule->get_current_stop()<schedule->get_count());
-				if (v->get_pos() == schedule->get_current_eintrag().pos) {
+				if (v->get_pos() == schedule->get_current_entry().pos) {
 					advance_schedule();
 				}
 				// Calculate a route in the next threaded step.
@@ -2289,7 +2289,6 @@ end_loop:
 		case ROUTING_1:
 		case CAN_START:
 		case WAITING_FOR_CLEARANCE:
-			//wait_lock = 500;
 			// Bernd Gabriel: simutrans extended may have presets the wait_lock before. Don't overwrite it here, if it ought to wait longer.
 			wait_lock = max(wait_lock, 250);
 			break;
@@ -2311,19 +2310,19 @@ void convoi_t::advance_schedule()
 	
 	// Is there a conditional skip order here? 
 	// If so, check whether the condition is satisfied and perform the skip.
-	bool skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip); 
+	bool skip = schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_skip); 
 
 	while(skip)
 	{		
 		// Is the destination a depot? If so, use the depot skip logic for maintenance.
-		const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);
+		const grund_t* gr = welt->lookup(schedule->get_current_entry().pos);
 		if (gr && gr->get_depot())
 		{
 			if (!is_maintenance_needed())
 			{
 				// If no maintenance is required and this is a conditionally skipped depot, skip the depot call
 				advance_schedule_internal();
-				skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip);
+				skip = schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_skip);
 			}
 			else
 			{
@@ -2336,7 +2335,7 @@ void convoi_t::advance_schedule()
 			if (get_loading_level() == 0)
 			{
 				advance_schedule_internal();
-				skip = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::conditional_skip);
+				skip = schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_skip);
 			}
 			else
 			{
@@ -2489,7 +2488,7 @@ void convoi_t::new_month()
 	}
 	else if(state == OUT_OF_RANGE)
 	{
-		get_owner()->report_vehicle_problem(self, schedule->get_current_eintrag().pos);
+		get_owner()->report_vehicle_problem(self, schedule->get_current_entry().pos);
 	}
 	// check for traffic jam
 	if(state==WAITING_FOR_CLEARANCE) {
@@ -2573,7 +2572,7 @@ void convoi_t::enter_depot(depot_t *dep)
 
 	// Make this the new home depot...
 	// (Will be done again in convoi_arrived, but make sure to do it early in case of crashes)
-	home_depot=dep->get_pos();
+	home_depot = dep->get_pos();
 
 	// Hajo: remove vehicles from world data structure
 	for(unsigned i=0; i<vehicle_count; i++) {
@@ -2589,7 +2588,19 @@ void convoi_t::enter_depot(depot_t *dep)
 		}
 	}
 	last_signal_pos = koord3d::invalid;
-	dep->convoi_arrived(self, get_schedule());
+
+	bool depot_entry_erase = false;
+
+	schedule_t* sch = get_schedule();
+	if (sch && sch->get_current_entry().minimum_loading > 0)
+	{
+		// If the minimum_loading > 0, this has been added from a 
+		// "go to depot" command, and thus the depot entry should
+		// be removed on arriving at the depot.
+		depot_entry_erase = true;
+	}
+
+	dep->convoi_arrived(self, depot_entry_erase);
 
 	close_windows();
 
@@ -2719,7 +2730,7 @@ void convoi_t::ziel_erreicht()
 				}
 			}
 		}
-		else if(schedule->get_current_eintrag().pos == get_pos()) {
+		else if(schedule->get_current_entry().pos == get_pos()) {
 			// Neither depot nor station: waypoint
 			advance_schedule();
 			state = ROUTING_1;
@@ -5193,7 +5204,7 @@ void convoi_t::laden() //"load" (Babelfish)
 	// Calculate average speed and journey time
 	// @author: jamespetts
 	
-	halthandle_t halt = haltestelle_t::get_halt(schedule->get_current_eintrag().pos, owner);
+	halthandle_t halt = haltestelle_t::get_halt(schedule->get_current_entry().pos, owner);
 	halthandle_t this_halt = haltestelle_t::get_halt(get_pos(), owner);
 
 	if(!this_halt.is_bound())
@@ -5399,12 +5410,12 @@ void convoi_t::laden() //"load" (Babelfish)
 	if(halt.is_bound())
 	{
 		//const player_t* owner = halt->get_owner(); 
-		const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);
+		const grund_t* gr = welt->lookup(schedule->get_current_entry().pos);
 		const weg_t *w = gr ? gr->get_weg(schedule->get_waytype()) : NULL;
 		bool tram_stop_public = false;
 		if(schedule->get_waytype() == tram_wt)
 		{
-			const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);
+			const grund_t* gr = welt->lookup(schedule->get_current_entry().pos);
 			const weg_t *street = gr ? gr->get_weg(road_wt) : NULL;
 			if(street && (street->get_owner() == get_owner() || street->get_owner() == NULL || street->get_owner()->allows_access_to(get_owner()->get_player_nr())))
 			{
@@ -5843,8 +5854,8 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 
 	// any loading went on?
 	calc_loading();
-	loading_limit = schedule->get_current_eintrag().minimum_loading; // minimum_loading = max. load.
-	const bool wait_for_time = schedule->get_current_eintrag().is_flag_set(schedule_entry_t::wait_for_time);
+	loading_limit = schedule->get_current_entry().minimum_loading; // minimum_loading = max. load.
+	const bool wait_for_time = schedule->get_current_entry().is_flag_set(schedule_entry_t::wait_for_time);
 	highest_axle_load = calc_highest_axle_load(); // Bernd Gabriel, Mar 10, 2010: was missing.
 	if(  old_last_stop_pos != front()->get_pos()  )
 	{
@@ -5925,14 +5936,14 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 		go_on_ticks = WAIT_INFINITE;
 		arrival_time = now;
 	}
-	const uint32 reversing_time = schedule->get_current_eintrag().reverse > 0 ? calc_reverse_delay() : 0;
+	const uint32 reversing_time = schedule->get_current_entry().reverse > 0 ? calc_reverse_delay() : 0;
 	bool running_late = false;
 	sint64 go_on_ticks_waiting = WAIT_INFINITE;
 	const sint64 earliest_departure_time = arrival_time + ((sint64)current_loading_time - (sint64)reversing_time);
 	if(go_on_ticks == WAIT_INFINITE)
 	{
 		const sint64 departure_time = (arrival_time + (sint64)current_loading_time) - (sint64)reversing_time;
-		if(haltestelle_t::get_halt(get_pos(), get_owner()) != haltestelle_t::get_halt(schedule->get_current_eintrag().pos, get_owner()))
+		if(haltestelle_t::get_halt(get_pos(), get_owner()) != haltestelle_t::get_halt(schedule->get_current_entry().pos, get_owner()))
 		{
 			// Sometimes, for some reason, the loading method is entered with the wrong schedule entry. Make sure that this does not cause
 			// convoys to become stuck trying to get a full load at stops where this is not possible (freight consumers, etc.).
@@ -5952,16 +5963,16 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 			{
 				// Departures/month
 				const sint64 spacing = (welt->ticks_per_world_month * 12u) / (sint64)schedule->get_spacing(); // *12 because the spacing setting is now in 12ths of a fraction of a month.
-				const sint64 spacing_shift = (sint64)schedule->get_current_eintrag().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
+				const sint64 spacing_shift = (sint64)schedule->get_current_entry().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
 				const sint64 wait_from_ticks = ((now + reversing_time - spacing_shift) / spacing) * spacing + spacing_shift; // remember, it is integer division
 				sint64 queue_pos = halt.is_bound() ? halt->get_queue_pos(self) : 1ll;
 				go_on_ticks_spacing = (wait_from_ticks + spacing * queue_pos) - reversing_time;
 			}
 			
-			if(schedule->get_current_eintrag().waiting_time_shift > 0)
+			if(schedule->get_current_entry().waiting_time_shift > 0)
 			{
 				// Maximum wait time
-				go_on_ticks_waiting = now + (welt->ticks_per_world_month >> (16ll - (sint64)schedule->get_current_eintrag().waiting_time_shift)) - (sint64)reversing_time;
+				go_on_ticks_waiting = now + (welt->ticks_per_world_month >> (16ll - (sint64)schedule->get_current_entry().waiting_time_shift)) - (sint64)reversing_time;
 			}
 
 			if (schedule->get_spacing() && !line.is_bound())
@@ -6093,7 +6104,7 @@ void convoi_t::calc_loading()
 // return the current average speed
 uint32 convoi_t::get_average_kmh() 
 {
-	halthandle_t halt = haltestelle_t::get_halt(schedule->get_current_eintrag().pos, owner);
+	halthandle_t halt = haltestelle_t::get_halt(schedule->get_current_entry().pos, owner);
 	id_pair idp(last_stop_id, halt.get_id());
 	average_tpl<uint32>* avr = get_average_journey_times().access(idp);
 	return avr ? avr->get_average() : get_vehicle_summary().max_speed;
@@ -6366,21 +6377,22 @@ void convoi_t::check_pending_updates()
 		if(  schedule==NULL  ) {
 			schedule = create_schedule();
 		}
-		schedule_t* new_fpl = line_update_pending->get_schedule();
+		schedule_t* new_sch = line_update_pending->get_schedule();
 		uint8 current_stop = schedule->get_current_stop(); // save current position of schedule
 		bool is_same = false;
 		bool is_depot = false;
+		schedule_entry_t removed_depot_entry;
 		koord3d current = koord3d::invalid, depot = koord3d::invalid;
 
-		if (schedule->empty() || new_fpl->empty()) {
+		if (schedule->empty() || new_sch->empty()) {
 			// There was no entry or is no entry: go to the first stop
 			current_stop = 0;
 		}
 		else {
 			// something to check for ...
-			current = schedule->get_current_eintrag().pos;
+			current = schedule->get_current_entry().pos;
 
-			if(  current_stop<new_fpl->get_count() &&  current==new_fpl->entries[current_stop].pos  ) {
+			if(  current_stop<new_sch->get_count() &&  current==new_sch->entries[current_stop].pos  ) {
 				// next pos is the same => keep the convoi state
 				is_same = true;
 			}
@@ -6391,12 +6403,23 @@ void convoi_t::check_pending_updates()
 				if(is_depot) {
 					// depot => current_stop+1 (depot will be restored later before this)
 					depot = current;
+					removed_depot_entry.minimum_loading = schedule->get_current_entry().minimum_loading;
+					removed_depot_entry.condition_bitfield = schedule->get_current_entry().condition_bitfield;
+					removed_depot_entry.flags = schedule->get_current_entry().flags;
+					removed_depot_entry.reverse = schedule->get_current_entry().reverse;
+					removed_depot_entry.spacing_shift = schedule->get_current_entry().spacing_shift;
+					removed_depot_entry.target_id_condition_trigger = schedule->get_current_entry().target_id_condition_trigger;
+					removed_depot_entry.target_id_couple = schedule->get_current_entry().target_id_couple;
+					removed_depot_entry.target_id_uncouple = schedule->get_current_entry().target_id_uncouple;
+					removed_depot_entry.target_unique_entry_uncouple = schedule->get_current_entry().target_unique_entry_uncouple;
+					removed_depot_entry.unique_entry_id = schedule->get_current_entry().unique_entry_id;
+					removed_depot_entry.waiting_time_shift = schedule->get_current_entry().waiting_time_shift;
 					schedule->remove();
 					if(schedule->empty())
 					{
 						goto end_check;
 					}
-					current = schedule->get_current_eintrag().pos;
+					current = schedule->get_current_entry().pos;
 				}
 
 				/* there could be only one entry that matches best:
@@ -6418,7 +6441,7 @@ void convoi_t::check_pending_updates()
 				}
 				const int weights[4] = {3, 4, 2, 1};
 				int how_good_matching = 0;
-				const uint8 new_count = new_fpl->get_count();
+				const uint8 new_count = new_sch->get_count();
 
 				for(  uint8 i=0;  i<new_count;  i++  )
 				{
@@ -6427,8 +6450,8 @@ void convoi_t::check_pending_updates()
 					int quality = 0;
 					for( uint8 j=0; j<4; j++ )
 					{
-						quality += matches_halt(next[j],new_fpl->entries[index].pos) * weights[j];
-						new_fpl->increment_index(&index, &reverse);
+						quality += matches_halt(next[j],new_sch->entries[index].pos) * weights[j];
+						new_sch->increment_index(&index, &reverse);
 					}
 					if(  quality>how_good_matching  )
 					{
@@ -6437,13 +6460,13 @@ void convoi_t::check_pending_updates()
 						reverse = reverse_schedule;
 						for( uint8 j=0; j<4; j++ )
 						{
-							if( matches_halt(next[j], new_fpl->entries[index].pos) )
-							if( new_fpl->entries[index].pos==next[j] )
+							if( matches_halt(next[j], new_sch->entries[index].pos) )
+							if( new_sch->entries[index].pos==next[j] )
 							{
 								current_stop = index;
 								break;
 							}
-							new_fpl->increment_index(&index, &reverse);
+							new_sch->increment_index(&index, &reverse);
 						}
 						how_good_matching = quality;
 					}
@@ -6451,10 +6474,10 @@ void convoi_t::check_pending_updates()
 
 				if(how_good_matching==0) {
 					// nothing matches => take the one from the line
-					current_stop = new_fpl->get_current_stop();
+					current_stop = new_sch->get_current_stop();
 				}
 				// if we go to same, then we do not need route recalculation ...
-				is_same = current_stop < new_fpl->get_count() && matches_halt(current,new_fpl->entries[current_stop].pos);
+				is_same = current_stop < new_sch->get_count() && matches_halt(current,new_sch->entries[current_stop].pos);
 			}
 		}
 end_check:
@@ -6468,18 +6491,18 @@ end_check:
 
 		// destroy old schedule and all related windows
 		if(!schedule->is_editing_finished()) {
-			schedule->copy_from( new_fpl );
+			schedule->copy_from( new_sch );
 			schedule->set_current_stop(current_stop); // set new schedule current position to best match
 			schedule->start_editing();
 		}
 		else {
-			schedule->copy_from( new_fpl );
+			schedule->copy_from( new_sch );
 			schedule->set_current_stop(current_stop); // set new schedule current position to one before best match
 		}
 
 		if(is_depot) {
 			// next was depot. restore it
-			schedule->insert(welt->lookup(depot), 0, 0, 0, owner == welt->get_active_player());
+			schedule->insert(welt->lookup(depot), removed_depot_entry.minimum_loading, removed_depot_entry.waiting_time_shift, removed_depot_entry.spacing_shift, removed_depot_entry.flags, removed_depot_entry.condition_bitfield, removed_depot_entry.target_id_condition_trigger, removed_depot_entry.target_id_uncouple, owner == welt->get_active_player());
 			// Insert will move the pointer past the inserted item; move back to it
 			schedule->advance_reverse();
 		}
@@ -6826,7 +6849,7 @@ bool convoi_t::go_to_depot(bool show_success, bool use_home_depot)
 	// limit update to certain states that are considered to be safe for schedule updates
 	int state = get_state();
 	if(state==convoi_t::EDIT_SCHEDULE) {
-DBG_MESSAGE("convoi_t::go_to_depot()","convoi state %i => cannot change schedule ... ", state );
+	DBG_MESSAGE("convoi_t::go_to_depot()","convoi state %i => cannot change schedule ... ", state );
 		return false;
 	}
 
@@ -6891,7 +6914,7 @@ DBG_MESSAGE("convoi_t::go_to_depot()","convoi state %i => cannot change schedule
 		// Don't consider it a valid home depot if we already failed to get there.
 		if (home_depot_valid && (state == NO_ROUTE || state == NO_ROUTE_TOO_COMPLEX || state == OUT_OF_RANGE)) {
 			if (schedule) {
-				const schedule_entry_t & current_entry = schedule->get_current_eintrag();
+				const schedule_entry_t & current_entry = schedule->get_current_entry();
 				if ( current_entry.pos == get_home_depot() ) {
 					// We were already trying to get there... and failed.
 					home_depot_valid = false;
@@ -6970,7 +6993,7 @@ DBG_MESSAGE("convoi_t::go_to_depot()","convoi state %i => cannot change schedule
 		else 
 		{
 			schedule_t* sch = schedule->copy();
-			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos));
+			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos), 1); // Set minimum loading to 1 as a flag to signal that this entry should be deleted on arriving at the depot.
 			// Insert will move the pointer past the inserted item; move back to it
 			sch->advance_reverse();
 			// We still have to call set_schedule
@@ -6984,22 +7007,26 @@ DBG_MESSAGE("convoi_t::go_to_depot()","convoi state %i => cannot change schedule
 	bool success = false;
 	if (home_depot_found && transport_success)
 	{
-		sprintf(txt, "The convoy has been sent\nto its home depot.\n%s\n", get_name());
+		sprintf(txt, "The convoy has been sent\nto its home depot.\n");
+		sprintf(txt, "%s\n", get_name()); 
 		success = true;
 	}
 	else if (other_depot_found && transport_success)
 	{
-		sprintf(txt, "Convoi has been sent\nto the nearest depot\nof appropriate type.\n%s\n", get_name());
+		sprintf(txt, "Convoi has been sent\nto the nearest depot\nof appropriate type.\n");
+		sprintf(txt, "%s\n", get_name());
 		success = true;
 	}
 	else if (!home_depot_found && !other_depot_found)
 	{
-		sprintf(txt, "No suitable depot found!\nYou need to send the\nconvoi to the depot\nmanually.\n%s\n", get_name());
+		sprintf(txt, "No suitable depot found!\nYou need to send the\nconvoi to the depot\nmanually.\n");
+		sprintf(txt, "%s\n", get_name());
 		success = false;
 	}
 	else if (!transport_success)
 	{
-		sprintf(txt, "Depot found but could not be inserted in schedule.  This is a bug!%s\n", get_name());
+		sprintf(txt, "Depot found but could not be inserted in schedule.  This is a bug!");
+		sprintf(txt, "%s\n", get_name());
 		dbg->warning("convoi_t::go_to_depot()", "Depot found but could not be inserted in schedule for convoy %s", get_name());
 		success = false;
 	}
@@ -7628,19 +7655,19 @@ void convoi_t::clear_replace()
 			if(halt.is_bound() && !halts_already_processed.is_contained(halt.get_id()))
 			{
 				halt->set_estimated_arrival_time(self.get_id(), eta);
-				const sint64 max_waiting_time = schedule->get_current_eintrag().waiting_time_shift ? welt->ticks_per_world_month >> (16ll - (sint64)schedule->get_current_eintrag().waiting_time_shift) : WAIT_INFINITE;
+				const sint64 max_waiting_time = schedule->get_current_entry().waiting_time_shift ? welt->ticks_per_world_month >> (16ll - (sint64)schedule->get_current_entry().waiting_time_shift) : WAIT_INFINITE;
 				if((schedule->entries[schedule_entry].minimum_loading > 0 || schedule->entries[schedule_entry].wait_for_time) && schedule->get_spacing() > 0)
 				{				
 					// Add spacing time. 
 					const sint64 spacing = (welt->ticks_per_world_month * 12u) / (sint64)schedule->get_spacing(); // *12 because spacing is now in 10ths of a fraction of a month.
-					const sint64 spacing_shift = (sint64)schedule->get_current_eintrag().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
+					const sint64 spacing_shift = (sint64)schedule->get_current_entry().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
 					const sint64 wait_from_ticks = ((eta - spacing_shift) / spacing) * spacing + spacing_shift; // remember, it is integer division
 					const sint64 spaced_departure = min(max_waiting_time, (wait_from_ticks + spacing)) - reverse_delay;
 					etd += (spaced_departure - eta);
 				}
 				else if(schedule->entries[schedule_entry].minimum_loading > 0 && schedule->get_spacing() == 0)
 				{
-					if(schedule->get_current_eintrag().waiting_time_shift)
+					if(schedule->get_current_entry().waiting_time_shift)
 					{
 						etd += max_waiting_time;
 					}

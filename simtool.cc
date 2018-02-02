@@ -8118,7 +8118,7 @@ bool tool_change_convoi_t::init( player_t *player )
 			cnv->get_replace()->clear_all();
 			// This convoy might already have been sent to a depot. This will need to be undone.
 			schedule_t* sch = cnv->get_schedule();
-			const schedule_entry_t le = sch->get_current_eintrag();
+			const schedule_entry_t le = sch->get_current_entry();
 			const grund_t* gr = welt->lookup(le.pos);
 			if (gr && gr->get_depot())
 			{
@@ -9086,7 +9086,7 @@ bool tool_access_t::init(player_t *player)
 					const weg_t *w = gr ? gr->get_weg(schedule->get_waytype()) : NULL;
 					if(halt.is_bound()) 
 					{
-						const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);	
+						const grund_t* gr = welt->lookup(schedule->get_current_entry().pos);	
 						if(schedule->get_waytype() == tram_wt)
 						{	
 							const weg_t *street = gr ? gr->get_weg(road_wt) : NULL;
@@ -9149,7 +9149,7 @@ bool tool_access_t::init(player_t *player)
 				const weg_t *w = gr ? gr->get_weg(schedule->get_waytype()) : NULL;
 				if(halt.is_bound()) 
 				{
-					const grund_t* gr = welt->lookup(schedule->get_current_eintrag().pos);	
+					const grund_t* gr = welt->lookup(schedule->get_current_entry().pos);	
 					if(schedule->get_waytype() == tram_wt)
 					{	
 						const weg_t *street = gr ? gr->get_weg(road_wt) : NULL;
