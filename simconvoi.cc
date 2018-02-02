@@ -5703,6 +5703,11 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 		}
 	}
 
+	if (is_maintenance_urgently_needed())
+	{
+		set_no_load(true);
+	}
+
 	last_stop_id = halt.get_id();
 
 	halt->update_alternative_seats(self);
@@ -6013,9 +6018,22 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 			book(get_vehicle(i)->get_cargo_max()-get_vehicle(i)->get_total_cargo(), CONVOI_CAPACITY);
 		}
 
-		// Advance schedule
-		advance_schedule();
-		state = ROUTING_1;
+		if (is_maintenance_urgently_needed())
+		{
+			emergency_go_to_depot();
+			if (get_owner() == welt->get_active_player())
+			{
+				char txt[255];
+				sprintf(txt, "%s %s.", get_name(), translator::translate("has been sent to a depot as its maintenance can be postponed no longer"));
+				create_win(new news_img(txt), w_do_not_delete, magic_none);
+			}
+		}
+		else
+		{
+			// Advance schedule
+			advance_schedule();
+			state = ROUTING_1;
+		}
 	}
 
 	// reset the wait_lock
@@ -6028,11 +6046,11 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 		
 		if (loading_limit > 0 && !wait_for_time)
 		{
-			wait_lock = (earliest_departure_time - now) / 2;
+			wait_lock = (sint32)((earliest_departure_time - now) / 2ll);
 		}
 		else
 		{
-			wait_lock = (go_on_ticks - now) / 2;
+			wait_lock = (sint32)((go_on_ticks - now) / 2ll);
 		}
 		// The random extra wait here is designed to avoid processing every convoy at once
 		wait_lock += (self.get_id()) % 1024;
