@@ -1743,14 +1743,14 @@ void convoi_t::step()
 					vector_tpl<vehicle_t*> new_vehicles;
 					vehicle_t* veh = NULL;
 					// Acquire the new one
-					ITERATE_PTR(replace->get_replacing_vehicles(),i)
+					for(auto replacing_vehicle : *replace->get_replacing_vehicles())
 					{
 						veh = NULL;
 						// First - check whether there are any of the required vehicles already
 						// in the convoy (free)
 						for(uint8 k = 0; k < vehicle_count; k++)
 						{
-							if(vehicle[k]->get_desc() == replace->get_replacing_vehicle(i))
+							if(vehicle[k]->get_desc() == replacing_vehicle)
 							{
 								veh = remove_vehicle_bei(k);
 								break;
@@ -1761,7 +1761,7 @@ void convoi_t::step()
 						{
 							 // Second - check whether there are any of the required vehicles already
 							 // in the depot (more or less free).
-							veh = dep->find_oldest_newest(replace->get_replacing_vehicle(i), true, &new_vehicles);
+							veh = dep->find_oldest_newest(replacing_vehicle, true, &new_vehicles);
 						}
 
 						if (veh == NULL && !replace->get_retain_in_depot())
@@ -1773,9 +1773,9 @@ void convoi_t::step()
 							{
 								for(uint8 c = 0; c < vehicle[j]->get_desc()->get_upgrades_count(); c ++)
 								{
-									if(replace->get_replacing_vehicle(i) == vehicle[j]->get_desc()->get_upgrades(c))
+									if(replacing_vehicle == vehicle[j]->get_desc()->get_upgrades(c))
 									{
-										veh = vehicle_builder_t::build(get_pos(), get_owner(), NULL, replace->get_replacing_vehicle(i), true);
+										veh = vehicle_builder_t::build(get_pos(), get_owner(), NULL, replacing_vehicle, true);
 										upgrade_vehicle(j, veh);
 										remove_vehicle_bei(j);
 										goto end_loop;
@@ -1788,7 +1788,7 @@ end_loop:
 						if(veh == NULL)
 						{
 							// Fourth - if all else fails, buy from new (expensive).
-							veh = dep->buy_vehicle(replace->get_replacing_vehicle(i), livery_scheme_index);
+							veh = dep->buy_vehicle(replacing_vehicle, livery_scheme_index);
 						}
 
 						// This new method is needed to enable this method to iterate over
@@ -1828,9 +1828,9 @@ end_loop:
 					reset();
 
 					//Next, add all the new vehicles to the convoy in order.
-					ITERATE(new_vehicles,b)
+					for (auto new_vehicle : new_vehicles)
 					{
-						dep->append_vehicle(self, new_vehicles[b], false, false);
+						dep->append_vehicle(self, new_vehicle, false, false);
 					}
 
 					if (!keep_name)
@@ -6876,13 +6876,13 @@ bool convoi_t::go_to_depot(bool show_success, bool use_home_depot)
 	uint16 shifter;
 	if(replace)
 	{
-		ITERATE_PTR(replace->get_replacing_vehicles(), i)
+		for(auto replacing_vehicle : *replace->get_replacing_vehicles())
 		{
-			if(replace->get_replacing_vehicle(i)->get_power() == 0)
+			if(replacing_vehicle->get_power() == 0)
 			{
 				continue;
 			}
-			shifter = 1 << replace->get_replacing_vehicle(i)->get_engine_type();
+			shifter = 1 << replacing_vehicle->get_engine_type();
 			traction_types |= shifter;
 		}
 	}

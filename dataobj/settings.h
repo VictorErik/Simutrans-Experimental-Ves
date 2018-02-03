@@ -38,8 +38,9 @@ public:
 
 	vector_with_ptr_ownership_tpl( vector_with_ptr_ownership_tpl const& src ) :
 		vector_tpl<T*>( src.get_count() ) {
-		ITERATE( src, i ) {
-			this->append( new T( *src[i] ) );
+		for (auto s : src)
+		{
+			this->append( new T( *s ) );
 		}
 	}
 

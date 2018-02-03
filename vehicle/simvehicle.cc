@@ -2951,7 +2951,8 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 			uint8 count = pre_corner_direction.get_count();
 			file->rdwr_byte(count);
 			sint16 dir;
-			ITERATE(pre_corner_direction, n)
+			// We cannot use C++11 ranged fo here as the fixed_list_tpl does not support it
+			for(uint32 n = 0; n < pre_corner_direction.get_count(); n ++)
 			{
 				dir = pre_corner_direction[n];
 				file->rdwr_short(dir);

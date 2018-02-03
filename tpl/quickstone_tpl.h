@@ -264,7 +264,7 @@ public:
 	 *
 	 * @author Hj. Malthaner
 	 */
-	T* operator->() const { return data[entry]; }
+	T* operator->() const { return data[entry]; } 
 
 	T& operator *() const { return *data[entry]; }
 

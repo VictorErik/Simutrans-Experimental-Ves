@@ -9104,7 +9104,8 @@ bool tool_access_t::init(player_t *player)
 					}
 				}
 				
-				ITERATE(entries_to_remove, j)
+				uint32 j = 0u;
+				for(auto unused : entries_to_remove)
 				{
 					schedule->set_current_stop(j);
 					schedule->remove();
@@ -9114,6 +9115,7 @@ bool tool_access_t::init(player_t *player)
 					{
 						halt->remove_line(current_line);
 					}
+					j++;
 				}
 				if(!entries_to_remove.empty())
 				{
@@ -9167,8 +9169,8 @@ bool tool_access_t::init(player_t *player)
 				}
 
 			}
-
-			ITERATE(entries_to_remove, j)
+			uint32 j = 0;
+			for (auto unused : entries_to_remove)
 			{
 				schedule->set_current_stop(j);
 				schedule->remove();
@@ -9178,6 +9180,7 @@ bool tool_access_t::init(player_t *player)
 				{				
 					halt->remove_convoy(cnv);
 				}
+				j ++;
 			}
 
 			if(!cnv->in_depot() && schedule->get_count() < 2)

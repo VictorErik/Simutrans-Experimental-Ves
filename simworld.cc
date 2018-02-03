@@ -3145,9 +3145,9 @@ void karte_t::set_scale()
 	}
 
 	// Stations
-	ITERATE(hausbauer_t::modifiable_station_buildings, n)
+	for(auto station : hausbauer_t::modifiable_station_buildings)
 	{
-		hausbauer_t::modifiable_station_buildings[n]->set_scale(scale_factor); 
+		station->set_scale(scale_factor);
 	}
 
 	// Goods
@@ -3158,7 +3158,7 @@ void karte_t::set_scale()
 	}
 
 	// Industries
-	FOR(stringhashtable_tpl<factory_desc_t*>, & info, factory_builder_t::modifiable_table)
+	for(auto info : factory_builder_t::modifiable_table)
 	{
 		info.value->set_scale(scale_factor);
 	}
@@ -5754,9 +5754,9 @@ void karte_t::step()
 #ifdef DEBUG_SIMRAND_CALLS
 		if(/*last_clients == 0*/ true)
 		{
-			ITERATE(karte_t::random_callers, n)
+			for(auto random_caller : random_callers)
 			{
-				get_message()->add_message(random_callers.get_element(n), koord::invalid, message_t::ai);
+				get_message()->add_message(random_caller, koord::invalid, message_t::ai);
 			}
 			print_randoms = false;
 		}
@@ -10709,9 +10709,9 @@ void karte_t::network_disconnect()
 #ifdef DEBUG_SIMRAND_CALLS
 	print_randoms = false;
 	printf("Lost synchronisation\nwith server.\n");
-	ITERATE(karte_t::random_callers, n)
+	for (auto random_caller : random_callers)
 	{
-		get_message()->add_message(random_callers.get_element(n), koord::invalid, message_t::ai);
+		get_message()->add_message(random_caller, koord::invalid, message_t::ai);
 	}
 #endif
 }
@@ -11195,10 +11195,10 @@ void karte_t::privatecar_rdwr(loadsave_t *file)
 		{
 			uint32 count = car_ownership[cl].get_count();
 			file->rdwr_long(count);
-			ITERATE(car_ownership[cl], i)
+			for(auto car_owner : car_ownership[cl])
 			{
-				file->rdwr_longlong(car_ownership[cl].get_element(i).year);
-				file->rdwr_short(car_ownership[cl].get_element(i).ownership_percent);
+				file->rdwr_longlong(car_owner.year);
+				file->rdwr_short(car_owner.ownership_percent);
 			}
 		}
 

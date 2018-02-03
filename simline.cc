@@ -722,9 +722,9 @@ void simline_t::recalc_status()
 
 bool simline_t::has_overcrowded() const
 {
-	ITERATE(line_managed_convoys,i)
+	for(auto line_managed_convoy : line_managed_convoys)
 	{
-		if(line_managed_convoys[i]->get_overcrowded() > 0)
+		if(line_managed_convoy->get_overcrowded() > 0)
 		{
 			return true;
 		}
@@ -959,10 +959,10 @@ void simline_t::set_withdraw( bool yes_no )
 
 void simline_t::propogate_livery_scheme()
 {
-	ITERATE(line_managed_convoys, i)
+	for (auto line_managed_convoy : line_managed_convoys)
 	{
-		line_managed_convoys[i]->set_livery_scheme_index(livery_scheme_index);
-		line_managed_convoys[i]->apply_livery_scheme();
+		line_managed_convoy->set_livery_scheme_index(livery_scheme_index);
+		line_managed_convoy->apply_livery_scheme();
 	}
 }
 

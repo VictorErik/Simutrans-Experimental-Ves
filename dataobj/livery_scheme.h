@@ -52,14 +52,13 @@ public:
 		}
 		else
 		{
-			ITERATE(liveries, i)
+			for(auto livery : liveries)
 			{
-				if(date >= liveries.get_element(i).intro_date)
+				if(date >= livery.intro_date)
 				{ 
 					return true;
 				}
-			}
-			
+			}		
 			return false;
 		}
 	}

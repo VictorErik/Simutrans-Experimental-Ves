@@ -22,18 +22,18 @@ const char* livery_scheme_t::get_latest_available_livery(uint16 date, const vehi
 		// No liveries available at all
 		return NULL;
 	}
-	const char* livery = NULL;
+	const char* livery_name = NULL;
 	uint16 latest_valid_intro_date = 0;
-	ITERATE(liveries, i)
+	for(auto livery : liveries)
 	{
-		if(date >= liveries.get_element(i).intro_date && desc->check_livery(liveries.get_element(i).name.c_str()) && liveries.get_element(i).intro_date > latest_valid_intro_date)
+		if(date >= livery.intro_date && desc->check_livery(livery.name.c_str()) && livery.intro_date > latest_valid_intro_date)
 		{
 			// This returns the most recent livery available for this vehicle that is not in the future.
-			latest_valid_intro_date = liveries.get_element(i).intro_date;
-			livery = liveries.get_element(i).name.c_str();
+			latest_valid_intro_date = livery.intro_date;
+			livery_name = livery.name.c_str();
 		}
 	}
-	return livery;
+	return livery_name;
 }
 
 void livery_scheme_t::rdwr(loadsave_t *file)

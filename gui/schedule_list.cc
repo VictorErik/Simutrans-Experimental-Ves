@@ -271,16 +271,16 @@ schedule_list_gui_t::schedule_list_gui_t(player_t *player_) :
 	livery_selector.set_max_size(scr_size(D_BUTTON_WIDTH - 8, LINESPACE*3+2+16));
 	livery_selector.set_highlight_color(1);
 	livery_selector.clear_elements();
-	vector_tpl<livery_scheme_t*>* schemes = welt->get_settings().get_livery_schemes();
 	livery_scheme_indices.clear();
-	ITERATE_PTR(schemes, i)
+	uint32 i = 0;
+	for(auto scheme : *welt->get_settings().get_livery_schemes())
 	{
-		livery_scheme_t* scheme = schemes->get_element(i);
 		if(scheme->is_available(welt->get_timeline_year_month()))
 		{
 			livery_selector.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(scheme->get_name()), SYSCOL_TEXT));
 			livery_scheme_indices.append(i);
 		}
+		i++;
 	}
 	livery_selector.add_listener(this);
 	add_component(&livery_selector);
