@@ -1427,7 +1427,7 @@ vehicle_t::vehicle_t() :
 	km_since_new = 0;
 	km_since_last_overhaul = 0;
 	km_since_last_maintenance = 0;
-	km_since_last_refuel = 0;
+	km_since_last_replenish = 0;
 	last_maintenance_time = 0ll;
 }
 
@@ -3042,7 +3042,7 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		file->rdwr_long(km_since_new);
 		file->rdwr_long(km_since_last_overhaul);
 		file->rdwr_long(km_since_last_maintenance);
-		file->rdwr_long(km_since_last_refuel);
+		file->rdwr_long(km_since_last_replenish);
 		file->rdwr_longlong(last_maintenance_time); 
 	}
 	else
@@ -3050,7 +3050,7 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		km_since_new = 0;
 		km_since_last_overhaul = 0;
 		km_since_last_maintenance = 0;
-		km_since_last_refuel = 0;
+		km_since_last_replenish = 0;
 		last_maintenance_time = welt->get_ticks();
 	}
 

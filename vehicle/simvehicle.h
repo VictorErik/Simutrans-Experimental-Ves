@@ -364,7 +364,7 @@ protected:
 	uint32 km_since_new;
 	uint32 km_since_last_overhaul;
 	uint32 km_since_last_maintenance;
-	uint32 km_since_last_refuel;
+	uint32 km_since_last_replenish;
 	sint64 last_maintenance_time;
 
 	virtual void calc_image();
@@ -479,7 +479,7 @@ public:
 
 	void set_direction_steps(sint16 value) { direction_steps = value; }
 
-	void step_km(uint32 km) { km_since_new += km; km_since_last_overhaul += km; km_since_last_maintenance += km; km_since_last_refuel += km; }
+	void step_km(uint32 km) { km_since_new += km; km_since_last_overhaul += km; km_since_last_maintenance += km; km_since_last_replenish += km; }
 
 #ifdef INLINE_OBJ_TYPE
 protected:
@@ -696,6 +696,11 @@ public:
 	// This should always return true when is_maintenance_urgently_needed() would be true.
 	virtual bool is_maintenance_needed() const { return false; }
 	virtual bool is_maintenance_urgently_needed() const { return false; }
+	virtual bool is_overhaul_needed() const { return false; }
+
+	void replenish() { km_since_last_replenish = 0; }
+	void maintain() { replenish(); km_since_last_maintenance = 0; }
+	void overhaul() { maintain(); km_since_last_overhaul = 0; } // TODO: Add code here for updating the livery.
 };
 
 
