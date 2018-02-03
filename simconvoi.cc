@@ -2592,7 +2592,7 @@ void convoi_t::enter_depot(depot_t *dep)
 	bool depot_entry_erase = false;
 
 	schedule_t* sch = get_schedule();
-	if (sch && sch->get_current_entry().minimum_loading > 0)
+	if (sch && sch->get_current_entry().minimum_loading & schedule_entry_t::delete_entry)
 	{
 		// If the minimum_loading > 0, this has been added from a 
 		// "go to depot" command, and thus the depot entry should
@@ -7011,7 +7011,7 @@ bool convoi_t::go_to_depot(bool show_success, bool use_home_depot)
 		else 
 		{
 			schedule_t* sch = schedule->copy();
-			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos), 1); // Set minimum loading to 1 as a flag to signal that this entry should be deleted on arriving at the depot.
+			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos), schedule_entry_t::delete_entry); // Set minimum loading to schedule_entry_t::delete_entry as a flag to signal that this entry should be deleted on arriving at the depot.
 			// Insert will move the pointer past the inserted item; move back to it
 			sch->advance_reverse();
 			// We still have to call set_schedule

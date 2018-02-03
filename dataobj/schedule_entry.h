@@ -69,6 +69,15 @@ public:
 		uncouple_target_sch_is_reversed = (1u << 15)
 	};
 
+	// These are used in place of minimum_loading to control
+	// what a vehicle does when it goes to the depot.
+	enum depot_flag
+	{
+		delete_entry			= (1u << 0),
+		store					= (1u << 1),
+		maintain_or_overhaul	= (1u << 2)
+	};
+
 	/*
 	* A bitfield of flags of the type schedule_entry_flag (supra)
 	*/
