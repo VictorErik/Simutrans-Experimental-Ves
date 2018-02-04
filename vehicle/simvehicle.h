@@ -360,6 +360,9 @@ protected:
 	bool smoke:1;
 	bool check_for_finish:1;		// true, if on the last tile
 	bool has_driven:1;
+	
+	bool do_not_overhaul : 1;
+	bool do_not_auto_upgrade : 1;
 
 	uint32 km_since_new;
 	uint32 km_since_last_overhaul;
@@ -701,6 +704,12 @@ public:
 	void replenish() { km_since_last_replenish = 0; }
 	void maintain() { replenish(); km_since_last_maintenance = 0; }
 	void overhaul() { maintain(); km_since_last_overhaul = 0; } // TODO: Add code here for updating the livery.
+
+	void set_do_not_overhaul(bool value) { do_not_overhaul = value; }
+	void set_do_not_auto_upgrade(bool value) { do_not_auto_upgrade = value; }
+
+	bool get_do_not_overhaul() const { return do_not_overhaul; }
+	bool get_do_not_auto_upgrade() const { return do_not_auto_upgrade; }
 };
 
 

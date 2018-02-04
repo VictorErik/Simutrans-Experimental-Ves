@@ -195,11 +195,11 @@ public:
 
 	/**
 	 * A convoi arrived at the depot and is added to the convoi list.
-	 * If fpl_adjust is true, the current depot is removed from schedule.
+	 * The flags determine what happens when the convoy arrives at the depot.
 	 * @author Volker Meyer
 	 * @date  09.06.2003
 	 */
-	void convoi_arrived(convoihandle_t cnv, bool fpl_adjust);
+	void convoi_arrived(convoihandle_t cnv, uint16 flags);
 
 	/**
 	 * Öffnet ein neues Beobachtungsfenster für das Objekt.

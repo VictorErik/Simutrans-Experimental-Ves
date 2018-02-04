@@ -169,9 +169,10 @@ void depot_t::call_depot_tool( char tool, convoihandle_t cnv, const char *extra,
  * first a convoy reaches the depot during its journey (or on emergency stop)
  * second during loading a convoi is stored in a depot => only store it again
  */
-void depot_t::convoi_arrived(convoihandle_t acnv, bool fpl_adjust)
+void depot_t::convoi_arrived(convoihandle_t acnv, uint16 flags)
 {
-	if(fpl_adjust) {
+	if(flags & schedule_entry_t::delete_entry) 
+	{
 		// Volker: remove depot from schedule
 		schedule_t *schedule = acnv->get_schedule();
 		for(  int i=0;  i<schedule->get_count();  i++  ) {
@@ -192,20 +193,60 @@ void depot_t::convoi_arrived(convoihandle_t acnv, bool fpl_adjust)
 		{
 			acnv->unregister_stops();
 		}
+
+		if (flags & schedule_entry_t::store)
+		{
+			// There is no need to re-run the path explorer
+			// if this convoy is going to the depot routinely
 #ifdef MULTI_THREAD
-		world()->stop_path_explorer();
+			world()->stop_path_explorer();
 #endif
-		path_explorer_t::refresh_all_categories(true);
+			path_explorer_t::refresh_all_categories(true);
+		}
 	}
 
+	bool overhaul = false;
+
 	// Clean up the vehicles -- get rid of freight, etc.  Do even when loading, just in case.
-	for(unsigned i=0; i<acnv->get_vehicle_count(); i++) {
+	for(unsigned i=0; i<acnv->get_vehicle_count(); i++)
+	{
 		vehicle_t *v = acnv->get_vehicle(i);
 		// Hajo: reset vehicle data
 		v->discard_cargo();
-		v->set_pos( koord3d::invalid );
-		v->set_leading( i==0 );
-		v->set_last( i+1==acnv->get_vehicle_count() );
+		if (flags & schedule_entry_t::store)
+		{
+			v->set_pos(koord3d::invalid);
+			v->set_leading(i == 0);
+			v->set_last(i + 1 == acnv->get_vehicle_count());
+		}
+
+
+		if(flags & schedule_entry_t::maintain_or_overhaul)
+		{
+			if(v->is_overhaul_needed() && !v->get_do_not_overhaul())
+			{
+				v->overhaul();
+				overhaul = true;
+			}
+			else
+			{
+				v->maintain();
+			}
+		}
+	}
+
+	if (flags & schedule_entry_t::maintain_or_overhaul)
+	{
+		if(overhaul)
+		{
+			acnv->set_state(convoi_t::OVERHAUL);
+			acnv->set_wait_lock(2000); // TODO: Use a proper value here. This is temporary.
+		}
+		else
+		{
+			acnv->set_state(convoi_t::MAINTENANCE);
+			acnv->set_wait_lock(1000); // TODO: Use a proper value here. This is temporary.
+		}
 	}
 
 	// this part stores the convoi in the depot
@@ -214,7 +255,10 @@ void depot_t::convoi_arrived(convoihandle_t acnv, bool fpl_adjust)
 	if(depot_frame) {
 		depot_frame->action_triggered(NULL,(long int)0);
 	}
-	acnv->set_home_depot( get_pos() );
+	if (flags & schedule_entry_t::store)
+	{
+		acnv->set_home_depot(get_pos());
+	}
 	DBG_MESSAGE("depot_t::convoi_arrived()", "convoi %d, %p entered depot", acnv.get_id(), acnv.get_rep());
 }
 

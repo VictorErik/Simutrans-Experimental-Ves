@@ -72,7 +72,7 @@ struct route_range_specification
 class convoi_t : public sync_steppable, public overtaker_t, public lazy_convoy_t
 {
 public:
-	enum convoi_cost_t {			// Exp|Std|Description
+	enum convoi_cost_t {			// Ext|Std|Description
 		CONVOI_CAPACITY = 0,		//  0 | 0 | the amount of ware that could be transported, theoretically	
 		CONVOI_TRANSPORTED_GOODS,	//  1 | 1 | the amount of ware that has been transported
 		CONVOI_AVERAGE_SPEED,		//  2 |   | the average speed of the convoy per rolling month
@@ -108,12 +108,15 @@ public:
 		WAITING_FOR_CLEARANCE_TWO_MONTHS,
 		CAN_START_TWO_MONTHS,
 		LEAVING_DEPOT,
-		ENTERING_DEPOT,
+		ENTERING_DEPOT, // Deprecated
 		REVERSING,
 		OUT_OF_RANGE,
 		EMERGENCY_STOP,
 		ROUTE_JUST_FOUND,
 		NO_ROUTE_TOO_COMPLEX,
+		REPLENISHING,
+		MAINTENANCE,
+		OVERHAUL,
 		MAX_STATES
 	};
 
@@ -969,7 +972,7 @@ public:
 	* Called to make a convoi enter a depot
 	* @author Hj. Malthaner, neroden
 	*/
-	void enter_depot(depot_t *dep);
+	void enter_depot(depot_t *dep, uint16 flags = 0);
 
 	/**
 	* Gibt Namen des Convois zurück.
@@ -1419,7 +1422,7 @@ public:
 	bool has_same_vehicles(convoihandle_t other) const;
 
 	// Go to depot, if possible
-	bool go_to_depot(bool show_success, bool use_home_depot = false);
+	bool go_to_depot(bool show_success, bool use_home_depot = false, bool maintain = false);
 
 	// True if convoy has no cargo
 	//@author: isidoro
@@ -1516,7 +1519,7 @@ public:
 	/** For going to a depot automatically
 	 *  when stuck - will teleport if necessary.
 	 */
-	void emergency_go_to_depot();
+	void emergency_go_to_depot(bool maintain = false);
 
 	journey_times_map& get_average_journey_times();
 	inline const journey_times_map& get_average_journey_times_this_convoy_only() const { return average_journey_times; }

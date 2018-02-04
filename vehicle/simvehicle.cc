@@ -1354,6 +1354,8 @@ vehicle_t::vehicle_t(koord3d pos, const vehicle_desc_t* desc, player_t* player) 
 	check_for_finish = false;
 	use_calc_height = true;
 	has_driven = false;
+	do_not_overhaul = false;
+	do_not_auto_upgrade = false;
 
 	previous_direction = direction = ribi_t::none;
 	target_halt = halthandle_t();
@@ -3044,6 +3046,15 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		file->rdwr_long(km_since_last_maintenance);
 		file->rdwr_long(km_since_last_replenish);
 		file->rdwr_longlong(last_maintenance_time); 
+		
+		bool dno = do_not_overhaul;
+		bool dnau = do_not_auto_upgrade;
+
+		file->rdwr_bool(dno);
+		file->rdwr_bool(dnau);
+
+		do_not_overhaul = dno;
+		do_not_auto_upgrade = dnau;
 	}
 	else
 	{
@@ -3052,9 +3063,11 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		km_since_last_maintenance = 0;
 		km_since_last_replenish = 0;
 		last_maintenance_time = welt->get_ticks();
+		do_not_overhaul = false;
+		do_not_auto_upgrade = false;
 	}
 
-	delete[]fracht_count;
+	delete[] fracht_count;
 }
 
 
