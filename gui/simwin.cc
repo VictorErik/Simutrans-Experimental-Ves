@@ -72,6 +72,7 @@
 #include "message_option_t.h"
 #include "fabrik_info.h"
 #include "themeselector.h"
+#include "vehicle_manager.h"
 
 #include "../simversion.h"
 
@@ -522,6 +523,9 @@ void rdwr_all_win(loadsave_t *file)
 						else if(  id>=magic_toolbar  &&  id<magic_toolbar+256  ) {
 							tool_t::toolbar_tool[id-magic_toolbar]->update(wl->get_active_player());
 							w = tool_t::toolbar_tool[id-magic_toolbar]->get_tool_selector();
+						}
+						else if (id >= magic_vehicle_manager_t  &&  id<magic_vehicle_manager_t + MAX_PLAYER_COUNT) {
+							w = new vehicle_manager_t(wl->get_player(id - magic_vehicle_manager_t));
 						}
 						else {
 							dbg->error( "rdwr_all_win()", "No idea how to restore magic 0x%X", id );

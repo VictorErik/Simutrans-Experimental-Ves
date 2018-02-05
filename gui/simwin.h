@@ -76,8 +76,9 @@ enum magic_numbers {
 	magic_line_management_t=magic_halt_list+MAX_PLAYER_COUNT,
 	magic_ai_options_t=magic_line_management_t+MAX_PLAYER_COUNT,
 	magic_pwd_t=magic_ai_options_t+MAX_PLAYER_COUNT,
+	magic_vehicle_manager_t=magic_pwd_t+ MAX_PLAYER_COUNT,
 	// normal stuff
-	magic_jump=magic_pwd_t+MAX_PLAYER_COUNT,
+	magic_jump=magic_vehicle_manager_t +MAX_PLAYER_COUNT,
 	magic_curiositylist,
 	magic_factorylist,
 	magic_goodslist,
