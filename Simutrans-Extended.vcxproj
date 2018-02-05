@@ -2611,6 +2611,7 @@
     <ClCompile Include="gui\times_history_container.cc" />
     <ClCompile Include="gui\times_history_entry.cc" />
     <ClCompile Include="gui\vehicle_class_manager.cc" />
+    <ClCompile Include="gui\vehicle_manager.cc" />
     <ClCompile Include="network\checksum.cc" />
     <ClCompile Include="network\memory_rw.cc" />
     <ClCompile Include="network\network.cc" />
@@ -3272,6 +3273,7 @@
     <ClInclude Include="gui\times_history_container.h" />
     <ClInclude Include="gui\times_history_entry.h" />
     <ClInclude Include="gui\vehicle_class_manager.h" />
+    <ClInclude Include="gui\vehicle_manager.h" />
     <ClInclude Include="network\checksum.h" />
     <ClInclude Include="network\memory_rw.h" />
     <ClInclude Include="network\network.h" />
