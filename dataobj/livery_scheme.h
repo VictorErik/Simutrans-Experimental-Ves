@@ -18,6 +18,9 @@ struct livery_t
 {
 	std::string name;
 	uint16 intro_date;
+
+	bool operator == (const livery_t comparator) const { return comparator.intro_date == intro_date && name == comparator.name; }
+	bool operator != (const livery_t comparator) const { return comparator.intro_date != intro_date || name != comparator.name; }
 };
 
 class livery_scheme_t
@@ -66,5 +69,7 @@ public:
 	const char* get_latest_available_livery(uint16 date, const vehicle_desc_t* desc) const;
 
 	void rdwr(loadsave_t *file);
+
+	bool operator == (const livery_scheme_t comparator) const;
 };
 #endif
