@@ -92,7 +92,7 @@ public:
 	*/
 	enum { max_vehicle=8, max_rail_vehicle = 64 };
 
-	enum states {INITIAL,
+	enum states {INITIAL, // INITIAL means stored in the depot
 		EDIT_SCHEDULE, 
 		ROUTING_1,
 		ROUTING_2,
@@ -117,6 +117,7 @@ public:
 		REPLENISHING,
 		MAINTENANCE,
 		OVERHAUL,
+		AWAITING_TRIGGER,
 		MAX_STATES
 	};
 
@@ -1474,10 +1475,8 @@ public:
 	// taking into account any catering.
 	uint8 get_comfort(uint8 g_class) const;
 
-	/** The new revenue calculation method for per-leg
-	 * based revenue calculation, rather than per-hop
-	 * based revenue calculation. This method calculates
-	 * the revenue of a ware packet as it is unloaded.
+	/** This method calculates the revenue of each
+	 * ware packet as it is unloaded.
 	 *
 	 * It also calculates allocations of revenue to different
 	 * players based on track usage.
@@ -1560,15 +1559,15 @@ public:
 	} 
 
 	bool check_triggered_condition(uint16 value) const { return value & conditions_bitfield; }
-
 	void set_triggered_conditions(uint16 value) { conditions_bitfield |= value; }
-
 	void clear_triggered_conditions(uint16 value) { conditions_bitfield &= ~value; }
-
 	void reset_all_triggers() { conditions_bitfield = 0; }
 
 	bool is_maintenance_needed() const;
 	bool is_maintenance_urgently_needed() const;
+	bool is_overhaul_needed() const;
+
+	void check_departure(halthandle_t halt = halthandle_t()); 
 };
 
 #endif

@@ -2101,8 +2101,15 @@ end_loop:
 		}
 
 		case ROUTE_JUST_FOUND:
+			
+			gr = welt->lookup(get_pos()); 
+			if (depot_t* dep = gr->get_depot())
+			{
+				dep->start_convoi(self, false); 
+			}
+			
+			// This used to be part of drive_to(), but this was not suitable for use in a multi-threaded state.
 			gr = welt->lookup(get_route()->back());
-
 			if (front()->get_waytype() == track_wt || front()->get_waytype() == tram_wt || front()->get_waytype() == narrowgauge_wt || front()->get_waytype() == maglev_wt || front()->get_waytype() == monorail_wt && gr && !gr->get_depot())
 			{
 				rail_vehicle_t* rv = (rail_vehicle_t*)back();
@@ -2113,8 +2120,8 @@ end_loop:
 				}
 			}
 			vorfahren();
-			break;
-			// This used to be part of drive_to(), but this was not suitable for use in a multi-threaded state.
+
+			break;		
 
 		case CAN_START:
 		case CAN_START_ONE_MONTH:
@@ -2212,6 +2219,10 @@ end_loop:
 		case LOADING:
 			break;
 
+		case ENTERING_DEPOT:
+			check_departure();
+			break;
+
 		// immediate action needed
 		case LEAVING_DEPOT:
 			get_owner()->simlinemgmt.get_lines(schedule->get_type(), &lines);	
@@ -2236,7 +2247,6 @@ end_loop:
 			}
 			// Fallthrough intended.
 		case SELF_DESTRUCT:
-		case ENTERING_DEPOT:
 		case DRIVING:
 		case ROUTING_2:
 		case DUMMY5:
@@ -2274,7 +2284,7 @@ end_loop:
 		case OVERHAUL:
 		case MAINTENANCE:
 			// We will only get here if wait_lock == 0
-			state = INITIAL;
+			state = LEAVING_DEPOT;
 			break;
 		default: ;
 	}
@@ -2546,9 +2556,18 @@ void convoi_t::enter_depot(depot_t *dep, uint16 flags)
 	// Set the speed to zero...
 	set_akt_speed(0);
 
-	// Make this the new home depot...
-	// (Will be done again in convoi_arrived, but make sure to do it early in case of crashes)
-	home_depot = dep->get_pos();
+	schedule_t* sch = get_schedule();
+	if (sch && welt->lookup(sch->get_current_entry().pos)->get_depot())
+	{
+		flags |= sch->get_current_entry().minimum_loading;
+	}
+
+	if (flags & schedule_entry_t::store)
+	{
+		// Make this the new home depot...
+		// (Will be done again in convoi_arrived, but make sure to do it early in case of crashes)
+		home_depot = dep->get_pos();
+	}
 
 	// Hajo: remove vehicles from world data structure
 	for(unsigned i=0; i<vehicle_count; i++) {
@@ -2565,12 +2584,6 @@ void convoi_t::enter_depot(depot_t *dep, uint16 flags)
 	}
 	last_signal_pos = koord3d::invalid;
 
-	schedule_t* sch = get_schedule();
-	if (sch && welt->lookup(sch->get_current_entry().pos)->get_depot())
-	{
-		flags |= sch->get_current_entry().minimum_loading;
-	}
-
 	dep->convoi_arrived(self, flags);
 
 	close_windows();
@@ -2579,15 +2592,28 @@ void convoi_t::enter_depot(depot_t *dep, uint16 flags)
 	{
 		// If this is to be maintained or overhauled, the state will be set in 
 		// convoi_arrived
-		state = INITIAL;
+		if (flags & schedule_entry_t::store)
+		{
+			state = INITIAL;
+		}
+		else if (sch->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait))
+		{
+			state = AWAITING_TRIGGER;
+		}
+		else
+		{
+			state = ENTERING_DEPOT;
+		}
 	}
+	steps_driven = -1;
 	wait_lock = 0;
 }
 
 
 void convoi_t::start()
 {
-	if(state == INITIAL || state == ROUTING_1) {
+	if(state == INITIAL || state == ROUTING_1 || state == ROUTE_JUST_FOUND)
+	{
 
 		// set home depot to location of depot convoi is leaving
 		if(route.empty())
@@ -2603,7 +2629,10 @@ void convoi_t::start()
 		// (vorfahren() will remove it anyway again.)
 		grund_t *gr = welt->lookup( home_depot );
 		assert(gr);
-		gr->obj_add( front() );
+		if (state != ROUTE_JUST_FOUND)
+		{
+			gr->obj_add(front());
+		}
 
 		alte_direction = ribi_t::none;
 		no_load = false;
@@ -2615,7 +2644,14 @@ void convoi_t::start()
 			schedule->advance_reverse();
 		}
 
-		state = ROUTING_1;
+		if (state != ROUTE_JUST_FOUND)
+		{
+			state = ROUTING_1;
+		}
+		else
+		{
+			state = LEAVING_DEPOT;
+		}
 
 		// recalc weight and image
 		// also for any vehicle entered a depot, set_last is true! => reset it correctly
@@ -2694,7 +2730,14 @@ void convoi_t::ziel_erreicht()
 			// seems to be a stop, so book the money for the trip
 			set_akt_speed(0);
 			halt->book(1, HALT_CONVOIS_ARRIVED);
-			state = LOADING;
+			if (schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait))
+			{
+				state = AWAITING_TRIGGER;
+			}
+			else
+			{
+				state = LOADING;
+			}
 			go_on_ticks = WAIT_INFINITE;	// we will eventually wait from now on
 			if(front()->get_waytype() == air_wt)
 			{
@@ -5693,7 +5736,7 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 	const koord3d old_last_stop_pos = front()->last_stop_pos;
 
 	uint16 changed_loading_level = 0;
-	int number_loadable_vehicles = vehicle_count; // Will be shortened for short platform
+	uint32 number_loadable_vehicles = vehicle_count; // Will be shortened for short platform
 
 	// We only unload & load vehicles which are within the station.
 	// To fix: this creates undesired behavior for long trains, because the
@@ -5716,7 +5759,7 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 	// First, unload vehicles.
 
 	uint8 convoy_length = 0;
-	for(int i = 0; i < vehicle_count ; i++)
+	for(uint32 i = 0; i < vehicle_count ; i++)
 	{
 		vehicle_t* v = vehicle[i];
 
@@ -5910,139 +5953,7 @@ void convoi_t::hat_gehalten(halthandle_t halt)
 		return;
 	}
 
-	const sint64 now = welt->get_ticks();
-	if(arrival_time > now)
-	{
-		// This is a workaround for an odd bug the origin of which is as yet unclear.
-		go_on_ticks = WAIT_INFINITE;
-		arrival_time = now;
-	}
-	const uint32 reversing_time = schedule->get_current_entry().reverse > 0 ? calc_reverse_delay() : 0;
-	bool running_late = false;
-	sint64 go_on_ticks_waiting = WAIT_INFINITE;
-	const sint64 earliest_departure_time = arrival_time + ((sint64)current_loading_time - (sint64)reversing_time);
-	if(go_on_ticks == WAIT_INFINITE)
-	{
-		const sint64 departure_time = (arrival_time + (sint64)current_loading_time) - (sint64)reversing_time;
-		if(haltestelle_t::get_halt(get_pos(), get_owner()) != haltestelle_t::get_halt(schedule->get_current_entry().pos, get_owner()))
-		{
-			// Sometimes, for some reason, the loading method is entered with the wrong schedule entry. Make sure that this does not cause
-			// convoys to become stuck trying to get a full load at stops where this is not possible (freight consumers, etc.).
-			loading_limit = 0;
-		}
-		if((!loading_limit || loading_level >= loading_limit) && !wait_for_time)
-		{
-			// Simple case: do not wait for a full load or a particular time.
-			go_on_ticks = std::max(departure_time, arrival_time);
-		}
-		else 
-		{
-			// Wait for a % load or a spacing slot.
-			sint64 go_on_ticks_spacing = WAIT_INFINITE;
-			
-			if(line.is_bound() && schedule->get_spacing() && line->count_convoys())
-			{
-				// Departures/month
-				const sint64 spacing = (welt->ticks_per_world_month * 12u) / (sint64)schedule->get_spacing(); // *12 because the spacing setting is now in 12ths of a fraction of a month.
-				const sint64 spacing_shift = (sint64)schedule->get_current_entry().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
-				const sint64 wait_from_ticks = ((now + reversing_time - spacing_shift) / spacing) * spacing + spacing_shift; // remember, it is integer division
-				sint64 queue_pos = halt.is_bound() ? halt->get_queue_pos(self) : 1ll;
-				go_on_ticks_spacing = (wait_from_ticks + spacing * queue_pos) - reversing_time;
-			}
-			
-			if(schedule->get_current_entry().waiting_time_shift > 0)
-			{
-				// Maximum wait time
-				go_on_ticks_waiting = now + (welt->ticks_per_world_month >> (16ll - (sint64)schedule->get_current_entry().waiting_time_shift)) - (sint64)reversing_time;
-			}
-
-			if (schedule->get_spacing() && !line.is_bound())
-			{
-				// Spacing should not be possible without a line, but this can occasionally occur. Without this, the convoy will wait forever.
-				go_on_ticks_spacing = departure_time;
-			}
-
-			go_on_ticks = std::min(go_on_ticks_spacing, go_on_ticks_waiting);
-			go_on_ticks = std::max(departure_time, go_on_ticks);
-			running_late = wait_for_time && (go_on_ticks_waiting < go_on_ticks_spacing);
-			if(running_late)
-			{
-				go_on_ticks = earliest_departure_time;
-			}
-		}
-	}
-
-	// loading is finished => maybe drive on
-	bool can_go = false;
-	
-	can_go = loading_level >= loading_limit && (now >= go_on_ticks || !wait_for_time);
-	can_go = can_go || (now >= go_on_ticks && !wait_for_time);
-	can_go = can_go || running_late; 
-	can_go = can_go || no_load;
-	can_go = can_go && state != WAITING_FOR_CLEARANCE && state != WAITING_FOR_CLEARANCE_ONE_MONTH && state != WAITING_FOR_CLEARANCE_TWO_MONTHS;
-	can_go = can_go && now > earliest_departure_time;
-	if(can_go) {
-
-		if(withdraw  &&  (loading_level==0  ||  goods_catg_index.empty())) {
-			// destroy when empty
-			self_destruct();
-			return;
-		}
-
-		// add available capacity after loading(!) to statistics
-		for (unsigned i = 0; i<vehicle_count; i++) {
-			book(get_vehicle(i)->get_cargo_max()-get_vehicle(i)->get_total_cargo(), CONVOI_CAPACITY);
-		}
-
-		if (is_maintenance_urgently_needed() && !welt->get_settings().get_simplified_maintenance())
-		{
-			emergency_go_to_depot();
-			if (get_owner() == welt->get_active_player())
-			{
-				char txt[255];
-				sprintf(txt, "%s %s.", get_name(), translator::translate("has been sent to a depot as its maintenance can be postponed no longer"));
-				create_win(new news_img(txt), w_do_not_delete, magic_none);
-			}
-		}
-		else
-		{
-			// Advance schedule
-			advance_schedule();
-			state = ROUTING_1;
-		}
-	}
-
-	// reset the wait_lock
-	if(state == ROUTING_1)
-	{
-		wait_lock = 0;
-	}
-	else
-	{
-		
-		if (loading_limit > 0 && !wait_for_time)
-		{
-			wait_lock = (sint32)((earliest_departure_time - now) / 2ll);
-		}
-		else
-		{
-			wait_lock = (sint32)((go_on_ticks - now) / 2ll);
-		}
-		// The random extra wait here is designed to avoid processing every convoy at once
-		wait_lock += (self.get_id()) % 1024;
-		if (wait_lock < 0 )
-		{
-			wait_lock = 0;
-		}
-		else if(wait_lock > 8192 && go_on_ticks == WAIT_INFINITE)
-		{
-			// This is needed because the above calculation (from Standard) produces excessively
-			// large numbers on occasions due to the conversion in Extended of certain values
-			// (karte_t::ticks and go_on_ticks) to sint64. It would be better ultimately to fix that,
-			// but this seems to work for now.
-			wait_lock = 8192;
-		}
-	}
+	check_departure(halt);
 }
 
 
@@ -7836,7 +7747,19 @@ void convoi_t::emergency_go_to_depot(bool maintain)
 			assert(error == 0);
 #endif
 			// Do NOT do the convoi_arrived here: it's done in enter_depot!
-			state = INITIAL;
+
+			if (!maintain)
+			{
+				state = INITIAL;
+			}
+			else if (is_overhaul_needed())
+			{
+				state = OVERHAUL;
+			}
+			else
+			{
+				state = MAINTENANCE;
+			}
 			schedule->set_current_stop(0);
 		}
 		else
@@ -8162,4 +8085,162 @@ bool convoi_t::is_maintenance_urgently_needed() const
 		}
 	}
 	return false;
+}
+
+bool convoi_t::is_overhaul_needed() const
+{
+	if(welt->get_settings().get_simplified_maintenance())
+	{
+		return false;
+	}
+	for (const_iterator i = begin(); i != end(); ++i)
+	{
+		const vehicle_t &v = **i;
+		if (v.is_overhaul_needed())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void convoi_t::check_departure(halthandle_t halt)
+{
+	// The schedule has not yet been advanced.
+
+	const bool wait_for_time = schedule->get_current_entry().is_flag_set(schedule_entry_t::wait_for_time); 
+
+	const sint64 now = welt->get_ticks();
+	if(arrival_time > now)
+	{
+		// This is a workaround for an odd bug the origin of which is as yet unclear.
+		go_on_ticks = WAIT_INFINITE;
+		arrival_time = now;
+	}
+	const uint32 reversing_time = schedule->get_current_entry().reverse > 0 ? calc_reverse_delay() : 0;
+	bool running_late = false;
+	sint64 go_on_ticks_waiting = WAIT_INFINITE;
+	const sint64 earliest_departure_time = arrival_time + ((sint64)current_loading_time - (sint64)reversing_time);
+	if(go_on_ticks == WAIT_INFINITE)
+	{
+		const sint64 departure_time = (arrival_time + (sint64)current_loading_time) - (sint64)reversing_time;
+		if(haltestelle_t::get_halt(get_pos(), get_owner()) != haltestelle_t::get_halt(schedule->get_current_entry().pos, get_owner()))
+		{
+			// Sometimes, for some reason, the loading method is entered with the wrong schedule entry. Make sure that this does not cause
+			// convoys to become stuck trying to get a full load at stops where this is not possible (freight consumers, etc.).
+			loading_limit = 0;
+		}
+		if((!loading_limit || loading_level >= loading_limit) && !wait_for_time)
+		{
+			// Simple case: do not wait for a full load or a particular time.
+			go_on_ticks = std::max(departure_time, arrival_time);
+		}
+		else 
+		{
+			// Wait for a % load or a spacing slot.
+			sint64 go_on_ticks_spacing = WAIT_INFINITE;
+
+			if(line.is_bound() && schedule->get_spacing() && line->count_convoys())
+			{
+				// Departures/month
+				const sint64 spacing = (welt->ticks_per_world_month * 12u) / (sint64)schedule->get_spacing(); // *12 because the spacing setting is now in 12ths of a fraction of a month.
+				const sint64 spacing_shift = (sint64)schedule->get_current_entry().spacing_shift * welt->ticks_per_world_month / (sint64)welt->get_settings().get_spacing_shift_divisor();
+				const sint64 wait_from_ticks = ((now + reversing_time - spacing_shift) / spacing) * spacing + spacing_shift; // remember, it is integer division
+				sint64 queue_pos = halt.is_bound() ? halt->get_queue_pos(self) : 1ll;
+				go_on_ticks_spacing = (wait_from_ticks + spacing * queue_pos) - reversing_time;
+			}
+
+			if(schedule->get_current_entry().waiting_time_shift > 0)
+			{
+				// Maximum wait time
+				go_on_ticks_waiting = now + (welt->ticks_per_world_month >> (16ll - (sint64)schedule->get_current_entry().waiting_time_shift)) - (sint64)reversing_time;
+			}
+
+			if (schedule->get_spacing() && !line.is_bound())
+			{
+				// Spacing should not be possible without a line, but this can occasionally occur. Without this, the convoy will wait forever.
+				go_on_ticks_spacing = departure_time;
+			}
+
+			go_on_ticks = std::min(go_on_ticks_spacing, go_on_ticks_waiting);
+			go_on_ticks = std::max(departure_time, go_on_ticks);
+			running_late = wait_for_time && (go_on_ticks_waiting < go_on_ticks_spacing);
+			if(running_late)
+			{
+				go_on_ticks = earliest_departure_time;
+			}
+		}
+	}
+
+	// loading is finished => maybe drive on
+	bool can_go = false;
+
+	can_go = loading_level >= loading_limit && (now >= go_on_ticks || !wait_for_time);
+	can_go = can_go || (now >= go_on_ticks && !wait_for_time);
+	can_go = can_go || running_late; 
+	can_go = can_go || no_load;
+	can_go = can_go && state != WAITING_FOR_CLEARANCE && state != WAITING_FOR_CLEARANCE_ONE_MONTH && state != WAITING_FOR_CLEARANCE_TWO_MONTHS;
+	can_go = can_go && now > earliest_departure_time;
+	if(can_go) {
+
+		if(withdraw  &&  (loading_level==0  ||  goods_catg_index.empty())) {
+			// destroy when empty
+			self_destruct();
+			return;
+		}
+
+		// add available capacity after loading(!) to statistics
+		for (unsigned i = 0; i<vehicle_count; i++) {
+			book(get_vehicle(i)->get_cargo_max()-get_vehicle(i)->get_total_cargo(), CONVOI_CAPACITY);
+		}
+
+		if (is_maintenance_urgently_needed())
+		{
+			emergency_go_to_depot();
+			if (get_owner() == welt->get_active_player())
+			{
+				char txt[255];
+				sprintf(txt, "%s %s.", get_name(), translator::translate("has been sent to a depot as its maintenance can be postponed no longer"));
+				create_win(new news_img(txt), w_do_not_delete, magic_none);
+			}
+		}
+		else
+		{
+			// Advance schedule
+			advance_schedule();
+			state = ROUTING_1;
+		}
+	}
+
+	// reset the wait_lock
+	if(state == ROUTING_1)
+	{
+		wait_lock = 0;
+	}
+	else
+	{
+
+		if (loading_limit > 0 && !wait_for_time)
+		{
+			wait_lock = (sint32)((earliest_departure_time - now) / 2ll);
+		}
+		else
+		{
+			wait_lock = (sint32)((go_on_ticks - now) / 2ll);
+		}
+		// The random extra wait here is designed to avoid processing every convoy at once
+		wait_lock += (self.get_id()) % 1024;
+		if (wait_lock < 0 )
+		{
+			wait_lock = 0;
+		}
+		else if(wait_lock > 8192 && go_on_ticks == WAIT_INFINITE)
+		{
+			// This is needed because the above calculation (from Standard) produces excessively
+			// large numbers on occasions due to the conversion in Extended of certain values
+			// (karte_t::ticks and go_on_ticks) to sint64. It would be better ultimately to fix that,
+			// but this seems to work for now.
+			wait_lock = 8192;
+		}
+	}
 }
