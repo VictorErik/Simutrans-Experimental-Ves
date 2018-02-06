@@ -984,3 +984,22 @@ sint64 simline_t::calc_departures_scheduled()
 
 	return timed_departure_points_count * (sint64) schedule->get_spacing();
 }
+
+void simline_t::propagate_triggers(uint16 triggers, bool trigger_one_only)
+{
+	if (!trigger_one_only)
+	{
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				i->set_triggered_conditions(triggers);
+			}
+		}
+	}
+	else
+	{
+		// Find the most suitable convoy to trigger
+
+	}
+}

@@ -19,7 +19,8 @@ public:
 		sint8 reverse, 
 		uint16 flags, 
 		uint16 unique_entry_id, 
-		uint16 condition_bitfield, 
+		uint16 condition_bitfield_broadcaster, 
+		uint16 condition_bitfield_receiver,
 		uint16 target_id_condition_trigger, 
 		uint16 target_id_couple, 
 		uint16 target_id_uncouple, 
@@ -31,7 +32,8 @@ public:
 		reverse(reverse),
 		flags(flags),
 		unique_entry_id(unique_entry_id),
-		condition_bitfield(condition_bitfield),
+		condition_bitfield_broadcaster(condition_bitfield_broadcaster),
+		condition_bitfield_receiver(condition_bitfield_receiver),
 		target_id_condition_trigger(target_id_condition_trigger),
 		target_id_couple(target_id_couple),
 		target_id_uncouple(target_id_uncouple),
@@ -104,11 +106,20 @@ public:
 	uint16 unique_entry_id;
 
 	/*
-	* A bitfield the conditions to trigger
+	* A bitfield of the conditions to trigger
 	* (in the range 1u << 0 to 1u << 15)
 	* when this convoy arrives at this stop
+	* or depot.
 	*/
-	uint16 condition_bitfield;
+	uint16 condition_bitfield_broadcaster;
+
+	/*
+	* A bitfield of the conditions all of
+	* which must be matched by the convoy's
+	* list of stored triggers before the
+	* convoy will leave the stop or depot
+	*/
+	uint16 condition_bitfield_receiver;
 
 	/*
 	* The ID of the line or convoy that will

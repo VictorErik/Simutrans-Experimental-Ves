@@ -2705,6 +2705,29 @@ void convoi_t::ziel_erreicht()
 	const vehicle_t* v = front();
 	alte_direction = v->get_direction();
 
+	// Set any conditional triggers
+	if(schedule->get_current_entry().is_flag_set(schedule_entry_t::send_trigger))
+	{
+		if(schedule->get_current_entry().is_flag_set(schedule_entry_t::cond_trigger_is_line_or_cnv))
+		{
+			// Line if this is true, else convoy
+		}
+		else
+		{
+			// Convoy
+			convoihandle_t cnv_to_trigger;
+			cnv_to_trigger.set_id(schedule->get_current_entry().target_id_condition_trigger);
+			if (cnv_to_trigger.is_bound())
+			{
+				cnv_to_trigger->set_triggered_conditions(schedule->get_current_entry().condition_bitfield_broadcaster);
+			}
+			else
+			{
+				//TODO: Consider whether to display an error message here.
+			}
+		}
+	}
+
 	// check, what is at destination!
 	const grund_t *gr = welt->lookup(v->get_pos());
 	depot_t *dp = gr->get_depot();
@@ -6309,7 +6332,8 @@ void convoi_t::check_pending_updates()
 					// depot => current_stop+1 (depot will be restored later before this)
 					depot = current;
 					removed_depot_entry.minimum_loading = schedule->get_current_entry().minimum_loading;
-					removed_depot_entry.condition_bitfield = schedule->get_current_entry().condition_bitfield;
+					removed_depot_entry.condition_bitfield_broadcaster = schedule->get_current_entry().condition_bitfield_broadcaster;
+					removed_depot_entry.condition_bitfield_receiver = schedule->get_current_entry().condition_bitfield_receiver;
 					removed_depot_entry.flags = schedule->get_current_entry().flags;
 					removed_depot_entry.reverse = schedule->get_current_entry().reverse;
 					removed_depot_entry.spacing_shift = schedule->get_current_entry().spacing_shift;
@@ -6408,7 +6432,7 @@ end_check:
 		if(is_depot) 
 		{
 			// next was depot. restore it
-			schedule->insert(welt->lookup(depot), removed_depot_entry.minimum_loading, removed_depot_entry.waiting_time_shift, removed_depot_entry.spacing_shift, removed_depot_entry.flags, removed_depot_entry.condition_bitfield, removed_depot_entry.target_id_condition_trigger, removed_depot_entry.target_id_uncouple, owner == welt->get_active_player());
+			schedule->insert(welt->lookup(depot), removed_depot_entry.minimum_loading, removed_depot_entry.waiting_time_shift, removed_depot_entry.spacing_shift, removed_depot_entry.flags, removed_depot_entry.condition_bitfield_broadcaster, removed_depot_entry.condition_bitfield_receiver, removed_depot_entry.target_id_condition_trigger, removed_depot_entry.target_id_uncouple, owner == welt->get_active_player());
 			// Insert will move the pointer past the inserted item; move back to it
 			schedule->advance_reverse();
 		}

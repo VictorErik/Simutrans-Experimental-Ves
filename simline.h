@@ -278,6 +278,8 @@ public:
 	inline times_history_map& get_journey_times_history() { return journey_times_history; }
 
 	sint64 calc_departures_scheduled();
+
+	void propagate_triggers(uint16 triggers, bool trigger_one_only);
 };
 
 
