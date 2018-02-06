@@ -23,9 +23,7 @@ public:
 		uint16 target_id_condition_trigger, 
 		uint16 target_id_couple, 
 		uint16 target_id_uncouple, 
-		uint16 target_unique_entry_uncouple,
-		uint8 player_number_trigger_receive,
-		uint8 player_number_trigger_send) :
+		uint16 target_unique_entry_uncouple) :
 		pos(pos),
 		minimum_loading(minimum_loading),
 		waiting_time_shift(waiting_time_shift),
@@ -37,9 +35,7 @@ public:
 		target_id_condition_trigger(target_id_condition_trigger),
 		target_id_couple(target_id_couple),
 		target_id_uncouple(target_id_uncouple),
-		target_unique_entry_uncouple(target_unique_entry_uncouple),
-		player_number_trigger_receive(player_number_trigger_receive),
-		player_number_trigger_send(player_number_trigger_send)
+		target_unique_entry_uncouple(target_unique_entry_uncouple)
 	{}
 
 	/**
@@ -162,20 +158,6 @@ public:
 	 * @author: jamespetts
 	 */
 	sint8 reverse;
-
-	/**
-	* The player number of the conditional trigger
-	* This is necessary to allow players to send and receive 
-	* triggers to interface with other players' services.
-	*/
-	uint8 player_number_trigger_receive;
-
-	/**
-	* The player number of the conditional trigger
-	* This is necessary to allow players to send and receive 
-	* triggers to interface with other players' services.
-	*/
-	uint8 player_number_trigger_send;
 
 	bool is_flag_set(schedule_entry_flag flag) const { return flag & flags; }
 

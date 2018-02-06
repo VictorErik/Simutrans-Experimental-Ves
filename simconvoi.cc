@@ -3145,7 +3145,7 @@ schedule_t *convoi_t::create_schedule()
 				const depot_t* this_depot = gr->get_depot();
 				if (this_depot)
 				{
-					schedule->append(gr, owner->get_player_nr(), owner->get_player_nr(), 0, 0, 0, schedule_entry_t::conditional_skip | schedule_entry_t::maintain_or_overhaul);
+					schedule->append(gr, 0, 0, 0, schedule_entry_t::conditional_skip | schedule_entry_t::maintain_or_overhaul);
 					schedule->set_reverse(1, 0);
 				}
 			}
@@ -6497,7 +6497,7 @@ end_check:
 		if(is_depot) 
 		{
 			// next was depot. restore it
-			schedule->insert(welt->lookup(depot), owner->get_player_nr(), owner->get_player_nr(), removed_depot_entry.minimum_loading, removed_depot_entry.waiting_time_shift, removed_depot_entry.spacing_shift, removed_depot_entry.flags, removed_depot_entry.condition_bitfield, removed_depot_entry.target_id_condition_trigger, removed_depot_entry.target_id_uncouple, owner == welt->get_active_player());
+			schedule->insert(welt->lookup(depot), removed_depot_entry.minimum_loading, removed_depot_entry.waiting_time_shift, removed_depot_entry.spacing_shift, removed_depot_entry.flags, removed_depot_entry.condition_bitfield, removed_depot_entry.target_id_condition_trigger, removed_depot_entry.target_id_uncouple, owner == welt->get_active_player());
 			// Insert will move the pointer past the inserted item; move back to it
 			schedule->advance_reverse();
 		}
@@ -7013,7 +7013,7 @@ bool convoi_t::go_to_depot(bool show_success, bool use_home_depot, bool maintain
 				// in the depot.
 				flags |= schedule_entry_t::store;
 			}
-			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos), get_owner()->get_player_nr(),  get_owner()->get_player_nr(), flags); // Set minimum loading to schedule_entry_t::delete_entry as a flag to signal that this entry should be deleted on arriving at the depot.
+			bool schedule_insertion_succeeded = sch->insert(welt->lookup(depot_pos), flags); // Set minimum loading to schedule_entry_t::delete_entry as a flag to signal that this entry should be deleted on arriving at the depot.
 			// Insert will move the pointer past the inserted item; move back to it
 			sch->advance_reverse();
 			// We still have to call set_schedule
