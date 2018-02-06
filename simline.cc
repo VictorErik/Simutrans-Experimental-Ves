@@ -1000,6 +1000,72 @@ void simline_t::propagate_triggers(uint16 triggers, bool trigger_one_only)
 	else
 	{
 		// Find the most suitable convoy to trigger
+	
+		sint64 earliest_arrival_time = welt->get_ticks();
+		convoi_t* cnv_to_trigger = NULL;
+		uint16 trigger;
 
+		// First, check for all convoys that are actually waiting for this conditional trigger.
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				if(i->get_state() == convoi_t::AWAITING_TRIGGER)
+				{
+					trigger = i->get_schedule()->get_current_entry().condition_bitfield_receiver & triggers;
+					if(i->get_schedule()->get_current_entry().condition_bitfield_receiver == triggers || i->get_schedule()->get_current_entry().condition_bitfield_receiver == trigger)
+					{
+						// This trigger would allow the convoy to depart
+						if(i->get_arrival_time() < earliest_arrival_time)
+						{
+							earliest_arrival_time = i->get_arrival_time();
+							cnv_to_trigger = i.get_rep();
+						}
+					}
+				}
+			}
+		}
+
+		if(cnv_to_trigger != NULL)
+		{
+			cnv_to_trigger->set_triggered_conditions(triggers); 
+			return;
+		}
+		
+		// Second, check again with partial triggering
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				if(i->get_state() == convoi_t::AWAITING_TRIGGER)
+				{
+					if(i->get_schedule()->get_current_entry().condition_bitfield_receiver & triggers)
+					{
+						// This trigger would not allow the convoy to depart alone, but might in combination with others.
+						if(i->get_arrival_time() < earliest_arrival_time)
+						{
+							earliest_arrival_time = i->get_arrival_time();
+							cnv_to_trigger = i.get_rep();
+						}
+					}
+				}
+			}
+		}
+
+		if(cnv_to_trigger != NULL)
+		{
+			cnv_to_trigger->set_triggered_conditions(triggers); 
+			return;
+		}
+
+		// Third, just pick one at random.
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				i->set_triggered_conditions(triggers);
+				return;
+			}
+		}
 	}
 }

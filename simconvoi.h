@@ -1568,6 +1568,8 @@ public:
 	bool is_overhaul_needed() const;
 
 	void check_departure(halthandle_t halt = halthandle_t()); 
+
+	sint64 get_arrival_time() const { return arrival_time; }
 };
 
 #endif

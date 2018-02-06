@@ -2711,6 +2711,12 @@ void convoi_t::ziel_erreicht()
 		if(schedule->get_current_entry().is_flag_set(schedule_entry_t::cond_trigger_is_line_or_cnv))
 		{
 			// Line if this is true, else convoy
+			linehandle_t line_to_trigger;
+			line_to_trigger.set_id(schedule->get_current_entry().target_id_condition_trigger);
+			if(line_to_trigger.is_bound())
+			{
+				line_to_trigger->propagate_triggers(schedule->get_current_entry().condition_bitfield_broadcaster, schedule->get_current_entry().is_flag_set(schedule_entry_t::trigger_one_only));
+			}
 		}
 		else
 		{
