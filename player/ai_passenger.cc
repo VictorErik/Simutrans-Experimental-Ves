@@ -426,8 +426,8 @@ bool ai_passenger_t::create_water_transport_vehicle(const stadt_t* start_stadt, 
 
 	// since 86.01 we use lines for vehicles ...
 	schedule_t *schedule=new ship_schedule_t();
-	schedule->append( welt->lookup_kartenboden(start_pos), 0, 0 );
-	schedule->append( welt->lookup_kartenboden(end_pos), 90, 0 );
+	schedule->append( welt->lookup_kartenboden(start_pos), get_player_nr(), get_player_nr(), 0, 0 );
+	schedule->append( welt->lookup_kartenboden(end_pos), get_player_nr(), get_player_nr(), 90, 0 );
 	schedule->set_current_stop( 1 );
 	schedule->finish_editing();
 	linehandle_t line=simlinemgmt.create_line(simline_t::shipline,this,schedule);
@@ -746,8 +746,8 @@ bool ai_passenger_t::create_air_transport_vehicle(const stadt_t *start_stadt, co
 
 	// since 86.01 we use lines for vehicles ...
 	schedule_t *schedule=new airplane_schedule_();
-	schedule->append( start, 0, 0 );
-	schedule->append( end, 90, 0 );
+	schedule->append( start, get_player_nr(), get_player_nr(), 0, 0 );
+	schedule->append( end,  get_player_nr(), get_player_nr(), 90, 0 );
 	schedule->set_current_stop( 1 );
 	schedule->finish_editing();
 	linehandle_t line=simlinemgmt.create_line(simline_t::airline,this,schedule);
@@ -791,7 +791,7 @@ DBG_MESSAGE("ai_passenger_t::create_bus_transport_vehicle()","bus at (%i,%i)",st
 	schedule_t *schedule=new truck_schedule_t();
 	// do not start at current stop => wont work ...
 	for(int j=0;  j<count;  j++) {
-		schedule->append(welt->lookup_kartenboden(stops[j]), j == 0 || !do_wait ? 0 : 10);
+		schedule->append(welt->lookup_kartenboden(stops[j]), get_player_nr(), get_player_nr(), j == 0 || !do_wait ? 0 : 10);
 	}
 	schedule->set_current_stop( stops[0]==startpos2d );
 	schedule->finish_editing();
@@ -885,7 +885,7 @@ void ai_passenger_t::walk_city(linehandle_t const line, grund_t* const start, in
 					const building_desc_t* bs = hausbauer_t::get_random_station(building_desc_t::generic_stop, road_wt, welt->get_timeline_year_month(), haltestelle_t::PAX);
 					if(  call_general_tool( TOOL_BUILD_STATION, to->get_pos().get_2d(), bs->get_name() )  ) {
 						//add to line
-						line->get_schedule()->append(to,0); // no need to register it yet; done automatically, when convois will be assigned
+						line->get_schedule()->append(to, get_player_nr(), get_player_nr(), 0); // no need to register it yet; done automatically, when convois will be assigned
 					}
 				}
 				// start road, but no houses anywhere => stop searching
@@ -916,7 +916,7 @@ void ai_passenger_t::cover_city_with_bus_route(koord start_pos, int number_of_st
 	// and init all stuff for recursion
 	grund_t *start = welt->lookup_kartenboden(start_pos);
 	linehandle_t line = simlinemgmt.create_line( simline_t::truckline,this, new truck_schedule_t() );
-	line->get_schedule()->append(start,0);
+	line->get_schedule()->append(start, get_player_nr(), get_player_nr(), 0);
 
 	// now create a line
 	walk_city( line, start, number_of_stops );

@@ -414,8 +414,8 @@ bool ai_goods_t::create_ship_transport_vehicle(fabrik_t *qfab, int vehicle_count
 
 	// since 86.01 we use lines for vehicles ...
 	schedule_t *schedule=new ship_schedule_t();
-	schedule->append( welt->lookup_kartenboden(best_pos), 0 );
-	schedule->append( welt->lookup(qfab->get_pos()), 100 );
+	schedule->append( welt->lookup_kartenboden(best_pos), get_player_nr(), get_player_nr(), 0 );
+	schedule->append( welt->lookup(qfab->get_pos()), get_player_nr(), get_player_nr(), 100 );
 	schedule->set_current_stop( 1 );
 	schedule->finish_editing();
 	linehandle_t line=simlinemgmt.create_line(simline_t::shipline,this,schedule);
@@ -478,8 +478,8 @@ void ai_goods_t::create_road_transport_vehicle(fabrik_t *qfab, int vehicle_count
 
 		// since 86.01 we use lines for road vehicles ...
 		schedule_t *schedule=new truck_schedule_t();
-		schedule->append(welt->lookup(pos1), start_location == 0 ? 100 : 0);
-		schedule->append(welt->lookup(pos2), start_location == 1 ? 100 : 0);
+		schedule->append(welt->lookup(pos1), get_player_nr(), get_player_nr(), start_location == 0 ? 100 : 0);
+		schedule->append(welt->lookup(pos2), get_player_nr(), get_player_nr(), start_location == 1 ? 100 : 0);
 		schedule->set_current_stop( start_location );
 		schedule->finish_editing();
 		linehandle_t line=simlinemgmt.create_line(simline_t::truckline,this,schedule);
@@ -553,8 +553,8 @@ void ai_goods_t::create_rail_transport_vehicle(const koord platz1, const koord p
 	schedule = cnv->front()->generate_new_schedule();
 
 	schedule->set_current_stop( 0 );
-	schedule->append(welt->lookup(pos1), minimum_loading);
-	schedule->append(welt->lookup(pos2), 0);
+	schedule->append(welt->lookup(pos1), get_player_nr(), get_player_nr(), minimum_loading);
+	schedule->append(welt->lookup(pos2), get_player_nr(), get_player_nr(), 0);
 	schedule->finish_editing();
 
 	cnv->set_schedule(schedule);

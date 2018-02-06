@@ -2353,11 +2353,11 @@ static const char *tool_schedule_insert_aux(karte_t *welt, player_t *player, koo
 		// ok, now we have a valid ground
 		if(append) 
 		{
-			schedule->append(bd);
+			schedule->append(bd, player->get_player_nr(), player->get_player_nr());
 		}
 		else 
 		{
-			schedule->insert(bd);
+			schedule->insert(bd, player->get_player_nr(), player->get_player_nr());
 		}
 	}
 	return NULL;
@@ -8526,7 +8526,7 @@ bool tool_change_depot_t::init( player_t *player )
 				if (!welt->get_settings().get_simplified_maintenance())
 				{
 					const grund_t* gr_depot = welt->lookup(depot->get_pos()); 
-					selected_line->get_schedule()->append(gr_depot, 0, 0, 0, schedule_entry_t::conditional_skip);
+					selected_line->get_schedule()->append(gr_depot, cnv->get_owner()->get_player_nr(), cnv->get_owner()->get_player_nr(), 0, 0, 0, schedule_entry_t::conditional_skip);
 					selected_line->get_schedule()->set_reverse(1, 0); 
 				}
 			}
