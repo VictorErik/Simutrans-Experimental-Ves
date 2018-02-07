@@ -2188,6 +2188,7 @@ end_loop:
 			}
 			break;
 
+		case AWAITING_TRIGGER:
 		case REPLENISHING:
 		case LOADING:
 			laden();
@@ -2212,17 +2213,58 @@ end_loop:
 		default:	/* keeps compiler silent*/
 			break;
 	}
+
 	// calculate new waiting time
 	vector_tpl<linehandle_t> lines;
-	switch( state ) {
+	switch( state )
+	{
+
+	case AWAITING_TRIGGER:
+		const uint16 conditional_bitfield_receiver = schedule->get_current_entry().condition_bitfield_receiver;
+		const uint16 combined = conditional_bitfield_receiver & conditions_bitfield;
+		const bool is_triggered = conditional_bitfield_receiver == conditions_bitfield || combined == conditional_bitfield_receiver;
+		
+		if (is_triggered)
+		{
+			gr = welt->lookup(get_pos()); 
+			if (depot_t* dep = gr->get_depot())
+			{
+				if (schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait))
+				{
+					state = ENTERING_DEPOT;
+					arrival_time = welt->get_ticks();
+					goto ed;
+				}
+				else
+				{
+					state = LEAVING_DEPOT;
+					goto ld;
+				}
+			}
+			else
+			{
+				if (schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait))
+				{
+					arrival_time = welt->get_ticks();
+				}
+				state = LOADING;
+			}
+		}
+		else
+		{
+			break;
+		}
+
 		// handled by routine
 		case LOADING:
 			break;
 
+		ed:
 		case ENTERING_DEPOT:
 			check_departure();
 			break;
-
+		
+		ld:
 		// immediate action needed
 		case LEAVING_DEPOT:
 			get_owner()->simlinemgmt.get_lines(schedule->get_type(), &lines);	
@@ -2596,7 +2638,7 @@ void convoi_t::enter_depot(depot_t *dep, uint16 flags)
 		{
 			state = INITIAL;
 		}
-		else if (sch->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait))
+		else if (sch->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait) || sch->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_after_wait))
 		{
 			state = AWAITING_TRIGGER;
 		}
@@ -2759,7 +2801,7 @@ void convoi_t::ziel_erreicht()
 			// seems to be a stop, so book the money for the trip
 			set_akt_speed(0);
 			halt->book(1, HALT_CONVOIS_ARRIVED);
-			if (schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait))
+			if (schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_before_wait) || schedule->get_current_entry().is_flag_set(schedule_entry_t::conditional_depart_after_wait))
 			{
 				state = AWAITING_TRIGGER;
 			}
@@ -8234,7 +8276,7 @@ void convoi_t::check_departure(halthandle_t halt)
 				create_win(new news_img(txt), w_do_not_delete, magic_none);
 			}
 		}
-		else
+		else if (state != AWAITING_TRIGGER)
 		{
 			// Advance schedule
 			advance_schedule();
