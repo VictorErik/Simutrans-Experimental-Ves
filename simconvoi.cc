@@ -2216,16 +2216,29 @@ end_loop:
 
 	// calculate new waiting time
 	vector_tpl<linehandle_t> lines;
+	uint16 conditional_bitfield_receiver;
+	uint16 combined;
+	bool is_triggered;
 	switch( state )
 	{
 
 	case AWAITING_TRIGGER:
-		const uint16 conditional_bitfield_receiver = schedule->get_current_entry().condition_bitfield_receiver;
-		const uint16 combined = conditional_bitfield_receiver & conditions_bitfield;
-		const bool is_triggered = conditional_bitfield_receiver == conditions_bitfield || combined == conditional_bitfield_receiver;
+		conditional_bitfield_receiver = schedule->get_current_entry().condition_bitfield_receiver;
+		combined = conditional_bitfield_receiver & conditions_bitfield;
+		is_triggered = conditional_bitfield_receiver == conditions_bitfield || combined == conditional_bitfield_receiver;
 		
 		if (is_triggered)
 		{
+			if (schedule->get_current_entry().is_flag_set(schedule_entry_t::clear_stored_triggers_on_dep))
+			{
+				reset_all_triggers();
+			}
+			else
+			{
+				// Only clear the triggers actually set.
+				clear_triggered_conditions(conditional_bitfield_receiver);
+			}
+			
 			gr = welt->lookup(get_pos()); 
 			if (depot_t* dep = gr->get_depot())
 			{
