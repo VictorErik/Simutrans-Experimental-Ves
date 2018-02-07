@@ -370,6 +370,8 @@ protected:
 	uint32 km_since_last_replenish;
 	sint64 last_maintenance_time;
 
+	uint16 tags;
+
 	virtual void calc_image();
 
 	bool check_access(const weg_t* way) const;
@@ -710,6 +712,11 @@ public:
 
 	bool get_do_not_overhaul() const { return do_not_overhaul; }
 	bool get_do_not_auto_upgrade() const { return do_not_auto_upgrade; }
+
+	uint16 get_tags() const { return tags; }
+	bool is_tag_set(uint16 tag) const { return tag & tags; }
+	void set_tag(uint16 tag) { tag |= tags; }
+	void clear_tag(uint16 tag) { tag &= ~tags; }
 };
 
 

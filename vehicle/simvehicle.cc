@@ -1426,11 +1426,12 @@ vehicle_t::vehicle_t() :
 	fracht = NULL;	
 	class_reassignments = NULL;
 
-	km_since_new = 0;
-	km_since_last_overhaul = 0;
-	km_since_last_maintenance = 0;
-	km_since_last_replenish = 0;
+	km_since_new = 0u;
+	km_since_last_overhaul = 0u;
+	km_since_last_maintenance = 0u;
+	km_since_last_replenish = 0u;
 	last_maintenance_time = 0ll;
+	tags = 0u;
 }
 
 void vehicle_t::set_desc(const vehicle_desc_t* value)
@@ -3055,6 +3056,7 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		file->rdwr_long(km_since_last_maintenance);
 		file->rdwr_long(km_since_last_replenish);
 		file->rdwr_longlong(last_maintenance_time); 
+		file->rdwr_short(tags);
 		
 		bool dno = do_not_overhaul;
 		bool dnau = do_not_auto_upgrade;
@@ -3067,13 +3069,14 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 	}
 	else
 	{
-		km_since_new = 0;
-		km_since_last_overhaul = 0;
-		km_since_last_maintenance = 0;
-		km_since_last_replenish = 0;
+		km_since_new = 0u;
+		km_since_last_overhaul = 0u;
+		km_since_last_maintenance = 0u;
+		km_since_last_replenish = 0u;
 		last_maintenance_time = welt->get_ticks();
 		do_not_overhaul = false;
 		do_not_auto_upgrade = false;
+		tags = 0u;
 	}
 }
 
