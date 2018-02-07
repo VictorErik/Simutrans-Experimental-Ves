@@ -6439,14 +6439,14 @@ sint32 karte_t::generate_passengers_or_mail(const goods_desc_t * wtyp)
 			}
 			else
 			{
-				FOR(minivec_tpl<const planquadrat_t*>, const& current_tile_3, current_destination.building->get_tiles())
+				for(const planquadrat_t* current_tile_4 : current_destination.building->get_tiles())
 				{
-					const nearby_halt_t* halt_list = current_tile_3->get_haltlist();
+					const nearby_halt_t* halt_list = current_tile_4->get_haltlist();
 					if (!halt_list)
 					{
 						continue;
 					}
-					for (int h = current_tile_3->get_haltlist_count() - 1; h >= 0; h--)
+					for (int h = current_tile_4->get_haltlist_count() - 1; h >= 0; h--)
 					{
 						halthandle_t halt = halt_list[h].halt;
 						if (halt->is_enabled(wtyp))
