@@ -2,11 +2,13 @@
 #define schedule_h
 
 #include "schedule_entry.h"
+#include "../dataobj/consist_order_t.h"
 
 #include "../halthandle_t.h"
 
 #include "../tpl/minivec_tpl.h"
 #include "../tpl/koordhashtable_tpl.h"
+#include "../tpl/inthashtable_tpl.h"
 
 #define TIMES_HISTORY_SIZE 3
 
@@ -18,7 +20,7 @@ class karte_t;
 
 
 /**
- * Eine Klasse zur Speicherung von Fahrplänen in Simutrans.
+ * Class to hold schedule of vehicles in Simutrans.
  *
  * @author Hj. Malthaner
  */
@@ -35,15 +37,29 @@ protected:
 public:
 	minivec_tpl<schedule_entry_t> entries;
 
+	/*
+	* The consist orders for this schedule, indexed by
+	* the unique ID of each schedule entry.
+	*
+	* These are separate from schedule entries because
+	* they are much more heavyweight objects, and
+	* schedule entries are often copied by value.
+	*
+	* Query: Would move constructors make a difference here?
+	* This would need a great deal of checking and re-factoring
+	* to verify and implement.
+	*/
+	inthashtable_tpl<uint16, consist_order_t> orders;
+
 	/**
-	* sollte eine Fehlermeldung ausgeben, wenn halt nicht erlaubt ist
+	* Returns error message if stops are not allowed
 	* @author Hj. Malthaner
 	*/
 	virtual char const* get_error_msg() const = 0;
 
 	/**
-	* der allgemeine Fahrplan erlaubt haltestellen überall.
-	* diese Methode sollte in den unterklassen redefiniert werden.
+	* Returns true if this schedule allows stop at the
+	* given tile.
 	* @author Hj. Malthaner
 	*/
 	virtual bool is_stop_allowed(const grund_t *gr) const;
