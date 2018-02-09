@@ -23,6 +23,14 @@ struct vehicle_description_element
 	*/
 	vehicle_desc_t* specific_vehicle = nullptr;
 
+	/*
+	* If this is set to true, the vehicle slot is empty.
+	* This means that it is permissible for the convoy as
+	* assembled by this consist order to have no vehicle
+	* in this slot.
+	*/
+	bool empty = true;
+
 	/* Rules hereinafter */
 	
 	uint8 engine_type = 0;
