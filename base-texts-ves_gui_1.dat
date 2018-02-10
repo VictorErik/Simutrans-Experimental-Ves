@@ -1,0 +1,26 @@
+# Simutranslator settings for Simutrans-Extended texts
+# Addendum for the reorganisation of the depot window
+#
+# Author: jamespetts
+# Created: April 2013
+#
+obj=program_text
+name=estimated_renewal
+note=Shown in the way info window
+-
+obj=program_text
+name=expected_degration
+note=Shown in the way info window
+-
+obj=program_text
+name=in_%i_years
+note=Shown in the way info window
+-
+obj=program_text
+name=>_50_years
+note=Shown in the way info window
+-
+obj=program_text
+name=not_enough_data
+note=Shown in the way info window
+-
