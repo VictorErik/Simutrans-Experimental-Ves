@@ -914,6 +914,64 @@ void weg_t::info(cbuffer_t & buf, bool is_bridge) const
 		buf.append(translator::translate("keine"));
 		buf.append("\n");
 	}
+	if (!degraded)
+	{
+		// Find out approximately when the road needs to upgrade again	
+		if (replacement_way)
+		{
+			buf.append(translator::translate("estimated_renewal"));
+		}
+		else
+		{
+			buf.append(translator::translate("expected_degration"));
+		}
+		buf.append(": ");
+		if (welt->get_timeline_year_month() - last_renewal_month_year > 0 && get_condition_percent() < 100)
+		{
+			uint16 month_since_last_renewal = welt->get_timeline_year_month() - last_renewal_month_year + 1;
+			uint32 used_condition_percenta = 100 - get_condition_percent();
+			const uint32 degridation_fraction = welt->get_settings().get_way_degradation_fraction();
+			uint32 condition_left = replacement_way ? get_condition_percent() - (100 / degridation_fraction) : get_condition_percent();
+
+			const long double months_pr_percent = (long double)month_since_last_renewal / used_condition_percenta;
+			const long double remaining_months = (long double)months_pr_percent *condition_left;
+			uint16 remaining_years = remaining_months / 12;
+
+			const long double ticks_pr_month = (long double)welt->ticks_per_world_month;
+			const long double remaining_month_ticks = (long double)welt->get_next_month_ticks() - welt->get_ticks();
+			const long double progress_towards_next_month_ticks = ticks_pr_month - remaining_month_ticks;
+			const double month_progress_percent = (progress_towards_next_month_ticks / ticks_pr_month * 100) / 100;
+
+			// Due to some very inacuracy in the calculations, the "(month_progress_percent*2) - 1" part in the lower line will subtract a month from the beginning,
+			// and add a month to the ending of each month in the calculation. When testing, this seemed to give better predictions and help eliminating the yoyo effect at each ends of the months.
+			// This should be subject to calibration if the values still jump too much back and fourth. // Ves
+			const uint16 next_renewal_month_year = remaining_months + welt->get_current_month() + (month_progress_percent*2) - 1;
+
+			char next_renew_date[40];
+			if (remaining_years < 10)
+			{
+				// Only show date when it is within 10 years.
+				sprintf(next_renew_date, "%s, %i", translator::get_month_name(next_renewal_month_year % 12), next_renewal_month_year / 12);
+			}
+			else if (remaining_years < 50)
+			{
+				// Just show how many years left.
+				sprintf(next_renew_date, translator::translate("in_%i_years"), remaining_years);
+			}
+			else
+			{
+				// Dont even bother count the years...
+				sprintf(next_renew_date, translator::translate(">_50_years"));
+			}
+			buf.append(next_renew_date);
+			buf.append("\n");
+		}
+		else
+		{
+			buf.append(translator::translate("not_enough_data"));
+		}
+		buf.append("\n");
+	}
 
 	if (way_constraints.get_permissive() || way_constraints.get_prohibitive())
 	{
