@@ -942,10 +942,11 @@ void weg_t::info(cbuffer_t & buf, bool is_bridge) const
 			const long double progress_towards_next_month_ticks = ticks_pr_month - remaining_month_ticks;
 			const double month_progress_percent = (progress_towards_next_month_ticks / ticks_pr_month * 100) / 100;
 
-			// Due to some very inacuracy in the calculations, the "(month_progress_percent*2) - 1" part in the lower line will subtract a month from the beginning,
+			// Due to some very inacuracy in the calculations, the "((month_progress_percent*2) - 1)" part in the lower line will subtract a month from the beginning,
 			// and add a month to the ending of each month in the calculation. When testing, this seemed to give better predictions and help eliminating the yoyo effect at each ends of the months.
-			// This should be subject to calibration if the values still jump too much back and fourth. // Ves
-			const uint16 next_renewal_month_year = remaining_months + welt->get_current_month() + (month_progress_percent*2) - 1;
+			// This should be subject to calibration if the values still jump too much back and fourth.
+			// To alter the "buffer", increase/decrease the "2" value, to "move" the buffer, increase/decrease the "1" value // Ves
+			const uint16 next_renewal_month_year = remaining_months + welt->get_current_month() + ((month_progress_percent*2) - 1);
 
 			char next_renew_date[40];
 			if (remaining_years < 10)

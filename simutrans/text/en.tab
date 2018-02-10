@@ -3794,3 +3794,13 @@ convoy_times_history
 Convoy Times History: 
 more_units
 more units
+estimated_renewal
+Estimated renewal
+expected_degration
+Expected to degrade
+in_%i_years
+in %i years
+>_50_years
+> 50 years
+not_enough_data
+not enough data
