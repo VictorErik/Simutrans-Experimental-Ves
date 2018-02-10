@@ -929,11 +929,11 @@ void weg_t::info(cbuffer_t & buf, bool is_bridge) const
 		if (welt->get_timeline_year_month() - last_renewal_month_year > 0 && get_condition_percent() < 100)
 		{
 			uint16 month_since_last_renewal = welt->get_timeline_year_month() - last_renewal_month_year + 1;
-			uint32 used_condition_percenta = 100 - get_condition_percent();
+			uint32 used_condition_percents = 100 - get_condition_percent();
 			const uint32 degridation_fraction = welt->get_settings().get_way_degradation_fraction();
 			uint32 condition_left = replacement_way ? get_condition_percent() - (100 / degridation_fraction) : get_condition_percent();
 
-			const long double months_pr_percent = (long double)month_since_last_renewal / used_condition_percenta;
+			const long double months_pr_percent = (long double)month_since_last_renewal / used_condition_percents;
 			const long double remaining_months = (long double)months_pr_percent *condition_left;
 			uint16 remaining_years = remaining_months / 12;
 
