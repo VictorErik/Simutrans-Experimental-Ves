@@ -61,6 +61,11 @@ struct vehicle_description_element
 	uint16 min_capacity = 0;
 	uint16 max_capacity = 65535;
 
+	uint32 max_running_cost = UINT32_MAX_VALUE;
+	uint32 max_fixed_cost = UINT32_MAX_VALUE;
+	uint32 min_running_cost = 0;
+	uint32 min_fixed_cost = 0;
+
 	/*
 	* These rules define which of available
 	* vehicles are to be preferred, and do
@@ -82,16 +87,17 @@ struct vehicle_description_element
 		prefer_high_power				= (1u << 1),
 		prefer_high_tractive_effort		= (1u << 2),
 		prefer_high_speed				= (1u << 3),
-		prefer_high_cost				= (1u << 4),
-		prefer_low_capacity				= (1u << 5),
-		prefer_low_power				= (1u << 6),
-		prefer_low_tractive_effort		= (1u << 7),
-		prefer_low_speed				= (1u << 8),
-		prefer_low_cost					= (1u << 9)
-		// TODO: Consider adding fixed/per km types of maintenance cost here
+		prefer_high_running_cost		= (1u << 4),
+		prefer_high_fixed_cost			= (1u << 5),
+		prefer_low_capacity				= (1u << 6),
+		prefer_low_power				= (1u << 7),
+		prefer_low_tractive_effort		= (1u << 8),
+		prefer_low_speed				= (1u << 9),
+		prefer_low_running_cost			= (1u << 10),
+		prefer_low_fixed_cost			= (1u << 11)
 	};
 	
-	uint16 rule_flags[10] { prefer_high_capacity, prefer_high_power, prefer_high_tractive_effort, prefer_high_speed, prefer_high_cost, prefer_low_capacity, prefer_low_power, prefer_low_tractive_effort, prefer_low_speed, prefer_low_cost };
+	uint16 rule_flags[12] { prefer_high_capacity, prefer_high_power, prefer_high_tractive_effort, prefer_high_speed, prefer_high_running_cost, prefer_high_fixed_cost, prefer_low_capacity, prefer_low_power, prefer_low_tractive_effort, prefer_low_speed, prefer_low_running_cost, prefer_low_fixed_cost };
 };
 
 class consist_order_element_t
