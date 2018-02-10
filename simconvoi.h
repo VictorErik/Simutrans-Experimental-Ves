@@ -72,7 +72,7 @@ struct route_range_specification
 class convoi_t : public sync_steppable, public overtaker_t, public lazy_convoy_t
 {
 public:
-	enum convoi_cost_t {			// Exp|Std|Description
+	enum convoi_cost_t {			// Ext|Std|Description
 		CONVOI_CAPACITY = 0,		//  0 | 0 | the amount of ware that could be transported, theoretically	
 		CONVOI_TRANSPORTED_GOODS,	//  1 | 1 | the amount of ware that has been transported
 		CONVOI_AVERAGE_SPEED,		//  2 |   | the average speed of the convoy per rolling month
@@ -92,7 +92,7 @@ public:
 	*/
 	enum { max_vehicle=8, max_rail_vehicle = 64 };
 
-	enum states {INITIAL,
+	enum states {INITIAL, // INITIAL means stored in the depot
 		EDIT_SCHEDULE, 
 		ROUTING_1,
 		ROUTING_2,
@@ -108,12 +108,16 @@ public:
 		WAITING_FOR_CLEARANCE_TWO_MONTHS,
 		CAN_START_TWO_MONTHS,
 		LEAVING_DEPOT,
-		ENTERING_DEPOT,
+		ENTERING_DEPOT, 
 		REVERSING,
 		OUT_OF_RANGE,
 		EMERGENCY_STOP,
 		ROUTE_JUST_FOUND,
 		NO_ROUTE_TOO_COMPLEX,
+		REPLENISHING,
+		MAINTENANCE,
+		OVERHAUL,
+		AWAITING_TRIGGER,
 		MAX_STATES
 	};
 
@@ -699,6 +703,7 @@ private:
 	* @author yobbobandana
 	*/
 	void advance_schedule();
+	void advance_schedule_internal();
 
 	/**
 	 * Measure and record the times that
@@ -968,7 +973,7 @@ public:
 	* Called to make a convoi enter a depot
 	* @author Hj. Malthaner, neroden
 	*/
-	void enter_depot(depot_t *dep);
+	void enter_depot(depot_t *dep, uint16 flags = 0);
 
 	/**
 	* Gibt Namen des Convois zurück.
@@ -1418,7 +1423,7 @@ public:
 	bool has_same_vehicles(convoihandle_t other) const;
 
 	// Go to depot, if possible
-	bool go_to_depot(bool show_success, bool use_home_depot = false);
+	bool go_to_depot(bool show_success, bool use_home_depot = false, bool maintain = false);
 
 	// True if convoy has no cargo
 	//@author: isidoro
@@ -1470,10 +1475,8 @@ public:
 	// taking into account any catering.
 	uint8 get_comfort(uint8 g_class) const;
 
-	/** The new revenue calculation method for per-leg
-	 * based revenue calculation, rather than per-hop
-	 * based revenue calculation. This method calculates
-	 * the revenue of a ware packet as it is unloaded.
+	/** This method calculates the revenue of each
+	 * ware packet as it is unloaded.
 	 *
 	 * It also calculates allocations of revenue to different
 	 * players based on track usage.
@@ -1515,7 +1518,7 @@ public:
 	/** For going to a depot automatically
 	 *  when stuck - will teleport if necessary.
 	 */
-	void emergency_go_to_depot();
+	void emergency_go_to_depot(bool maintain = false);
 
 	journey_times_map& get_average_journey_times();
 	inline const journey_times_map& get_average_journey_times_this_convoy_only() const { return average_journey_times; }
@@ -1537,8 +1540,6 @@ public:
 
 	bool carries_this_or_lower_class(uint8 catg, uint8 g_class) const;
 
-	bool check_fresh_carries_class(uint8 catg, uint8 g_class) const;
-
 	const minivec_tpl<uint8>* get_classes_carried(uint8 catg) const 
 	{ 
 		if (catg == goods_manager_t::INDEX_PAS)
@@ -1556,12 +1557,17 @@ public:
 	} 
 
 	bool check_triggered_condition(uint16 value) const { return value & conditions_bitfield; }
-
 	void set_triggered_conditions(uint16 value) { conditions_bitfield |= value; }
-
 	void clear_triggered_conditions(uint16 value) { conditions_bitfield &= ~value; }
-
 	void reset_all_triggers() { conditions_bitfield = 0; }
+
+	bool is_maintenance_needed() const;
+	bool is_maintenance_urgently_needed() const;
+	bool is_overhaul_needed() const;
+
+	void check_departure(halthandle_t halt = halthandle_t()); 
+
+	sint64 get_arrival_time() const { return arrival_time; }
 };
 
 #endif

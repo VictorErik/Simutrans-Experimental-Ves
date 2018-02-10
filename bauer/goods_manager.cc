@@ -54,9 +54,10 @@ bool goods_manager_t::successfully_loaded()
 		dbg->fatal("goods_manager_t::successfully_loaded()","Too many different goods %i>255",goods.get_count()-1 );
 	}
 
-	// assign indexes
+	// assign indexes, and fix number_of_classes
 	for(  uint8 i=3;  i<goods.get_count();  i++  ) {
 		goods[i]->goods_index = i;
+		goods[i]->fix_number_of_classes();
 	}
 
 	// now assign unique category indexes for unique categories
@@ -121,9 +122,10 @@ static bool compare_ware_desc(const goods_desc_t* a, const goods_desc_t* b)
 bool goods_manager_t::register_desc(goods_desc_t *desc)
 {
 	desc->values.clear();
-	ITERATE(desc->base_values, i)
+	//ITERATE(desc->base_values, i)
+	for(auto base_value : desc->base_values)
 	{
-		desc->values.append(desc->base_values[i]);
+		desc->values.append(base_value);
 	}
 	::register_desc(special_objects, desc);
 	// avoid duplicates with same name
@@ -191,15 +193,14 @@ const goods_desc_t *goods_manager_t::get_info_catg_index(const uint8 catg_index)
 // adjuster for dummies ...
 void goods_manager_t::set_multiplier(sint32 multiplier, uint16 scale_factor)
 {
-//DBG_MESSAGE("goods_manager_t::set_multiplier()","new factor %i",multiplier);
 	for(unsigned i=0;  i<get_count();  i++  ) 
 	{
 		goods[i]->values.clear();
-		ITERATE(goods[i]->base_values, n)
+		for(auto goods_entry : goods[i]->base_values)
 		{
-			sint32 long_base_value = goods[i]->base_values[n].price;
+			sint32 long_base_value = goods_entry.price;
 			uint16 new_value = (uint16)((long_base_value * multiplier) / 1000l);
-			goods[i]->values.append(fare_stage_t(goods[i]->base_values[n].to_distance, new_value));
+			goods[i]->values.append(fare_stage_t(goods_entry.to_distance, new_value));
 		}
 		goods[i]->set_scale(scale_factor);
 	}

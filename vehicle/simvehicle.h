@@ -360,12 +360,17 @@ protected:
 	bool smoke:1;
 	bool check_for_finish:1;		// true, if on the last tile
 	bool has_driven:1;
+	
+	bool do_not_overhaul : 1;
+	bool do_not_auto_upgrade : 1;
 
 	uint32 km_since_new;
 	uint32 km_since_last_overhaul;
 	uint32 km_since_last_maintenance;
-	uint32 km_since_last_refuel;
+	uint32 km_since_last_replenish;
 	sint64 last_maintenance_time;
+
+	uint16 tags;
 
 	virtual void calc_image();
 
@@ -429,7 +434,7 @@ public:
 	void set_route_index(uint16 value) { route_index = value; }
 	const koord3d get_pos_prev() const {return pos_prev;}
 
-    virtual route_t::route_result_t reroute(const uint16 reroute_index, const koord3d &ziel, route_t* route = NULL);
+	virtual route_t::route_result_t reroute(const uint16 reroute_index, const koord3d &ziel, route_t* route = NULL);
 
 	/**
 	* Get the base image.
@@ -479,7 +484,10 @@ public:
 
 	void set_direction_steps(sint16 value) { direction_steps = value; }
 
-	void step_km(uint32 km) { km_since_new += km; km_since_last_overhaul += km; km_since_last_maintenance += km; km_since_last_refuel += km; }
+	void step_km(uint32 km) { km_since_new += km; km_since_last_overhaul += km; km_since_last_maintenance += km; km_since_last_replenish += km; }
+
+	void fix_class_accommodations();
+
 
 #ifdef INLINE_OBJ_TYPE
 protected:
@@ -530,7 +538,7 @@ public:
 	sint32 get_speed_limit() const { return speed_limit; }
 	static inline sint32 speed_unlimited() {return (std::numeric_limits<sint32>::max)(); }
 
-	const slist_tpl<ware_t> & get_cargo(uint8 g_class) const { return fracht[g_class];}   // list of goods being transported (indexed by class)
+	const slist_tpl<ware_t> & get_cargo(uint8 g_class) const { return fracht[g_class];}   // list of goods being transported (indexed by accommodation class)
 
 	/**
 	 * Rotate freight target coordinates, has to be called after rotating factories.
@@ -572,8 +580,6 @@ public:
 	* @author Hj. Malthaner
 	*/
 	void get_cargo_info(cbuffer_t & buf) const;
-
-	void get_cargo_class_info(cbuffer_t & buf) const;
 
 	// Check for straightness of way.
 	//@author jamespetts
@@ -673,13 +679,15 @@ public:
 
 	uint16 get_sum_weight() const { return (sum_weight + 499) / 1000; }
 
+	uint16 get_overcrowded_capacity(uint8 g_class) const;
 	// @author: jamespetts
 	uint16 get_overcrowding(uint8 g_class) const;
 
 	// @author: jamespetts
 	uint8 get_comfort(uint8 catering_level = 0, uint8 g_class = 0) const;
 
-	uint16 get_capacity(uint8 g_class, bool include_lower_classes = false) const;
+	uint16 get_accommodation_capacity(uint8 g_class, bool include_lower_classes = false) const;
+	uint16 get_fare_capacity(uint8 g_class, bool include_lower_classes = false) const;
 
 	// BG, 06.06.2009: update player's fixed maintenance
 	void finish_rd();
@@ -690,6 +698,28 @@ public:
 
 	virtual sint32 get_takeoff_route_index() const { return INVALID_INDEX; }
 	virtual sint32 get_touchdown_route_index() const { return INVALID_INDEX; }
+
+	// TODO: Implement proper logic for this. Aircraft need different logic to other vehicles, hence
+	// virtual. Query: do we need different logic for other vehicles, too? 
+	// This should always return true when is_maintenance_urgently_needed() would be true.
+	virtual bool is_maintenance_needed() const { return false; }
+	virtual bool is_maintenance_urgently_needed() const { return false; }
+	virtual bool is_overhaul_needed() const { return false; }
+
+	void replenish() { km_since_last_replenish = 0; }
+	void maintain() { replenish(); km_since_last_maintenance = 0; }
+	void overhaul() { maintain(); km_since_last_overhaul = 0; } // TODO: Add code here for updating the livery.
+
+	void set_do_not_overhaul(bool value) { do_not_overhaul = value; }
+	void set_do_not_auto_upgrade(bool value) { do_not_auto_upgrade = value; }
+
+	bool get_do_not_overhaul() const { return do_not_overhaul; }
+	bool get_do_not_auto_upgrade() const { return do_not_auto_upgrade; }
+
+	uint16 get_tags() const { return tags; }
+	bool is_tag_set(uint16 tag) const { return tag & tags; }
+	void set_tag(uint16 tag) { tag |= tags; }
+	void clear_tag(uint16 tag) { tag &= ~tags; }
 };
 
 
@@ -1057,7 +1087,7 @@ public:
 	route_t::route_result_t calc_route(koord3d start, koord3d ziel, sint32 max_speed, bool is_tall, route_t* route);
 
 	// BG, 08.08.2012: extracted from can_enter_tile()
-    route_t::route_result_t reroute(const uint16 reroute_index, const koord3d &ziel);
+	route_t::route_result_t reroute(const uint16 reroute_index, const koord3d &ziel);
 
 #ifdef INLINE_OBJ_TYPE
 #else

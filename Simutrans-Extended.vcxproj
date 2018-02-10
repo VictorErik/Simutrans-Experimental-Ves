@@ -3227,6 +3227,7 @@
     <ClCompile Include="descriptor\reader\xref_reader.cc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dataobj\consist_order_t.h" />
     <ClInclude Include="dataobj\environment.h" />
     <ClInclude Include="dataobj\gameinfo.h" />
     <ClInclude Include="dataobj\height_map_loader.h" />

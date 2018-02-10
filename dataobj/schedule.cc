@@ -23,7 +23,7 @@
 
 #include "../tpl/slist_tpl.h"
 
-schedule_entry_t schedule_t::dummy_entry(koord3d::invalid, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0);
+schedule_entry_t schedule_t::dummy_entry(koord3d::invalid, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0);
 
 schedule_t::schedule_t(loadsave_t* const file)
 {
@@ -122,7 +122,7 @@ halthandle_t schedule_t::get_prev_halt( player_t *player ) const
 }
 
 
-bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, uint16 flags, uint16 condition_bitfield, uint16 target_id_condition_trigger, uint16 target_id_couple, uint16 target_id_uncouple, uint16 target_unique_entry_uncouple, bool show_failure)
+bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, uint16 flags, uint16 condition_bitfield_broadcaster, uint16 condition_bitfield_receiver, uint16 target_id_condition_trigger, uint16 target_id_couple, uint16 target_id_uncouple, uint16 target_unique_entry_uncouple, bool show_failure)
 {
 	// stored in minivec, so we have to avoid adding too many
 	if(entries.get_count() >= 254) 
@@ -147,7 +147,7 @@ bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 	}
 
 	if(  is_stop_allowed(gr)  ) {
-		entries.insert_at(current_stop, schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, flags, get_next_free_unique_id(), condition_bitfield, target_id_condition_trigger, target_id_couple, target_id_uncouple, target_unique_entry_uncouple));
+		entries.insert_at(current_stop, schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, flags, get_next_free_unique_id(), condition_bitfield_broadcaster, condition_bitfield_receiver, target_id_condition_trigger, target_id_couple, target_id_uncouple, target_unique_entry_uncouple));
 		current_stop ++;
 		make_current_stop_valid();
 		return true;
@@ -164,7 +164,7 @@ bool schedule_t::insert(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 
 
 
-bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, uint16 flags, uint16 condition_bitfield, uint16 target_id_condition_trigger, uint16 target_id_couple, uint16 target_id_uncouple, uint16 target_unique_entry_uncouple)
+bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting_time_shift, sint16 spacing_shift, uint16 flags, uint16 condition_bitfield_broadcaster, uint16 condition_bitfield_receiver, uint16 target_id_condition_trigger, uint16 target_id_couple, uint16 target_id_uncouple, uint16 target_unique_entry_uncouple)
 {
 	// stored in minivec, so we have to avoid adding too many
 	if(entries.get_count()>=254) {
@@ -185,7 +185,7 @@ bool schedule_t::append(const grund_t* gr, uint16 minimum_loading, uint8 waiting
 	}
 
 	if(is_stop_allowed(gr)) {
-		entries.append(schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, flags, get_next_free_unique_id(), condition_bitfield, target_id_condition_trigger, target_id_couple, target_id_uncouple, target_unique_entry_uncouple), 4);
+		entries.append(schedule_entry_t(gr->get_pos(), minimum_loading, waiting_time_shift, spacing_shift, -1, flags, get_next_free_unique_id(), condition_bitfield_broadcaster, condition_bitfield_receiver, target_id_condition_trigger, target_id_couple, target_id_uncouple, target_unique_entry_uncouple), 4);
 		return true;
 	}
 	else {
@@ -290,7 +290,7 @@ void schedule_t::rdwr(loadsave_t *file)
 			uint32 dummy;
 			pos.rdwr(file);
 			file->rdwr_long(dummy);
-			entries.append(schedule_entry_t(pos, (uint8)dummy, 0, 0, 0, 0, get_next_free_unique_id(), 0, 0, 0, 0, 0));
+			entries.append(schedule_entry_t(pos, (uint8)dummy, 0, 0, 0, 0, get_next_free_unique_id(), 0, 0, 0, 0, 0, 0));
 		}
 	}
 	else {
@@ -321,7 +321,9 @@ void schedule_t::rdwr(loadsave_t *file)
 				entries[i].minimum_loading = (uint16)old_minimum_loading;
 
 			}
-			if(file->get_version()>=99018) {
+
+			if(file->get_version()>=99018)
+			{
 				file->rdwr_byte(entries[i].waiting_time_shift);
 
 				if(file->get_extended_version() >= 9 && file->get_version() >= 110006) 
@@ -374,18 +376,29 @@ void schedule_t::rdwr(loadsave_t *file)
 						}
 					}
 
-					entries[i].unique_entry_id = get_next_free_unique_id();
+					if (file->is_loading())
+					{
+						entries[i].unique_entry_id = get_next_free_unique_id();
+						entries[i].flags = 0;
+						entries[i].condition_bitfield_broadcaster = 0;
+						entries[i].condition_bitfield_receiver = 0;
+						entries[i].target_id_condition_trigger = 0;
+						entries[i].target_id_couple = 0;
+						entries[i].target_id_uncouple = 0;
+						entries[i].target_unique_entry_uncouple = 0;
+					}
 				}	
-			}
-			else // Newer version (>14) with bitfield and new data
-			{
-				file->rdwr_short(entries[i].flags);
-				file->rdwr_short(entries[i].unique_entry_id);
-				file->rdwr_short(entries[i].condition_bitfield);
-				file->rdwr_short(entries[i].target_id_condition_trigger);
-				file->rdwr_short(entries[i].target_id_couple);
-				file->rdwr_short(entries[i].target_id_uncouple);
-				file->rdwr_short(entries[i].target_unique_entry_uncouple);
+				else // Newer version (>14) with bitfield and new data
+				{
+					file->rdwr_short(entries[i].flags);
+					file->rdwr_short(entries[i].unique_entry_id);
+					file->rdwr_short(entries[i].condition_bitfield_broadcaster);
+					file->rdwr_short(entries[i].condition_bitfield_receiver);
+					file->rdwr_short(entries[i].target_id_condition_trigger);
+					file->rdwr_short(entries[i].target_id_couple);
+					file->rdwr_short(entries[i].target_id_uncouple);
+					file->rdwr_short(entries[i].target_unique_entry_uncouple);
+				}
 			}
 
 			if(entries[i].is_flag_set(schedule_entry_t::wait_for_time))
@@ -409,11 +422,11 @@ void schedule_t::rdwr(loadsave_t *file)
 	if(file->get_extended_version() >= 9 && file->get_extended_version() < 14)
 	{
 		// Older versions stored the spacing as whole numbers, rather than tenths.
-		sint16 sp = spacing / 10;
+		sint16 sp = spacing / 12;
 		file->rdwr_short(sp);
 		if (file->is_loading())
 		{
-			sp = spacing * 10;
+			sp = spacing * 12;
 		}
 	}
 	if (file->get_extended_version() >= 14)
@@ -479,7 +492,8 @@ bool schedule_t::matches(karte_t *welt, const schedule_t *schedule)
 			&& schedule->entries[(uint8)f2].spacing_shift == entries[(uint8)f1].spacing_shift
 			&& schedule->entries[(uint16)f2].flags == entries[(uint16)f1].flags
 			&& schedule->entries[(uint16)f2].unique_entry_id == entries[(uint16)f1].unique_entry_id
-			&& schedule->entries[(uint16)f2].condition_bitfield == entries[(uint16)f1].condition_bitfield
+			&& schedule->entries[(uint16)f2].condition_bitfield_broadcaster == entries[(uint16)f1].condition_bitfield_broadcaster
+			&& schedule->entries[(uint16)f2].condition_bitfield_receiver == entries[(uint16)f1].condition_bitfield_receiver
 			&& schedule->entries[(uint16)f2].target_id_condition_trigger == entries[(uint16)f1].target_id_condition_trigger
 			&& schedule->entries[(uint16)f2].target_id_couple == entries[(uint16)f1].target_id_couple
 			&& schedule->entries[(uint16)f2].target_id_uncouple == entries[(uint16)f1].target_id_uncouple
@@ -646,7 +660,7 @@ void schedule_t::sprintf_schedule( cbuffer_t &buf ) const
 	buf.append( "|" );
 	FOR(minivec_tpl<schedule_entry_t>, const& i, entries) 
 	{
-		buf.printf( "%s,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i|", i.pos.get_str(), i.minimum_loading, (int)i.waiting_time_shift, (int)i.spacing_shift, (int)i.reverse, (int)i.flags, (int)i.unique_entry_id, (int)i.condition_bitfield, (int)i.target_id_condition_trigger, (int)i.target_id_couple, (int)i.target_id_uncouple, (int)i.target_unique_entry_uncouple);
+		buf.printf( "%s,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i|", i.pos.get_str(), i.minimum_loading, (int)i.waiting_time_shift, (int)i.spacing_shift, (int)i.reverse, (int)i.flags, (int)i.unique_entry_id, (int)i.condition_bitfield_broadcaster, (int)i.condition_bitfield_receiver, (int)i.target_id_condition_trigger, (int)i.target_id_couple, (int)i.target_id_uncouple, (int)i.target_unique_entry_uncouple);
 	}
 }
 
@@ -703,7 +717,7 @@ bool schedule_t::sscanf_schedule( const char *ptr )
 		return false;
 	}
 	p++;
-	const uint32 number_of_data_per_entry = 12 + 2; // +2 is necessary as a koord3d takes 3 values
+	const uint32 number_of_data_per_entry = 13 + 2; // +2 is necessary as a koord3d takes 3 values
 	// now scan the entries
 	while(  *p>0  ) {
 		sint16 values[number_of_data_per_entry];
@@ -723,7 +737,7 @@ bool schedule_t::sscanf_schedule( const char *ptr )
 			p++;
 		}
 		// ok, now we have a complete entry
-		entries.append(schedule_entry_t(koord3d(values[0], values[1], values[2]), values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13]));
+		entries.append(schedule_entry_t(koord3d(values[0], values[1], values[2]), values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14]));
 	}
 	return true;
 }

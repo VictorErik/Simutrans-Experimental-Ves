@@ -90,9 +90,9 @@ void replace_data_t::sprintf_replace(cbuffer_t &buf) const
 	// Finally, the replacing vehicles.
 	// Separate each name with the "|" character.
 	buf.append("|");
-	ITERATE_PTR(replacing_vehicles, n)
+	for(auto replacing_vehicle : *replacing_vehicles)
 	{
-		buf.append(replacing_vehicles->get_element(n)->get_name());
+		buf.append(replacing_vehicle->get_name());
 		buf.append("|");
 	}
 	// Terminating character	
@@ -183,9 +183,9 @@ void replace_data_t::rdwr(loadsave_t *file)
 	{
 		replacing_vehicles_count = replacing_vehicles->get_count();
 		file->rdwr_short(replacing_vehicles_count);
-		ITERATE_PTR(replacing_vehicles, i)
+		for(auto replacing_vehicle : *replacing_vehicles)
 		{
-			const char *s = replacing_vehicles->get_element(i)->get_name();
+			const char *s = replacing_vehicle->get_name();
 			file->rdwr_str(s);
 		}
 	}
@@ -260,13 +260,13 @@ void replace_data_t::increment_convoys(convoihandle_t cnv)
 void replace_data_t::clear_all()
 {
 	clearing = true;
-	ITERATE_PTR(replacing_convoys, i)
+	for(auto replacing_convoy : *replacing_convoys)
 	{
-		if(replacing_convoys->get_element(i).is_bound())
+		if(replacing_convoy.is_bound())
 		{
-			replacing_convoys->get_element(i)->clear_replace();
-			replacing_convoys->get_element(i)->set_depot_when_empty(false);
-			replacing_convoys->get_element(i)->set_no_load(false);
+			replacing_convoy->clear_replace();
+			replacing_convoy->set_depot_when_empty(false);
+			replacing_convoy->set_no_load(false);
 		}
 	}
 	delete this;

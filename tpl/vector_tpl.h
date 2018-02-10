@@ -1,13 +1,6 @@
 #ifndef TPL_VECTOR_H
 #define TPL_VECTOR_H
 
-#ifndef ITERATE
-#define ITERATE(collection,enumerator) for(uint32 enumerator = 0; enumerator < (collection).get_count(); enumerator++)
-#endif
-
-#ifndef ITERATE_PTR
-#define ITERATE_PTR(collection,enumerator) for(uint32 enumerator = 0; enumerator < (collection)->get_count(); enumerator++)
-#endif 
 #include <typeinfo>
 
 #include "../macros.h"

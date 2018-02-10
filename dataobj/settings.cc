@@ -1486,10 +1486,7 @@ void settings_t::rdwr(loadsave_t *file)
 			file->rdwr_short(spacing_shift_divisor);
 
 			uint16 livery_schemes_count = 0;
-			if(file->is_loading())
-			{
-				livery_schemes.clear();
-			}
+
 			if(file->is_saving())
 			{
 				livery_schemes_count = livery_schemes.get_count();
@@ -1509,7 +1506,7 @@ void settings_t::rdwr(loadsave_t *file)
 					{
 						livery_scheme_t* scheme = new livery_scheme_t("default", DEFAULT_RETIRE_DATE);
 						scheme->rdwr(file);
-						livery_schemes.append(scheme);
+						livery_schemes.append_unique(scheme);
 					}
 				}
 			}

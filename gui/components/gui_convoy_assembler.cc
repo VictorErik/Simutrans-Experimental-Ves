@@ -245,9 +245,9 @@ gui_convoy_assembler_t::gui_convoy_assembler_t(waytype_t wt, signed char player_
 	livery_selector.clear_elements();
 	vector_tpl<livery_scheme_t*>* schemes = welt->get_settings().get_livery_schemes();
 	livery_scheme_indices.clear();
-	ITERATE_PTR(schemes, i)
+	uint32 i = 0;
+	for(auto scheme : *schemes)
 	{
-		livery_scheme_t* scheme = schemes->get_element(i);
 		if(scheme->is_available(welt->get_timeline_year_month()))
 		{
 			livery_selector.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(scheme->get_name()), SYSCOL_TEXT));
@@ -255,6 +255,7 @@ gui_convoy_assembler_t::gui_convoy_assembler_t(waytype_t wt, signed char player_
 			livery_selector.set_selection(i);
 			livery_scheme_index = i;
 		}
+		i++;
 	}
 
 	bt_class_management.set_typ(button_t::roundbox);
@@ -557,13 +558,14 @@ void gui_convoy_assembler_t::layout()
 	}
 	else
 	{
-		vector_tpl<livery_scheme_t*>* schemes = welt->get_settings().get_livery_schemes();
-		ITERATE_PTR(schemes, n)
+		uint32 n = 0;
+		for(auto scheme : *welt->get_settings().get_livery_schemes())
 		{
-			if(schemes->get_element(n)->is_available(welt->get_timeline_year_month()))
+			if(scheme->is_available(welt->get_timeline_year_month()))
 			{
 				livery_selector.set_selection(livery_scheme_indices.index_of(n));
 			}
+			n++;
 		}
 	}
 }
@@ -688,11 +690,11 @@ void gui_convoy_assembler_t::draw(scr_coord parent_pos)
 		int pass_class_capacity[255] = { 0 };
 		int mail_class_capacity[255] = { 0 };
 
-		uint8 good_type_0 = 0;
-		uint8 good_type_1 = 0;
-		uint8 good_type_2 = 0;
-		uint8 good_type_3 = 0;
-		uint8 good_type_4 = 0;
+		int good_type_0 = -1;
+		int good_type_1 = -1;
+		int good_type_2 = -1;
+		int good_type_3 = -1;
+		int good_type_4 = -1;
 
 		uint32 good_type_0_amount = 0;
 		uint32 good_type_1_amount = 0;
@@ -748,10 +750,7 @@ void gui_convoy_assembler_t::draw(scr_coord parent_pos)
 					total_standing_pax += desc->get_overcrowded_capacity();
 					for (uint8 j = 0; j < goods_manager_t::passengers->get_number_of_classes(); j++)
 					{
-						if (v && v->get_capacity(j) > 0)
-						{
-							pass_class_capacity[j] += v->get_capacity(j);
-						}
+						pass_class_capacity[j] += v->get_fare_capacity(j);
 						if (v && v->get_desc()->get_catering_level() > highest_catering)
 						{
 							highest_catering = v->get_desc()->get_catering_level();
@@ -764,15 +763,11 @@ void gui_convoy_assembler_t::draw(scr_coord parent_pos)
 					total_mail += desc->get_total_capacity();
 					for (uint8 j = 0; j < goods_manager_t::mail->get_number_of_classes(); j++)
 					{
-						if (v && v->get_capacity(j) > 0)
-						{
-							mail_class_capacity[j] += v->get_capacity(j);
-						}
+						mail_class_capacity[j] += v->get_fare_capacity(j);
 						if (v && v->get_desc()->get_catering_level() > 0)
 						{
 							is_tpo = true;
 						}
-
 					}
 					break;
 				}
@@ -1360,18 +1355,20 @@ void gui_convoy_assembler_t::image_from_storage_list(gui_image_list_t::image_dat
 			if(veh_action == va_upgrade)
 			{
 				uint8 count;
-				ITERATE(vehicles,n)
+				uint32 n = 0;
+				for(auto vehicle : vehicles)
 				{
-					count = vehicles[n]->get_upgrades_count();
+					count = vehicle->get_upgrades_count();
 					for(int i = 0; i < count; i++)
 					{
-						if(vehicles[n]->get_upgrades(i) == info)
+						if(vehicle->get_upgrades(i) == info)
 						{
 							vehicles.insert_at(n, info);
 							vehicles.remove_at(n+1);
 							return;
 						}
 					}
+					n ++;
 				}
 			}
 			else
@@ -1642,9 +1639,9 @@ void gui_convoy_assembler_t::update_data()
 
 			//if(replace_frame == NULL)
 			//{
-				ITERATE(vehicles,i)
+				for(auto vehicle : vehicles)
 				{
-					vehicle_list.append(vehicles[i]);
+					vehicle_list.append(vehicle);
 				}
 			//}
 			//else
@@ -1657,11 +1654,11 @@ void gui_convoy_assembler_t::update_data()
 			//	}
 			//}
 
-			ITERATE(vehicle_list, i)
+			for(auto vehicle : vehicles)
 			{
-				for(uint16 c = 0; c < vehicle_list[i]->get_upgrades_count(); c++)
+				for(uint16 c = 0; c < vehicle->get_upgrades_count(); c++)
 				{
-					if(vehicle_list[i]->get_upgrades(c) && (info == vehicle_list[i]->get_upgrades(c)))
+					if(vehicle->get_upgrades(c) && (info == vehicle->get_upgrades(c)))
 					{
 						if(!player->can_afford(info->get_upgrade_price()))
 						{
@@ -1680,11 +1677,11 @@ void gui_convoy_assembler_t::update_data()
 							// vehicles is the list of the vehicles to replace them with.
 							int upgradable_count = 0;
 							
-							ITERATE(vehicle_list,j)
+							for(auto vehicle_2 : vehicles)
 							{
-								for(uint16 k = 0; k < vehicle_list[j]->get_upgrades_count(); k++)
+								for(uint16 k = 0; k < vehicle_2->get_upgrades_count(); k++)
 								{
-									if(vehicle_list[j]->get_upgrades(k) && (vehicle_list[j]->get_upgrades(k) == info))
+									if(vehicle_2->get_upgrades(k) && (vehicle_2->get_upgrades(k) == info))
 									{
 										// Counts the number of vehicles in the current convoy that can
 										// upgrade to the currently selected vehicle.
@@ -2055,10 +2052,8 @@ void gui_convoy_assembler_t::draw_vehicle_info_text(const scr_coord& pos)
 		//	linespace_skips += 2;
 		//}
 		//// (Livery information)
-		//vector_tpl<livery_scheme_t*>* schemes = welt->get_settings().get_livery_schemes();
-		//ITERATE_PTR(schemes, i)
+		//for (auto scheme : *welt->get_settings().get_livery_schemes())
 		//{
-		//	livery_scheme_t* scheme = schemes->get_element(i);
 		//	//if (scheme->is_available(welt->get_timeline_year_month()))
 		//	{
 		//		if (veh_type->check_livery(scheme->get_name()))
@@ -2408,7 +2403,7 @@ depot_convoi_capacity_t::depot_convoi_capacity_t()
 }
 
 //(total_pax, total_standing_pax, total_mail, total_goods, pax_classes, mail_classes)
-void depot_convoi_capacity_t::set_totals(uint32 pax, uint32 standing_pax, uint32 mail, uint32 goods, uint8 pax_classes, uint8 mail_classes, uint8 good_0, uint8 good_1, uint8 good_2, uint8 good_3, uint8 good_4, uint32 good_0_amount, uint32 good_1_amount, uint32 good_2_amount, uint32 good_3_amount, uint32 good_4_amount, uint32 rest_good, uint8 catering, bool tpo)
+void depot_convoi_capacity_t::set_totals(uint32 pax, uint32 standing_pax, uint32 mail, uint32 goods, uint8 pax_classes, uint8 mail_classes, int good_0, int good_1, int good_2, int good_3, int good_4, uint32 good_0_amount, uint32 good_1_amount, uint32 good_2_amount, uint32 good_3_amount, uint32 good_4_amount, uint32 rest_good, uint8 catering, bool tpo)
 {
 	total_pax = pax;
 	total_standing_pax = standing_pax;

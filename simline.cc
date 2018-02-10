@@ -722,9 +722,9 @@ void simline_t::recalc_status()
 
 bool simline_t::has_overcrowded() const
 {
-	ITERATE(line_managed_convoys,i)
+	for(auto line_managed_convoy : line_managed_convoys)
 	{
-		if(line_managed_convoys[i]->get_overcrowded() > 0)
+		if(line_managed_convoy->get_overcrowded() > 0)
 		{
 			return true;
 		}
@@ -749,7 +749,7 @@ void simline_t::calc_classes_carried()
 		{
 			FOR(const minivec_tpl<uint8>, const& g_class, *cnv.get_classes_carried(goods_manager_t::INDEX_PAS))
 			{
-				passenger_classes_carried.append(g_class);
+				passenger_classes_carried.append_unique(g_class);
 			}
 		}
 
@@ -757,7 +757,7 @@ void simline_t::calc_classes_carried()
 		{
 			FOR(const minivec_tpl<uint8>, const& g_class, *cnv.get_classes_carried(goods_manager_t::INDEX_MAIL))
 			{
-				mail_classes_carried.append(g_class);
+				mail_classes_carried.append_unique(g_class);
 			}
 		}
 		
@@ -769,7 +769,7 @@ void simline_t::calc_classes_carried()
 			{
 				if (cnv.carries_this_or_lower_class(goods_manager_t::INDEX_PAS, j))
 				{
-					passenger_classes_carried.append(j);
+					passenger_classes_carried.append_unique(j);
 				}
 			}
 		}
@@ -780,7 +780,7 @@ void simline_t::calc_classes_carried()
 			{
 				if (cnv.carries_this_or_lower_class(goods_manager_t::INDEX_MAIL, j))
 				{
-					mail_classes_carried.append(j);
+					mail_classes_carried.append_unique(j);
 				}
 			}
 		}*/
@@ -959,10 +959,10 @@ void simline_t::set_withdraw( bool yes_no )
 
 void simline_t::propogate_livery_scheme()
 {
-	ITERATE(line_managed_convoys, i)
+	for (auto line_managed_convoy : line_managed_convoys)
 	{
-		line_managed_convoys[i]->set_livery_scheme_index(livery_scheme_index);
-		line_managed_convoys[i]->apply_livery_scheme();
+		line_managed_convoy->set_livery_scheme_index(livery_scheme_index);
+		line_managed_convoy->apply_livery_scheme();
 	}
 }
 
@@ -983,4 +983,89 @@ sint64 simline_t::calc_departures_scheduled()
 	}
 
 	return timed_departure_points_count * (sint64) schedule->get_spacing();
+}
+
+void simline_t::propagate_triggers(uint16 triggers, bool trigger_one_only)
+{
+	if (!trigger_one_only)
+	{
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				i->set_triggered_conditions(triggers);
+			}
+		}
+	}
+	else
+	{
+		// Find the most suitable convoy to trigger
+	
+		sint64 earliest_arrival_time = welt->get_ticks();
+		convoi_t* cnv_to_trigger = NULL;
+		uint16 trigger;
+
+		// First, check for all convoys that are actually waiting for this conditional trigger.
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				if(i->get_state() == convoi_t::AWAITING_TRIGGER)
+				{
+					trigger = i->get_schedule()->get_current_entry().condition_bitfield_receiver & triggers;
+					if(i->get_schedule()->get_current_entry().condition_bitfield_receiver == triggers || i->get_schedule()->get_current_entry().condition_bitfield_receiver == trigger)
+					{
+						// This trigger would allow the convoy to depart
+						if(i->get_arrival_time() < earliest_arrival_time)
+						{
+							earliest_arrival_time = i->get_arrival_time();
+							cnv_to_trigger = i.get_rep();
+						}
+					}
+				}
+			}
+		}
+
+		if(cnv_to_trigger != NULL)
+		{
+			cnv_to_trigger->set_triggered_conditions(triggers); 
+			return;
+		}
+		
+		// Second, check again with partial triggering
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				if(i->get_state() == convoi_t::AWAITING_TRIGGER)
+				{
+					if(i->get_schedule()->get_current_entry().condition_bitfield_receiver & triggers)
+					{
+						// This trigger would not allow the convoy to depart alone, but might in combination with others.
+						if(i->get_arrival_time() < earliest_arrival_time)
+						{
+							earliest_arrival_time = i->get_arrival_time();
+							cnv_to_trigger = i.get_rep();
+						}
+					}
+				}
+			}
+		}
+
+		if(cnv_to_trigger != NULL)
+		{
+			cnv_to_trigger->set_triggered_conditions(triggers); 
+			return;
+		}
+
+		// Third, just pick one at random.
+		FOR(vector_tpl<convoihandle_t>, const i, line_managed_convoys)
+		{
+			if (i.is_bound())
+			{
+				i->set_triggered_conditions(triggers);
+				return;
+			}
+		}
+	}
 }
