@@ -36,6 +36,10 @@ struct vehicle_description_element
 	uint8 engine_type = 0;
 
 	uint8 min_catering = 0;
+	
+	// If this is 255, then this vehicle may carry
+	// any class of mail/passengers.
+	uint8 must_carry_class = 255;
 
 	uint16 min_range = 0;
 
@@ -56,23 +60,24 @@ struct vehicle_description_element
 	* if <=1 vehicles matching the above rules
 	* are available
 	*
-	* For reference, the default order of preference is:
-	* Capacity(+) > Power > Speed > Tractive effort > Running cost
+	* The order of the priorities can be customised
+	* by changing the position of each of the preferences
+	* in the array. The default order is that in which
+	* the elements are arranged above.
 	* 
 	* + Where the vehicle is a goods carrying vehicle: otherwise, this is ignored
 	*/
 
 	enum rule_flag
 	{
-		prefer_cost_to_power				= (1u << 0),
-		prefer_tractive_effort_to_power		= (1u << 1),
-		prefer_speed_to_power				= (1u << 2),
-		prefer_cost_to_capacity				= (1u << 3),
-		prefer_cost_to_speed				= (1u << 4),
-		prefer_speed_to_capacity			= (1u << 5)
+		prefer_capacity				= (1u << 0),
+		prefer_power				= (1u << 1),
+		prefer_tractive_effort		= (1u << 2),
+		prefer_speed				= (1u << 3),
+		prefer_cost					= (1u << 4)
 	};
 	
-	uint8 rule_flags = 0;
+	uint8 rule_flags[5] { prefer_capacity, prefer_power, prefer_tractive_effort, prefer_speed, prefer_cost };
 };
 
 class consist_order_element_t
