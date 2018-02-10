@@ -804,9 +804,9 @@ void weg_t::info(cbuffer_t & buf, bool is_bridge) const
 				buf.append(translator::translate("keine"));
 			}
 		}
+		buf.append("\n");
 		if (replacement_way->is_mothballed() == false)
 		{
-			buf.append("\n");
 			char upgrade_cost_number[64];
 			money_to_string(upgrade_cost_number, (double)welt->calc_adjusted_monthly_figure(desc->get_upgrade_group() == replacement_way->get_upgrade_group() ? replacement_way->get_way_only_cost() : replacement_way->get_value()) / 100 / 2);
 			buf.printf("- %s: %s", translator::translate("renewal_costs"), upgrade_cost_number);
