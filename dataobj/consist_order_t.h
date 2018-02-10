@@ -1,5 +1,4 @@
-/*
-* This file is part of the Simutrans project under the artistic licence.
+/* This file is part of the Simutrans project under the artistic licence.
 * (see licence.txt)
 *
 * @author: jamespetts, February 2018
@@ -36,22 +35,31 @@ struct vehicle_description_element
 	uint8 engine_type = 0;
 
 	uint8 min_catering = 0;
+	uint8 max_catering = 255;
 	
 	// If this is 255, then this vehicle may carry
 	// any class of mail/passengers.
 	uint8 must_carry_class = 255;
 
-	uint16 min_range = 0;
+	uint32 min_range = 0;
+	uint32 max_range = UINT32_MAX_VALUE;
 
 	uint16 min_brake_force = 0;
+	uint16 max_brake_force = UINT32_MAX_VALUE;
 	uint32 min_power = 0;
+	uint32 max_power = UINT32_MAX_VALUE;
 	uint32 min_tractive_effort = 0;
+	uint32 max_tractive_effort = UINT32_MAX_VALUE;
 	uint32 min_topspeed = 0;
+	uint32 max_topspeed = UINT32_MAX_VALUE;
 	
-	uint32 max_weight = 0;
-	uint32 max_axle_load = 0;
+	uint32 max_weight = UINT32_MAX_VALUE;
+	uint32 min_weight = 0;
+	uint32 max_axle_load = UINT32_MAX_VALUE;
+	uint32 min_axle_load = 0;
 
 	uint16 min_capacity = 0;
+	uint16 max_capacity = 65535;
 
 	/*
 	* These rules define which of available
@@ -70,14 +78,20 @@ struct vehicle_description_element
 
 	enum rule_flag
 	{
-		prefer_capacity				= (1u << 0),
-		prefer_power				= (1u << 1),
-		prefer_tractive_effort		= (1u << 2),
-		prefer_speed				= (1u << 3),
-		prefer_cost					= (1u << 4)
+		prefer_high_capacity			= (1u << 0),
+		prefer_high_power				= (1u << 1),
+		prefer_high_tractive_effort		= (1u << 2),
+		prefer_high_speed				= (1u << 3),
+		prefer_high_cost				= (1u << 4),
+		prefer_low_capacity				= (1u << 5),
+		prefer_low_power				= (1u << 6),
+		prefer_low_tractive_effort		= (1u << 7),
+		prefer_low_speed				= (1u << 8),
+		prefer_low_cost					= (1u << 9)
+		// TODO: Consider adding fixed/per km types of maintenance cost here
 	};
 	
-	uint8 rule_flags[5] { prefer_capacity, prefer_power, prefer_tractive_effort, prefer_speed, prefer_cost };
+	uint16 rule_flags[10] { prefer_high_capacity, prefer_high_power, prefer_high_tractive_effort, prefer_high_speed, prefer_high_cost, prefer_low_capacity, prefer_low_power, prefer_low_tractive_effort, prefer_low_speed, prefer_low_cost };
 };
 
 class consist_order_element_t
