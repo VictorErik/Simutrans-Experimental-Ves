@@ -10,6 +10,7 @@
 #include "../bauer/goods_manager.h"
 
 class vehicle_desc_t;
+class loadsave_t;
 
 struct vehicle_description_element
 {
@@ -20,7 +21,7 @@ struct vehicle_description_element
 	* If this is != nullptr, the rules below here are 
 	* ignored.
 	*/
-	vehicle_desc_t* specific_vehicle = nullptr;
+	const vehicle_desc_t* specific_vehicle = nullptr;
 
 	/*
 	* If this is set to true, the vehicle slot is empty.
@@ -99,7 +100,9 @@ struct vehicle_description_element
 		prefer_low_fixed_cost			= (1u << 13)
 	};
 	
-	uint16 rule_flags[14] { prefer_high_capacity, prefer_high_power, prefer_high_tractive_effort, prefer_high_speed, prefer_high_running_cost, prefer_high_fixed_cost, prefer_low_capacity, prefer_low_power, prefer_low_tractive_effort, prefer_low_speed, prefer_low_running_cost, prefer_low_fixed_cost };
+	static const uint8 max_rule_flags = 14;
+
+	uint16 rule_flags[max_rule_flags] { prefer_high_capacity, prefer_high_power, prefer_high_tractive_effort, prefer_high_speed, prefer_high_running_cost, prefer_high_fixed_cost, prefer_low_capacity, prefer_low_power, prefer_low_tractive_effort, prefer_low_speed, prefer_low_running_cost, prefer_low_fixed_cost };
 };
 
 class consist_order_element_t
@@ -138,8 +141,9 @@ class consist_order_t
 protected:
 	/*
 	* The unique ID of the schedule entry to which this consist order refers
+	* is stored as the key of the hashtable in which these are stored, and 
+	* thus need not be stored here.
 	*/
-	uint16 schedule_entry_id = 0;
 
 	/* The tags that are to be cleared on _all_ vehicles
 	* (whether loose or not) in this convoy after the execution
@@ -150,13 +154,13 @@ protected:
 	vector_tpl<consist_order_element_t> orders;
 
 public:
-
-	uint16 get_schedule_entry_id() const { return schedule_entry_id; }
 	
 	consist_order_element_t& get_order(uint32 element_number)
 	{
 		return orders[element_number];
 	}
+
+	void rdwr(loadsave_t* file);
 };
 
 #endif

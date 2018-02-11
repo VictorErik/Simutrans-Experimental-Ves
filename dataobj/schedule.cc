@@ -432,6 +432,32 @@ void schedule_t::rdwr(loadsave_t *file)
 	if (file->get_extended_version() >= 14)
 	{
 		file->rdwr_short(spacing); 
+
+		// Consist orders
+		uint32 consist_orders_count = orders.get_count();
+		file->rdwr_long(consist_orders_count);
+
+		if(file->is_saving())
+		{
+			for(auto consist_order : orders)
+			{
+				file->rdwr_short(consist_order.key);
+				consist_order.value.rdwr(file); 
+			}
+		}
+
+		if(file->is_loading())
+		{
+			orders.clear();
+			for(uint32 i = 0; i < consist_orders_count; i ++)
+			{
+				uint16 schedule_id = 0;
+				file->rdwr_short(schedule_id);
+				consist_order_t order;
+				order.rdwr(file); 
+				orders.put(schedule_id, order); 
+			}
+		}
 	}
 
 	if(file->get_extended_version() >= 9 && file->get_version() >= 110006)

@@ -194,8 +194,8 @@ void replace_data_t::rdwr(loadsave_t *file)
 		file->rdwr_short(replacing_vehicles_count);
 		for(uint16 i = 0; i < replacing_vehicles_count; i ++)
 		{
-			char vehicle_name[256];
-			file->rdwr_str(vehicle_name, 256);
+			char vehicle_name[512];
+			file->rdwr_str(vehicle_name, 512);
 			const vehicle_desc_t* desc = vehicle_builder_t::get_info(vehicle_name);
 			if(desc == NULL) 
 			{
