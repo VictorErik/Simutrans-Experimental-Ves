@@ -46,6 +46,7 @@
 #include "gui/server_frame.h"
 #include "gui/schedule_list.h"
 #include "gui/themeselector.h"
+#include "gui/vehicle_manager.h"
 
 class player_t;
 
@@ -514,5 +515,23 @@ public:
 	bool exit(player_t*) OVERRIDE{ destroy_win(magic_themes); return false; }
 	bool is_init_network_save() const OVERRIDE{ return true; }
 	bool is_work_network_save() const OVERRIDE{ return true; }
+};
+
+// open vehicle management
+class dialog_vehicle_manager_t : public tool_t {
+public:
+	dialog_vehicle_manager_t() : tool_t(DIALOG_VEHICLE_MANAGER | DIALOGE_TOOL) {}
+	char const* get_tooltip(player_t const*) const OVERRIDE { return translator::translate("vehicle_manager"); }
+	image_id get_icon(player_t* player) const OVERRIDE { return player && player->is_public_service() ? IMG_EMPTY : icon; }
+	bool is_selected() const OVERRIDE { return win_get_magic(magic_vehicle_manager_t + welt->get_active_player_nr()); }
+	bool init(player_t* player) OVERRIDE {
+		if (player->get_player_nr() != 1) {
+			create_win(new vehicle_manager_t(player), w_info, magic_vehicle_manager_t + player->get_player_nr());
+		}
+		return false;
+	}
+	bool exit(player_t* const player) OVERRIDE { destroy_win(win_get_magic(magic_vehicle_manager_t + player->get_player_nr())); return false; }
+	bool is_init_network_save() const OVERRIDE { return true; }
+	bool is_work_network_save() const OVERRIDE { return true; }
 };
 #endif

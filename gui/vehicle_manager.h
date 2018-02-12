@@ -23,6 +23,7 @@
 #include "components/gui_convoiinfo.h"
 #include "halt_list_stats.h"
 #include "../simline.h"
+#include "../simconvoi.h"
 
 class player_t;
 class vehicle_manager_t : public gui_frame_t, public action_listener_t
@@ -30,10 +31,10 @@ class vehicle_manager_t : public gui_frame_t, public action_listener_t
 private:
 	player_t *player;
 
-	button_t bt_new_line, bt_change_line, bt_delete_line, bt_withdraw_line, bt_line_class_manager, bt_times_history;
-	gui_container_t cont, cont_haltestellen;
+	button_t but;
+	gui_container_t cont;
 	//gui_scrollpane_t scrolly_convois, scrolly_haltestellen;
-	//gui_scrolled_list_t scl;
+	gui_scrolled_list_t scl;
 	gui_speedbar_t filled_bar;
 	gui_textinput_t inp_name, inp_filter;
 	gui_label_t lbl_filter;
@@ -43,7 +44,11 @@ private:
 
 	// vector of convoy info objects that are being displayed
 	vector_tpl<gui_convoiinfo_t *> convoy_infos;
-	
+
+	// All convoys we own
+	vector_tpl<convoihandle_t> convois;
+	convoihandle_t cnv;
+
 	// vector of stop info objects that are being displayed
 	vector_tpl<halt_list_stats_t *> stop_infos;
 
@@ -65,19 +70,12 @@ private:
 	// necessary after line was renamed
 	void reset_line_name();
 
-	// rename selected line
-	// checks if possible / necessary
-	void rename_line();
-
 	void display(scr_coord pos);
 
 	void update_lineinfo(linehandle_t new_line);
 
-	linehandle_t line;
 
-	vector_tpl<linehandle_t> lines;
-
-	void build_line_list(int filter);
+	void build_vehicle_list(int filter);
 
 	static uint16 livery_scheme_index;
 	vector_tpl<uint16> livery_scheme_indices;
@@ -135,8 +133,8 @@ public:
 	 */
 	void update_data(linehandle_t changed_line);
 
-	// following: rdwr stuff
-	void rdwr( loadsave_t *file );
+	//// following: rdwr stuff
+	//void rdwr( loadsave_t *file );
 	uint32 get_rdwr_id();
 };
 
