@@ -11,6 +11,7 @@
 
 class vehicle_desc_t;
 class loadsave_t;
+class cbuffer_t;
 
 struct vehicle_description_element
 {
@@ -63,8 +64,8 @@ struct vehicle_description_element
 	uint16 max_capacity = 65535;
 
 	uint32 max_running_cost = UINT32_MAX_VALUE;
-	uint32 max_fixed_cost = UINT32_MAX_VALUE;
 	uint32 min_running_cost = 0;
+	uint32 max_fixed_cost = UINT32_MAX_VALUE;
 	uint32 min_fixed_cost = 0;
 
 	/*
@@ -161,6 +162,9 @@ public:
 	}
 
 	void rdwr(loadsave_t* file);
+
+	void sprintf_consist_order(cbuffer_t &buf) const;
+	void sscanf_consist_order(const char* ptr); 
 };
 
 #endif

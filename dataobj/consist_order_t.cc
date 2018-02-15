@@ -6,6 +6,8 @@
 
 #include "consist_order_t.h"
 
+#include "../utils/cbuffer_t.h"
+
 #include "loadsave.h"
 #include "translator.h"
 
@@ -134,6 +136,51 @@ void consist_order_t::rdwr(loadsave_t* file)
 			}
 
 			orders.append(order);
+		}
+	}
+}
+
+void consist_order_t::sprintf_consist_order(cbuffer_t &buf) const
+{
+	buf.append_fixed(tags_to_clear); 
+	buf.append_fixed(orders.get_count()); 
+	for (auto order : orders)
+	{
+		buf.append_fixed(order.catg_index); 
+		buf.append_bool(order.clear_all_tags);
+		buf.append_fixed(order.tags_required);
+		buf.append_fixed(order.tags_to_set);
+		for(auto desc : order.vehicle_description)
+		{
+			buf.append(desc.specific_vehicle ? desc.specific_vehicle->get_name() : "NULL"); 
+			buf.append_bool(desc.empty);
+			buf.append_fixed(desc.engine_type);
+			buf.append_fixed(desc.min_catering); 
+			buf.append_fixed(desc.must_carry_class);
+			buf.append_fixed(desc.min_range);
+			buf.append_fixed(desc.max_range);
+			buf.append_fixed(desc.min_brake_force);
+			buf.append_fixed(desc.max_brake_force);
+			buf.append_fixed(desc.min_power);
+			buf.append_fixed(desc.max_power);
+			buf.append_fixed(desc.min_tractive_effort);
+			buf.append_fixed(desc.max_tractive_effort);
+			buf.append_fixed(desc.min_topspeed);
+			buf.append_fixed(desc.max_topspeed);
+			buf.append_fixed(desc.max_weight);
+			buf.append_fixed(desc.min_weight);
+			buf.append_fixed(desc.max_axle_load);
+			buf.append_fixed(desc.min_axle_load);
+			buf.append_fixed(desc.min_capacity);
+			buf.append_fixed(desc.max_capacity);
+			buf.append_fixed(desc.max_running_cost);
+			buf.append_fixed(desc.min_running_cost);
+			buf.append_fixed(desc.max_fixed_cost);
+			buf.append_fixed(desc.min_fixed_cost);
+			for(uint32 i = 0; i < vehicle_description_element::max_rule_flags; i ++)
+			{
+				buf.append_fixed(desc.rule_flags[i]); 
+			}
 		}
 	}
 }
