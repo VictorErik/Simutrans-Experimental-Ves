@@ -8,6 +8,7 @@
 
 #include "convoihandle_t.h"
 #include "linehandle_t.h"
+#include "vehiclehandle_t.h"
 #include "simtypes.h"
 #include "simconvoi.h"
 

@@ -3509,6 +3509,7 @@
     <ClInclude Include="boden\monorailboden.h" />
     <ClInclude Include="utils\simrandom.h" />
     <ClInclude Include="utils\simthread.h" />
+    <ClInclude Include="vehiclehandle_t.h" />
     <ClInclude Include="vehicle\movingobj.h" />
     <ClInclude Include="music\music.h" />
     <ClInclude Include="boden\wege\narrowgauge.h" />

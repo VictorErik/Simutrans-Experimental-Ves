@@ -7,8 +7,6 @@
  * @author hsiegeln: major redesign
  */
 
-#ifndef gui_vehicle_manager_h
-#define gui_vehicle_manager_h
 
 #include "gui_frame.h"
 #include "components/gui_container.h"
@@ -21,68 +19,126 @@
 #include "components/gui_combobox.h"
 #include "components/gui_label.h"
 #include "components/gui_convoiinfo.h"
+#include "components/gui_image_list.h"
 #include "halt_list_stats.h"
 #include "../simline.h"
 #include "../simconvoi.h"
 
 class player_t;
+
+#ifndef gui_vehicle_desc_info_h
+#define gui_vehicle_desc_info_h
+/**
+* One element of the vehicle list display
+*
+* @author Hj. Malthaner
+*/
+class gui_vehicle_desc_info_t : public gui_world_component_t
+{
+private:
+	player_t *player;
+	uint8 player_nr;
+	/**
+	* Handle Convois to be displayed.
+	* @author Hj. Malthaner
+	*/
+	vehicle_desc_t* veh;
+
+	gui_speedbar_t filled_bar;
+
+public:
+	/**
+	* @param cnv, the handler for the Convoi to be displayed.
+	* @author Hj. Malthaner
+	*/
+	gui_vehicle_desc_info_t::gui_vehicle_desc_info_t(vehicle_desc_t* veh);
+
+	bool infowin_event(event_t const*) OVERRIDE;
+
+	/**
+	* Draw the component
+	* @author Hj. Malthaner
+	*/
+	void draw(scr_coord offset);
+};
+
+#endif
+#ifndef gui_vehicleinfo_h
+#define gui_vehicleinfo_h
+/**
+* One element of the vehicle list display
+*
+* @author Hj. Malthaner
+*/
+class gui_vehicle_info_t : public gui_world_component_t
+{
+private:
+	player_t *player;
+	/**
+	* Handle Convois to be displayed.
+	* @author Hj. Malthaner
+	*/
+	vehiclehandle_t veh;
+
+	gui_speedbar_t filled_bar;
+
+public:
+	/**
+	* @param cnv, the handler for the Convoi to be displayed.
+	* @author Hj. Malthaner
+	*/
+	gui_vehicle_info_t::gui_vehicle_info_t(vehiclehandle_t veh);
+
+	bool infowin_event(event_t const*) OVERRIDE;
+
+	/**
+	* Draw the component
+	* @author Hj. Malthaner
+	*/
+	void draw(scr_coord offset);
+};
+
+
+#endif
+#ifndef gui_vehicle_manager_h
+#define gui_vehicle_manager_h
 class vehicle_manager_t : public gui_frame_t, public action_listener_t
 {
 private:
 	player_t *player;
 
-	button_t but;
-	gui_container_t cont;
-	//gui_scrollpane_t scrolly_convois, scrolly_haltestellen;
-	gui_scrolled_list_t scl;
-	gui_speedbar_t filled_bar;
-	gui_textinput_t inp_name, inp_filter;
-	gui_label_t lbl_filter;
-	gui_chart_t chart;
-	button_t filterButtons[MAX_LINE_COST];
-	gui_tab_panel_t tabs;
+	gui_container_t cont_veh_desc, cont_veh;
+	gui_scrollpane_t scrolly_vehicle_descs, scrolly_vehicles;
+	//gui_scrolled_list_t scl;
 
 	// vector of convoy info objects that are being displayed
 	vector_tpl<gui_convoiinfo_t *> convoy_infos;
 
-	// All convoys we own
-	vector_tpl<convoihandle_t> convois;
-	convoihandle_t cnv;
+	// All vehicles
+	//vector_tpl<quickstone_tpl<vehicle_desc_t>> vehicle_descs;
+	vector_tpl<vehiclehandle_t> vehicles;
+	vehiclehandle_t veh;
+	vector_tpl<vehicle_desc_t*> vehicle_descs;
 
-	// vector of stop info objects that are being displayed
-	vector_tpl<halt_list_stats_t *> stop_infos;
+	vector_tpl<gui_image_list_t::image_data_t*> veh_im;
+	waytype_t way_type;
 
-	gui_combobox_t livery_selector;
 
-	sint32 selection, capacity, load, loadfactor;
-
-	uint32 old_line_count;
-	schedule_t *last_schedule;
-	uint32 last_vehicle_count;
-
-	// only show schedules containing ...
-	char schedule_filter[512], old_schedule_filter[512];
-
-	// so even japanese can have long enough names ...
-	char line_name[512], old_line_name[512];
-
-	// resets textinput to current line name
-	// necessary after line was renamed
-	void reset_line_name();
-
+	vector_tpl<gui_vehicle_info_t *> vehicle_infos;
+	vector_tpl<gui_vehicle_desc_info_t *> vehicle_desc_infos;
+	
 	void display(scr_coord pos);
 
-	void update_lineinfo(linehandle_t new_line);
 
 
-	void build_vehicle_list(int filter);
-
-	static uint16 livery_scheme_index;
-	vector_tpl<uint16> livery_scheme_indices;
 
 public:
 	vehicle_manager_t(player_t* player);
 	~vehicle_manager_t();
+
+
+	void vehicle_manager_t::build_vehicle_lists();
+
 	/**
 	* in top-level windows the name is displayed in titlebar
 	* @return the non-translated component name
@@ -122,16 +178,6 @@ public:
 
 	bool action_triggered(gui_action_creator_t*, value_t) OVERRIDE;
 
-	/**
-	 * Select line and show its info
-	 * @author isidoro
-	 */
-	void show_lineinfo(linehandle_t line);
-
-	/**
-	 * called after renaming of line
-	 */
-	void update_data(linehandle_t changed_line);
 
 	//// following: rdwr stuff
 	//void rdwr( loadsave_t *file );
