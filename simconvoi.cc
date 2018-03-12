@@ -156,7 +156,7 @@ void convoi_t::init(player_t *player)
 
 	schedule = NULL;
 	replace = NULL;
-	fpl_target = koord3d::invalid;
+	schedule_target = koord3d::invalid;
 	line = linehandle_t();
 
 	reset();
@@ -218,6 +218,7 @@ convoi_t::convoi_t(loadsave_t* file) : vehicle(max_vehicle, NULL)
 	init(0);
 	replace = NULL;
 	is_choosing = false;
+	last_stop_was_depot = true;
 	max_signal_speed = SPEED_UNLIMITED;
 
 	no_route_retry_count = 0;
@@ -250,6 +251,7 @@ convoi_t::convoi_t(player_t* player) : vehicle(max_vehicle, NULL)
 	init_financial_history();
 	current_stop = 255;
 	is_choosing = false;
+	last_stop_was_depot = true;
 	max_signal_speed = SPEED_UNLIMITED;
 
 	// Added by : Knightly
@@ -496,7 +498,7 @@ void convoi_t::finish_rd()
 		// restore next schedule target for non-stop waypoint handling
 		const koord3d ziel = schedule->get_current_entry().pos;
 		if(  is_waypoint(ziel)  ) {
-			fpl_target = ziel;
+			schedule_target = ziel;
 		}
 	}
 
@@ -1433,7 +1435,7 @@ bool convoi_t::drive_to()
 		bool update_line = false;
 		while(success == route_t::valid_route && counter--)
 		{
-			if(schedule_entry->reverse == -1 && (!gr_current || !gr_current->get_depot()))
+			if(schedule_entry->reverse == -1 && (!gr_current || !gr_current->get_depot()) && !last_stop_was_depot)
 			{
 				schedule_entry->reverse = check_destination_reverse() ? 1 : 0;
 				schedule->set_reverse(schedule_entry->reverse, schedule->get_current_stop()); 
@@ -1445,6 +1447,8 @@ bool convoi_t::drive_to()
 					update_line = true;	
 				}
 			}
+
+			last_stop_was_depot = false;
 
 			if(schedule_entry->reverse == 1 || haltestelle_t::get_halt(schedule_entry->pos, get_owner()).is_bound())
 			{
@@ -1518,7 +1522,7 @@ bool convoi_t::drive_to()
 
 			// set next schedule target position if next is a waypoint
 			if(  is_waypoint(ziel)  ) {
-				fpl_target = ziel;
+				schedule_target = ziel;
 			}
 
 			// continue route search until the destination is a station
@@ -1575,7 +1579,7 @@ bool convoi_t::drive_to()
 
 					if(  looped  ) {
 						// proceed upto the waypoint before the loop. Will pause there for a new route search.
-						fpl_target = koord3d::invalid;
+						schedule_target = koord3d::invalid;
 						break;
 					}
 					else {
@@ -1610,7 +1614,7 @@ bool convoi_t::drive_to()
 			}
 		}
 
-		fpl_target = ziel;
+		schedule_target = ziel;
 		if(  route_ok  ) {
 			// When this was single threaded, this was an immediate call to vorfahren(), but this cannot be called when multi-threaded.
 			state = ROUTE_JUST_FOUND;
@@ -1941,7 +1945,7 @@ end_loop:
 			if (schedule != NULL && schedule->is_editing_finished())
 			{
 				set_schedule(schedule);
-				fpl_target = koord3d::invalid;
+				schedule_target = koord3d::invalid;
 
 				if (schedule->empty())
 				{
@@ -2280,6 +2284,7 @@ end_loop:
 		ld:
 		// immediate action needed
 		case LEAVING_DEPOT:
+			last_stop_was_depot = true;
 			get_owner()->simlinemgmt.get_lines(schedule->get_type(), &lines);	
 			FOR(vector_tpl<linehandle_t>, const l, lines)
 			{
@@ -3607,7 +3612,7 @@ void convoi_t::vorfahren()
 					sch->increment_index(&stop, &rev);
 				}
 				
-				if((sch->entries[stop].reverse == 1 != (state == REVERSING)) && (state != ROUTE_JUST_FOUND || front()->get_waytype() != road_wt))
+				if((sch->entries[stop].reverse == 1 != (state == REVERSING)) && (state != ROUTE_JUST_FOUND || front()->get_waytype() != road_wt) && !last_stop_was_depot)
 				{
 					need_to_update_line = true;
 					const sint8 reverse_state = state == REVERSING ? 1 : 0;
@@ -5011,6 +5016,13 @@ void convoi_t::rdwr(loadsave_t *file)
 			file->rdwr_byte(has_reserved);
 		}
 	}
+	
+	if ((file->get_extended_version() >= 13 && file->get_extended_revision() >= 5) || file->get_extended_version() >= 14)
+	{
+		bool lswd = last_stop_was_depot;
+		file->rdwr_bool(lswd);
+		last_stop_was_depot = lswd;
+	}
 
 	if (file->get_extended_version() >= 14)
 	{
@@ -6366,6 +6378,7 @@ void convoi_t::check_pending_updates()
 			schedule = create_schedule();
 		}
 		schedule_t* new_sch = line_update_pending->get_schedule();
+		new_sch->set_current_stop(0); // A line should never have current_stop != 0 - this seems to happen on occasions, so reset it here before it causes trouble.
 		uint8 current_stop = schedule->get_current_stop(); // save current position of schedule
 		bool is_same = false;
 		bool is_depot = false;
@@ -7306,7 +7319,11 @@ bool convoi_t::can_overtake(overtaker_t *other_overtaker, sint32 other_speed, si
 		}
 
 		if(  ribi_t::is_straight(str->get_ribi())  ) {
-			time_overtaking -= (VEHICLE_STEPS_PER_TILE<<16) / kmh_to_speed(str->get_max_speed());
+			// The code from Standard can produce a division be zero error.
+			if (kmh_to_speed(str->get_max_speed()) > 0)
+			{
+				time_overtaking -= (VEHICLE_STEPS_PER_TILE << 16) / kmh_to_speed(str->get_max_speed());
+			}
 		}
 		else {
 			time_overtaking -= (vehicle_base_t::get_diagonal_vehicle_steps_per_tile()<<16) / kmh_to_speed(str->get_max_speed());

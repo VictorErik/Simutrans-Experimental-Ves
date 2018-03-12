@@ -3,6 +3,8 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+
+#include "../simtypes.h"
 /**
  * A character buffer. Main operation is 'append'
  * @author Hj. Malthaner
