@@ -564,3 +564,9 @@ uint32 cbuffer_t::decode_uint32(const char* p)
 	number_string[10] = 0;
 	return (uint32)atoi(number_string);
 }
+
+bool cbuffer_t::decode_bool(const char* p)
+{
+	char bool_char = *p;
+	return (bool)atoi(&bool_char); 
+}

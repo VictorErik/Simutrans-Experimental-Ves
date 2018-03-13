@@ -150,6 +150,7 @@ void consist_order_t::sprintf_consist_order(cbuffer_t &buf) const
 		buf.append_bool(order.clear_all_tags);
 		buf.append_fixed(order.tags_required);
 		buf.append_fixed(order.tags_to_set);
+		buf.append_fixed(order.vehicle_description.get_count()); 
 		for(auto desc : order.vehicle_description)
 		{
 			buf.append(desc.specific_vehicle ? desc.specific_vehicle->get_name() : "NULL"); 
@@ -182,5 +183,93 @@ void consist_order_t::sprintf_consist_order(cbuffer_t &buf) const
 				buf.append_fixed(desc.rule_flags[i]); 
 			}
 		}
+	}
+}
+
+void consist_order_t::sscanf_consist_order(const char* ptr)
+{
+	const char *p = ptr;
+	orders.clear();
+
+	tags_to_clear = cbuffer_t::decode_uint16(p);
+
+	// Retrieve the count
+	uint32 order_count = cbuffer_t::decode_uint32(p);
+
+	// Now use the count to determine the number of orders retrieved
+	for(uint32 i = 0;  i < order_count; i ++)
+	{
+		consist_order_element_t element;
+		
+		element.catg_index = cbuffer_t::decode_uint8(p); 
+		element.clear_all_tags = cbuffer_t::decode_bool(p);
+		element.tags_required = cbuffer_t::decode_uint16(p); 
+		element.tags_to_set = cbuffer_t::decode_uint16(p); 
+
+		uint32 vehicle_description_count = cbuffer_t::decode_uint32(p); 
+		for(uint32 j = 0; j < vehicle_description_count; j ++)
+		{
+			vehicle_description_element desc;
+			char vehicle_name[256];
+			uint8 n = 0;
+			while(*p!='|')
+			{
+				vehicle_name[n++] = *p++;
+			}
+			vehicle_name[n] = '\0';
+
+			const vehicle_desc_t* vehicle_desc = vehicle_builder_t::get_info(vehicle_name);
+			if (strcmp(vehicle_name, "NULL"))
+			{
+				if (vehicle_desc == NULL)
+				{
+					vehicle_desc = vehicle_builder_t::get_info(translator::compatibility_name(vehicle_name));
+				}
+				if (vehicle_desc == NULL)
+				{
+					dbg->warning("consist_order_t::sscanf_consist_order()", "no vehicle found when searching for '%s', but this was not intended to be a blank consist order slot", vehicle_name);
+				}
+				else
+				{
+					desc.specific_vehicle = vehicle_desc;
+				}
+			}
+			else
+			{
+				desc.specific_vehicle = NULL;
+			}
+			p++;
+
+			desc.engine_type = cbuffer_t::decode_uint8(p);
+			desc.min_catering = cbuffer_t::decode_uint8(p);
+			desc.must_carry_class = cbuffer_t::decode_uint8(p);
+			desc.min_range = cbuffer_t::decode_uint32(p);
+			desc.max_range = cbuffer_t::decode_uint32(p);
+			desc.min_brake_force = cbuffer_t::decode_uint16(p);
+			desc.max_brake_force = cbuffer_t::decode_uint16(p);
+			desc.min_power = cbuffer_t::decode_uint32(p);
+			desc.max_power = cbuffer_t::decode_uint32(p);
+			desc.min_tractive_effort = cbuffer_t::decode_uint32(p);
+			desc.max_tractive_effort = cbuffer_t::decode_uint32(p);
+			desc.min_topspeed = cbuffer_t::decode_uint32(p);
+			desc.max_topspeed = cbuffer_t::decode_uint32(p);
+			desc.max_weight = cbuffer_t::decode_uint32(p);
+			desc.min_weight = cbuffer_t::decode_uint32(p);
+			desc.max_axle_load = cbuffer_t::decode_uint32(p);
+			desc.min_axle_load = cbuffer_t::decode_uint32(p);
+			desc.min_capacity = cbuffer_t::decode_uint16(p);
+			desc.max_capacity = cbuffer_t::decode_uint16(p);
+			desc.max_running_cost = cbuffer_t::decode_uint32(p);
+			desc.min_running_cost = cbuffer_t::decode_uint32(p);
+			desc.max_fixed_cost = cbuffer_t::decode_uint32(p);
+			desc.min_fixed_cost = cbuffer_t::decode_uint32(p);
+			for (uint32 k = 0; k < vehicle_description_element::max_rule_flags; k++)
+			{
+				desc.rule_flags[k] = cbuffer_t::decode_uint16(p); 
+			}
+
+			element.vehicle_description.append(desc);
+		}
+		orders.append(element);
 	}
 }
