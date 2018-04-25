@@ -56,36 +56,13 @@ replace_data_t::replace_data_t(loadsave_t *file)
 void replace_data_t::sprintf_replace(cbuffer_t &buf) const
 {
 	// First of all, general information
-	buf.append(autostart ? "1" : "0");
-	buf.append(retain_in_depot ? "1" : "0");
-	buf.append(use_home_depot ? "1" : "0");
-	buf.append(allow_using_existing_vehicles ? "1" : "0");
+	buf.append_bool(autostart); 
+	buf.append_bool(retain_in_depot);
+	buf.append_bool(use_home_depot);
+	buf.append_bool(allow_using_existing_vehicles);
 		
-	// Secondly, the number of convoys. Use leading zeros
-	// to keep a constant number of characters. 
-	sint8 zeros = 0;
-	if(number_of_convoys < 10)
-	{
-		zeros = 4;
-	}
-	else if(number_of_convoys < 100)
-	{
-		zeros = 3;
-	}
-	else if(number_of_convoys < 1000)
-	{
-		zeros = 2;
-	}
-	else if(number_of_convoys < 10000)
-	{
-		zeros = 1;
-	}
-	while(zeros > 0)
-	{
-		buf.append("0");
-		zeros--;
-	}
-	buf.append((int)number_of_convoys);
+	const uint16 number = number_of_convoys < 0 ? 0 : number_of_convoys; // Do we need this check?
+	buf.append_fixed(number);
 
 	// Finally, the replacing vehicles.
 	// Separate each name with the "|" character.
@@ -114,13 +91,15 @@ bool replace_data_t::sscanf_replace(const char *ptr)
 	allow_using_existing_vehicles = atoi(auev);
 
 	//Secondly, get the number of replacing vehicles
-	char rv[6];
+	/*char rv[6];
 	for(uint8 i = 0; i < 5; i ++)
 	{
 		rv[i] = *p++;
 	}
 	rv[5] = 0;
-	number_of_convoys = atoi(rv);
+	number_of_convoys = atoi(rv);*/
+
+	number_of_convoys = cbuffer_t::decode_uint16(p);
 
 	// Thirdly, get the replacing vehicles.
 	replacing_vehicles->clear();
@@ -194,8 +173,8 @@ void replace_data_t::rdwr(loadsave_t *file)
 		file->rdwr_short(replacing_vehicles_count);
 		for(uint16 i = 0; i < replacing_vehicles_count; i ++)
 		{
-			char vehicle_name[256];
-			file->rdwr_str(vehicle_name, 256);
+			char vehicle_name[512];
+			file->rdwr_str(vehicle_name, 512);
 			const vehicle_desc_t* desc = vehicle_builder_t::get_info(vehicle_name);
 			if(desc == NULL) 
 			{

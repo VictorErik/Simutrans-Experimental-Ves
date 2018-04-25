@@ -1670,17 +1670,17 @@ void vehicle_t::hop(grund_t* gr)
 
 	// check if arrived at waypoint, and update schedule to next destination
 	// route search through the waypoint is already complete
-//	if(  leading  &&  get_pos()==cnv->get_fpl_target()  ) { // leading turned off in vorfahren when reversing
-	if(  get_pos()==cnv->get_fpl_target()  ) {
+//	if(  leading  &&  get_pos()==cnv->get_schedule_target()  ) { // leading turned off in vorfahren when reversing
+	if(  get_pos()==cnv->get_schedule_target()  ) {
 		if(  route_index+1 >= cnv->get_route()->get_count()  ) {
 			// we end up here after loading a game or when a waypoint is reached which crosses next itself
-			cnv->set_fpl_target( koord3d::invalid );
+			cnv->set_schedule_target( koord3d::invalid );
 		}
 		else if(welt->lookup(cnv->get_route()->at(route_index))->get_halt() != welt->lookup(cnv->get_route()->at(cnv->get_route()->get_count() - 1))->get_halt())
 		{
 			cnv->get_schedule()->advance();
 			const koord3d ziel = cnv->get_schedule()->get_current_entry().pos;
-			cnv->set_fpl_target( cnv->is_waypoint(ziel) ? ziel : koord3d::invalid );
+			cnv->set_schedule_target( cnv->is_waypoint(ziel) ? ziel : koord3d::invalid );
 		}
 	}
 
@@ -3478,13 +3478,8 @@ void road_vehicle_t::get_screen_offset( int &xoff, int &yoff, const sint16 raste
 
 
 // chooses a route at a choose sign; returns true on success
-bool road_vehicle_t::choose_route( sint32 &restart_speed, ribi_t::ribi start_direction, uint16 index )
+bool road_vehicle_t::choose_route(sint32 &restart_speed, ribi_t::ribi start_direction, uint16 index)
 {
-	if(  cnv->get_fpl_target()!=koord3d::invalid  ) {
-		// destination is a waypoint!
-		return true;
-	}
-
 	// are we heading to a target?
 	route_t *rt = cnv->access_route();
 	target_halt = haltestelle_t::get_halt( rt->back(), get_owner() );
@@ -3531,7 +3526,7 @@ bool road_vehicle_t::choose_route( sint32 &restart_speed, ribi_t::ribi start_dir
 			// now it make sense to search a route
 			route_t target_rt;
 			koord3d next3d = rt->at(index);
-			if(  !target_rt.find_route(welt, next3d, this, speed_to_kmh(cnv->get_min_top_speed()), start_direction, cnv->get_highest_axle_load(), cnv->get_tile_length(), cnv->get_weight_summary().weight / 1000, 33, cnv->has_tall_vehicles(), route_t::choose_signal )  ) {
+			if(  !target_rt.find_route(welt, next3d, this, speed_to_kmh(cnv->get_min_top_speed()), start_direction, cnv->get_highest_axle_load(), cnv->get_tile_length(), cnv->get_weight_summary().weight / 1000, 33, cnv->has_tall_vehicles())  ) {
 				// nothing empty or not route with less than 33 tiles
 				target_halt = halthandle_t();
 				restart_speed = 0;
@@ -3548,6 +3543,7 @@ bool road_vehicle_t::choose_route( sint32 &restart_speed, ribi_t::ribi start_dir
 	}
 	return true;
 }
+
 
 
 bool road_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, uint8 second_check_count)
@@ -3579,71 +3575,32 @@ bool road_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 
 		// first: check roadsigns
 		const roadsign_t *rs = NULL;
-		if(str->has_sign()) {
+		if (str->has_sign()) {
 			rs = gr->find<roadsign_t>();
-			if(rs) {
-				// since at the corner, our direction may be diagonal, we make it straight
-				const uint8 direction90 = ribi_type(get_pos().get_2d(),pos_next.get_2d());
+			route_t const& r = *cnv->get_route();
 
-				if(rs->get_desc()->is_traffic_light()  &&  (rs->get_dir()&direction90)==0) {
+			if (rs && (route_index + 1u < r.get_count())) {
+				// since at the corner, our direction may be diagonal, we make it straight
+				uint8 direction90 = ribi_type(get_pos(), pos_next);
+
+				if (rs->get_desc()->is_traffic_light() && (rs->get_dir()&direction90) == 0) {
 					// wait here
 					restart_speed = 16;
 					return false;
 				}
 				// check, if we reached a choose point
-				else if(  rs->is_free_route(direction90)  &&  !target_halt.is_bound()  ) {
-					if(  second_check_count  ) {
-						return false;
-					}
+				else {
+					// route position after road sign
+					const koord pos_next_next = r.at(route_index + 1u).get_2d();
+					// since at the corner, our direction may be diagonal, we make it straight
+					direction90 = ribi_type(pos_next, pos_next_next);
 
-					const route_t *rt = cnv->get_route();
-					// is our target occupied?
-					target_halt = haltestelle_t::get_halt( rt->back(), get_owner() );
-					if(  target_halt.is_bound()  ) {
-						// since convois can long than one tile, check is more difficult
-						bool can_go_there = true;
-						for(  uint32 length=0;  can_go_there  &&  length<cnv->get_tile_length()  &&  length+1<rt->get_count();  length++  ) {
-							can_go_there &= target_halt->is_reservable( welt->lookup( rt->at( rt->get_count()-length-1) ), cnv->self );
+					if (rs->is_free_route(direction90) && !target_halt.is_bound()) {
+						if (second_check_count) {
+							return false;
 						}
-						if(  can_go_there  ) {
-							// then reserve it ...
-							for(  uint32 length=0;  length<cnv->get_tile_length()  &&  length+1<rt->get_count();  length++  ) {
-								target_halt->reserve_position( welt->lookup( rt->at( rt->get_count()-length-1) ), cnv->self );
-							}
-						}
-						else {
-							// cannot go there => need slot search
-
-							// if we fail, we will wait in a step, much more simulation friendly
-							if(!cnv->is_waiting()) {
-								restart_speed = -1;
-								target_halt = halthandle_t();
-								return false;
-							}
-
-							// check if there is a free position
-							// this is much faster than waysearch
-							if(!target_halt->find_free_position(road_wt,cnv->self,obj_t::road_vehicle)) {
-								restart_speed = 0;
-								target_halt = halthandle_t();
-								//DBG_MESSAGE("road_vehicle_t::can_enter_tile()","cnv=%d nothing free found!",cnv->self.get_id());
-								return false;
-							}
-
-							// now it make sense to search a route
-							route_t target_rt;
-							if(  !target_rt.find_route( welt, pos_next, this, speed_to_kmh(cnv->get_min_top_speed()), direction90, cnv->get_highest_axle_load(), cnv->get_tile_length(), cnv->get_weight_summary().weight / 1000, 33, cnv->has_tall_vehicles())  ) {
-								// nothing empty or not route with less than 33 tiles
-								target_halt = halthandle_t();
-								restart_speed = 0;
-								return false;
-							}
-
-							// now reserve our choice (beware: might be longer than one tile!)
-							for(  uint32 length=0;  length<cnv->get_tile_length()  &&  length+1<target_rt.get_count();  length++  ) {
-								target_halt->reserve_position( welt->lookup( target_rt.at( target_rt.get_count()-length-1) ), cnv->self );
-							}
-							cnv->update_route(route_index, target_rt);
+						if (!choose_route(restart_speed, direction90, route_index)) {
+							return false;
 						}
 					}
 				}
@@ -4299,6 +4256,7 @@ sint32 rail_vehicle_t::activate_choose_signal(const uint16 start_block, uint16 &
 		return 0;
 	}
 
+
 	grund_t const* target = welt->lookup(schedule->get_current_entry().pos); 
 
 	if(target == NULL) 
@@ -4628,47 +4586,53 @@ bool rail_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, ui
 		{
 			// Check for head-on collisions in drive by sight mode so as to fix deadlocks automatically.
 			convoihandle_t c = w->get_reserved_convoi();
-			ribi_t::ribi other_convoy_direction = c->front()->get_direction();
-			if (other_convoy_direction != get_direction())
+			if ((c->get_state() == convoi_t::DRIVING || c->get_state() == convoi_t::WAITING_FOR_CLEARANCE|| c->get_state() == convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH || c->get_state() == convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS) &&
+				(cnv->get_state() == convoi_t::DRIVING || cnv->get_state() == convoi_t::WAITING_FOR_CLEARANCE|| cnv->get_state() == convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH || cnv->get_state() == convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS) )
 			{
-				// Opposite directions detected
-				// We must decide whether this or the other convoy should reverse.
-				convoihandle_t lowest_numbered_convoy;
-				convoihandle_t highest_numbered_convoy;
-				if (cnv->self.get_id() < c->self.get_id())
+				ribi_t::ribi other_convoy_direction = c->front()->get_direction();
+				const depot_t* dep = gr->get_depot();
+				const koord3d TEST_other_next = c->front()->get_pos_next();
+				if (c->front()->get_pos_next() == get_pos() && get_pos_next() == c->front()->get_pos() && !dep && other_convoy_direction != get_direction())
 				{
-					lowest_numbered_convoy = cnv->self;
-					highest_numbered_convoy = c->self;
-				}
-				else
-				{
-					lowest_numbered_convoy = c->self;
-					highest_numbered_convoy = cnv->self;
-				}
-
-				const koord this_pos = lowest_numbered_convoy->get_pos().get_2d();
-				const koord lowest_numbered_last_stop_pos = lowest_numbered_convoy->get_schedule()->get_prev_halt(lowest_numbered_convoy->get_owner()).is_bound() ? lowest_numbered_convoy->get_schedule()->get_prev_halt(lowest_numbered_convoy->get_owner())->get_next_pos(this_pos) : this_pos;
-				const koord highest_numbered_last_stop_pos = highest_numbered_convoy->get_schedule()->get_prev_halt(highest_numbered_convoy->get_owner()).is_bound() ? highest_numbered_convoy->get_schedule()->get_prev_halt(highest_numbered_convoy->get_owner())->get_next_pos(this_pos) : this_pos;
-
-				const uint16 lowest_numbered_convoy_distance_to_stop = shortest_distance(this_pos, lowest_numbered_last_stop_pos);
-				const uint16 highest_numbered_convoy_distance_to_stop = shortest_distance(this_pos, highest_numbered_last_stop_pos);
-
-				if (lowest_numbered_convoy_distance_to_stop <= highest_numbered_convoy_distance_to_stop)
-				{
-					// The lowest numbered convoy reverses.
-					if (lowest_numbered_convoy == cnv->self)
+					// Opposite directions detected
+					// We must decide whether this or the other convoy should reverse.
+					convoihandle_t lowest_numbered_convoy;
+					convoihandle_t highest_numbered_convoy;
+					if (cnv->self.get_id() < c->self.get_id())
 					{
-						cnv->is_reversed() ? cnv->get_schedule()->advance() : cnv->get_schedule()->advance_reverse();
-						cnv->suche_neue_route(); 
+						lowest_numbered_convoy = cnv->self;
+						highest_numbered_convoy = c->self;
 					}
-				}
-				else
-				{
-					// The highest numbered convoy reverses
-					if (highest_numbered_convoy == cnv->self)
+					else
 					{
-						cnv->is_reversed() ? cnv->get_schedule()->advance() : cnv->get_schedule()->advance_reverse();
-						cnv->suche_neue_route();
+						lowest_numbered_convoy = c->self;
+						highest_numbered_convoy = cnv->self;
+					}
+
+					const koord this_pos = lowest_numbered_convoy->get_pos().get_2d();
+					const koord lowest_numbered_last_stop_pos = lowest_numbered_convoy->get_schedule()->get_prev_halt(lowest_numbered_convoy->get_owner()).is_bound() ? lowest_numbered_convoy->get_schedule()->get_prev_halt(lowest_numbered_convoy->get_owner())->get_next_pos(this_pos) : this_pos;
+					const koord highest_numbered_last_stop_pos = highest_numbered_convoy->get_schedule()->get_prev_halt(highest_numbered_convoy->get_owner()).is_bound() ? highest_numbered_convoy->get_schedule()->get_prev_halt(highest_numbered_convoy->get_owner())->get_next_pos(this_pos) : this_pos;
+
+					const uint16 lowest_numbered_convoy_distance_to_stop = shortest_distance(this_pos, lowest_numbered_last_stop_pos);
+					const uint16 highest_numbered_convoy_distance_to_stop = shortest_distance(this_pos, highest_numbered_last_stop_pos);
+
+					if (lowest_numbered_convoy_distance_to_stop <= highest_numbered_convoy_distance_to_stop)
+					{
+						// The lowest numbered convoy reverses.
+						if (lowest_numbered_convoy == cnv->self)
+						{
+							cnv->is_reversed() ? cnv->get_schedule()->advance() : cnv->get_schedule()->advance_reverse();
+							cnv->suche_neue_route();
+						}
+					}
+					else
+					{
+						// The highest numbered convoy reverses
+						if (highest_numbered_convoy == cnv->self)
+						{
+							cnv->is_reversed() ? cnv->get_schedule()->advance() : cnv->get_schedule()->advance_reverse();
+							cnv->suche_neue_route();
+						}
 					}
 				}
 			}
@@ -6532,7 +6496,7 @@ sint32 rail_vehicle_t::block_reserver(route_t *route, uint16 start_index, uint16
 						{
 							// Do not clear the last signal in the route, as nothing is reserved beyond it, unless there are no more signals beyond at all (count == 0)
 							sint32 add_value = 0;
-							if(reached_end_of_loop && signs.get_count() == 1)
+							if (reached_end_of_loop && (signs.get_count() == 1 || (signs.get_count() > 0 && this_stop_signal_index >= INVALID_INDEX)))
 							{
 								add_value = 1;
 							}
@@ -6802,7 +6766,7 @@ void rail_vehicle_t::leave_tile()
 			
 				const halthandle_t this_halt = gr->get_halt();
 				const halthandle_t dest_halt = haltestelle_t::get_halt((cnv && cnv->get_schedule() ? cnv->get_schedule()->get_current_entry().pos : koord3d::invalid), get_owner()); 
-				const bool at_reversing_destination = dest_halt.is_bound() && this_halt == dest_halt && cnv->get_schedule() && cnv->get_schedule()->get_current_entry().reverse; 
+				const bool at_reversing_destination = dest_halt.is_bound() && this_halt == dest_halt && cnv->get_schedule() && cnv->get_schedule()->get_current_entry().reverse == 1; ; 
 
 				route_t* route = cnv ? cnv->get_route() : NULL;
 				koord3d this_tile;
@@ -7891,9 +7855,9 @@ route_t::route_result_t air_vehicle_t::calc_route_internal(
 		search_for_stop = route.get_count()-1;
 
 		// define the endpoint on the runway
-		uint16 runway_tiles = search_for_stop - touchdown;
-		uint16 min_runway_tiles = desc->get_minimum_runway_length() / welt->get_settings().get_meters_per_tile() + 1;
-		uint16 excess_of_tiles = runway_tiles - min_runway_tiles;
+		uint32 runway_tiles = search_for_stop - touchdown;
+		uint32 min_runway_tiles = desc->get_minimum_runway_length() / welt->get_settings().get_meters_per_tile() + 1;
+		sint32 excess_of_tiles = runway_tiles - min_runway_tiles;
 		search_for_stop -= excess_of_tiles;
 		// now we just append the rest
 		for( int i=end_route.get_count()-2;  i>=0;  i--  ) {
@@ -8208,7 +8172,6 @@ bool air_vehicle_t::can_enter_tile(const grund_t *gr, sint32 &restart_speed, uin
 		}
 	}
 
-	//	if(route_index==search_for_stop  &&  state==landing) {
 	if(route_index==search_for_stop &&  state==landing) {
 
 		// we will wait in a step, much more simulation friendly

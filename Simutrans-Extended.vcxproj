@@ -2539,6 +2539,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bauer\goods_manager.cc" />
+    <ClCompile Include="dataobj\consist_order_t.cc" />
     <ClCompile Include="descriptor\factory_desc.cc" />
     <ClCompile Include="descriptor\obj_base_desc.cc" />
     <ClCompile Include="descriptor\reader\imagelist3d_reader.cc" />
@@ -3658,11 +3659,12 @@
     <None Include="base-texts-classes_gui.dat" />
     <None Include="base-texts-depot-window-refurbish.dat" />
     <None Include="base-texts-extended-journey-time-measurement.dat" />
+    <None Include="base-texts-missing-feb-2018.dat" />
+    <None Include="base-texts-missing-march-2018.dat" />
     <None Include="base-texts-new-convoy-debug-information.dat" />
     <None Include="base-texts-vehicle-management.dat" />
     <None Include="base_texts_extended-passenger-generation.dat" />
     <None Include="base_texts_bridge-change.dat" />
-    <None Include="base_texts_extended.dat" />
     <None Include="base_texts_extended_10.0.dat" />
     <None Include="base_texts_extended_10.1.dat" />
     <None Include="base_texts_extended_10.11.dat" />
@@ -3699,7 +3701,7 @@
     <None Include="base_texts_extended_transshipment.dat" />
     <None Include="base_texts_phil_fix.dat" />
     <None Include="base_texts_walking_passengers.dat" />
-    <None Include="bsae-texts-afhp.dat" />
+    <None Include="base-texts-afhp.dat" />
     <None Include="common.mk" />
     <None Include="config.template" />
     <None Include="Makefile" />

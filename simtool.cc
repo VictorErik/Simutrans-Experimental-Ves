@@ -3430,8 +3430,10 @@ bool tool_wayremover_t::calc_route( route_t &verbindung, player_t *player, const
 						}
 					}
 					// all other stuff
-					else {
-						can_delete = (calc_route_error = obj-> is_deletable(player)) == NULL;
+					// Ignore crossings: look only to the underlying way.
+					else if (!obj->get_typ() == obj_t::crossing)
+					{
+						can_delete = (calc_route_error = obj->is_deletable(player)) == NULL;
 					}
 				}
 			}
@@ -3640,7 +3642,7 @@ const char* tool_build_wayobj_t::get_tooltip(const player_t *) const
 					}
 					any_prohibitive = true;
 					char tmpbuf[30];
-					sprintf(tmpbuf, "Prohibitive %i", i);
+					sprintf(tmpbuf, "Prohibitive %i-%i", desc->get_waytype(), i);
 					n += sprintf(toolstr + n, " ");
 					n += sprintf(toolstr + n, translator::translate(tmpbuf));
 				}

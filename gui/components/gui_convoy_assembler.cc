@@ -893,7 +893,7 @@ void gui_convoy_assembler_t::draw(scr_coord parent_pos)
 		}
 
 		txt_convoi_power.clear();
-		txt_convoi_power.printf( translator::translate("Power: %4d kW, %d kN\n"), total_power, total_force);
+		txt_convoi_power.printf("%s %4d kW, %d kN\n", translator::translate("Power:"), total_power, total_force);
 
 		txt_convoi_brake_force.clear();
 		txt_convoi_brake_force.printf("%s %4.1fkN\n", translator::translate("Max. brake force:"), convoy.get_braking_force().to_double() / 1000.0);
@@ -2293,7 +2293,7 @@ void gui_convoy_assembler_t::draw_vehicle_info_text(const scr_coord& pos)
 			{
 				n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
 				char tmpbuf[30];
-				sprintf(tmpbuf, "Permissive %i", i);
+				sprintf(tmpbuf, "Permissive %i-%i", veh_type->get_waytype(), i);
 				n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
 			}
 		}
@@ -2313,7 +2313,7 @@ void gui_convoy_assembler_t::draw_vehicle_info_text(const scr_coord& pos)
 			{
 				n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: "));
 				char tmpbuf[30];
-				sprintf(tmpbuf, "Prohibitive %i", i);
+				sprintf(tmpbuf, "Prohibitive %i-%i", veh_type->get_waytype(), i);
 				n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
 			}
 		}

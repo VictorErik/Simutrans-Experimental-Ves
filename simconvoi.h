@@ -297,7 +297,7 @@ private:
 	// Added by : Knightly
 	// Purpose  : To hold the original schedule before opening schedule window
 	schedule_t *old_schedule;
-	koord3d fpl_target;
+	koord3d schedule_target;
 
 	/**
 	* loading_level was minimum_loading before. Actual percentage loaded for loadable vehicles (station length!).
@@ -732,6 +732,11 @@ private:
 	 */
 	bool is_choosing:1; 
 
+	// This is true if this convoy has not stopped since it emerged
+	// from a depot. This is useful for ensuring that a stop's reversing
+	// status is not set incorrectly.
+	bool last_stop_was_depot:1;
+
 	// The maximum speed allowed by the current signalling system
 	sint32 max_signal_speed; 
 
@@ -844,8 +849,8 @@ public:
 	void update_route(uint32 index, const route_t &replacement); // replace route with replacement starting at index.
 	void replace_route(const route_t &replacement); // Completely replace the route with that passed as a parameter.
 
-	const koord3d get_fpl_target() const { return fpl_target; }
-	void set_fpl_target( koord3d t ) { fpl_target = t; }
+	const koord3d get_schedule_target() const { return schedule_target; }
+	void set_schedule_target( koord3d t ) { schedule_target = t; }
 
 	/**
 	* get line
@@ -1194,6 +1199,9 @@ public:
 
 	void set_is_choosing(bool value) { is_choosing = value; }
 	bool get_is_choosing() const { return is_choosing; }
+
+	void set_last_stop_was_depot(bool value) { last_stop_was_depot = value; }
+	bool get_last_stop_was_depot() const { return last_stop_was_depot; }
 
 	void set_maximum_signal_speed(sint32 value) { max_signal_speed = value; }
 	sint32 get_max_signal_speed() const { return max_signal_speed; }

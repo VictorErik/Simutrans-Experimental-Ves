@@ -91,8 +91,8 @@ private:
 	gui_label_t lb_line;
 
 	// always needed
-	button_t bt_add, bt_insert, bt_remove; // stop management
-	button_t bt_bidirectional, bt_mirror, bt_wait_for_time, bt_same_spacing_shift, bt_ignore_choose;
+	button_t bt_add, bt_insert, bt_remove, bt_consist_order; // stop management
+	button_t bt_bidirectional, bt_mirror, bt_wait_for_time, bt_same_spacing_shift, bt_ignore_choose, bt_lay_over, bt_range_stop;
 
 	button_t bt_wait_prev, bt_wait_next;	// waiting in parts of month
 	gui_label_t lb_wait, lb_waitlevel_as_clock;
@@ -103,6 +103,10 @@ private:
 	gui_label_t lb_spacing;
 	gui_numberinput_t numimp_spacing;
 	gui_label_t lb_spacing_as_clock;
+
+	gui_label_t lb_conditional_depart, lb_broadcast_condition;
+	gui_label_t lb_wait_condition;
+	gui_numberinput_t conditional_depart, condition_broadcast;
 
 	gui_label_t lb_spacing_shift;
 	gui_numberinput_t numimp_spacing_shift;
