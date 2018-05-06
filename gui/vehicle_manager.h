@@ -55,6 +55,9 @@ public:
 
 	bool infowin_event(event_t const*) OVERRIDE;
 	bool selected = false;
+
+	bool is_selected() { return selected; }
+	bool set_selection(bool sel) { return selected = sel; }
 	
 	/**
 	* Draw the component
@@ -101,6 +104,8 @@ public:
 	void draw(scr_coord offset);
 
 	int image_height = 0;
+
+	bool is_selected() { return selected; }
 };
 
 
@@ -114,8 +119,8 @@ public:
 		by_desc_name = 0,
 		by_desc_intro_year = 1,
 		by_desc_amount = 2,
-		by_desc_issues = 3, // Experimental: If the vehicle_desc has any issues, like out of production, can upgrade, etc
-		SORT_MODES_DESC = 4
+		//by_desc_issues = 3, // Experimental: If the vehicle_desc has any issues, like out of production, can upgrade, etc
+		SORT_MODES_DESC = 3
 	};
 
 	enum sort_mode_t {
@@ -134,7 +139,7 @@ private:
 	gui_combobox_t combo_sorter;
 
 	button_t bt_show_only_owned;
-	bool show_all_desc;
+	bool show_only_owned;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_t sortby;
@@ -150,6 +155,8 @@ private:
 	waytype_t way_type;
 	vector_tpl<vehicle_t*> vehicles;
 	vector_tpl<vehicle_desc_t*> vehicle_descs;
+	vector_tpl<vehicle_desc_t*> vehicle_descs_pr_name;
+	vector_tpl<vehicle_t*> selected_vehicles;
 
 	// vector of convoy info objects that are being displayed
 	vector_tpl<gui_convoiinfo_t *> convoy_infos;
@@ -160,10 +167,12 @@ private:
 
 	uint32 amount_of_vehicle_descs;
 	uint32 amount_of_vehicles;
+
 	gui_label_t lb_amount_of_vehicle_descs;
 	gui_label_t lb_amount_of_vehicles;
 
-	vehicle_desc_t* vehicle_on_display;
+	vehicle_desc_t* vehicle_for_display;
+	int selected_index;
 	bool show_all_individual_vehicles;
 
 	// This stores the amount of the same kind of vehicles that player owns. Have to be resorted whenever the vehicles are sorted
@@ -172,6 +181,8 @@ private:
 	static const char *sort_text_desc[SORT_MODES_DESC];
 	static const char *sort_text[SORT_MODES];
 
+	char *name_with_amount[512];
+
 
 public:
 	vehicle_manager_t(player_t* player);
@@ -179,11 +190,17 @@ public:
 
 	vehicle_manager_t();
 
-	void vehicle_manager_t::build_vehicle_lists();
+	void vehicle_manager_t::build_vehicle_list();
+	void vehicle_manager_t::build_desc_list();
+	void vehicle_manager_t::sort_vehicles(bool);
 
-	static bool vehicle_manager_t::compare_vehicles(vehicle_desc_t*, vehicle_desc_t*);
+	void vehicle_manager_t::vehicle_on_display();
 
-	void vehicle_manager_t::display_this_vehicle(vehicle_desc_t* veh);
+	static bool vehicle_manager_t::compare_vehicle_desc(vehicle_desc_t*, vehicle_desc_t*);
+
+	static bool vehicle_manager_t::compare_vehicle_desc_amount(char*, char*);
+
+	static void vehicle_manager_t::display_this_vehicle(vehicle_desc_t* veh);
 
 	/**
 	* in top-level windows the name is displayed in titlebar
