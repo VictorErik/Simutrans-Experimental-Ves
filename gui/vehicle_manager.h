@@ -154,6 +154,7 @@ private:
 
 	waytype_t way_type;
 	vector_tpl<vehicle_t*> vehicles;
+	vector_tpl<vehicle_t*> vehicles_to_show;
 	vector_tpl<vehicle_desc_t*> vehicle_descs;
 	vector_tpl<vehicle_desc_t*> vehicle_descs_pr_name;
 	vector_tpl<vehicle_t*> selected_vehicles;
@@ -173,10 +174,13 @@ private:
 
 	vehicle_desc_t* vehicle_for_display;
 	int selected_index;
+	int old_selected_index = -1;
+	int updated_amount_owned_vehicles;
+	int old_amount_of_owned_vehicles = -1;
 	bool show_all_individual_vehicles;
 
 	// This stores the amount of the same kind of vehicles that player owns. Have to be resorted whenever the vehicles are sorted
-	uint16 *owned_vehicles = 0;
+	uint16 *owned_vehicles;
 
 	static const char *sort_text_desc[SORT_MODES_DESC];
 	static const char *sort_text[SORT_MODES];
