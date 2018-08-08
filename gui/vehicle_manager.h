@@ -44,7 +44,7 @@ private:
 	*/
 	vehicle_desc_t* veh;
 
-	uint16 amount = 0;
+	uint16 amount;
 
 public:
 	/**
@@ -65,7 +65,7 @@ public:
 	*/
 	void draw(scr_coord offset);
 
-	int image_height = 0;
+	int image_height;
 };
 
 #endif
@@ -102,10 +102,10 @@ public:
 	* @author Hj. Malthaner
 	*/
 	void draw(scr_coord offset);
-
-	int image_height = 0;
-
+	
 	bool is_selected() { return selected; }
+
+	int image_height;
 };
 
 
@@ -139,6 +139,7 @@ private:
 	gui_combobox_t combo_sorter;
 
 	button_t bt_show_only_owned;
+	button_t bt_deselect_all_desc;
 	bool show_only_owned;
 
 	static sort_mode_desc_t sortby_desc;
@@ -155,9 +156,11 @@ private:
 	waytype_t way_type;
 	vector_tpl<vehicle_t*> vehicles;
 	vector_tpl<vehicle_t*> vehicles_to_show;
+	vector_tpl<vehicle_t*> vehicle_we_own;
 	vector_tpl<vehicle_desc_t*> vehicle_descs;
 	vector_tpl<vehicle_desc_t*> vehicle_descs_pr_name;
 	vector_tpl<vehicle_t*> selected_vehicles;
+
 
 	// vector of convoy info objects that are being displayed
 	vector_tpl<gui_convoiinfo_t *> convoy_infos;
@@ -168,24 +171,20 @@ private:
 
 	uint32 amount_of_vehicle_descs;
 	uint32 amount_of_vehicles;
+	uint32 amount_of_vehicles_we_own;
 
 	gui_label_t lb_amount_of_vehicle_descs;
 	gui_label_t lb_amount_of_vehicles;
 
 	vehicle_desc_t* vehicle_for_display;
 	int selected_index;
-	int old_selected_index = -1;
 	int updated_amount_owned_vehicles;
 	int old_amount_of_owned_vehicles = -1;
 	bool show_all_individual_vehicles;
 
-	// This stores the amount of the same kind of vehicles that player owns. Have to be resorted whenever the vehicles are sorted
-	uint16 *owned_vehicles;
-
 	static const char *sort_text_desc[SORT_MODES_DESC];
 	static const char *sort_text[SORT_MODES];
 
-	char *name_with_amount[512];
 
 
 public:
@@ -197,8 +196,6 @@ public:
 	void vehicle_manager_t::build_vehicle_list();
 	void vehicle_manager_t::build_desc_list();
 	void vehicle_manager_t::sort_vehicles(bool);
-
-	void vehicle_manager_t::vehicle_on_display();
 
 	static bool vehicle_manager_t::compare_vehicle_desc(vehicle_desc_t*, vehicle_desc_t*);
 
@@ -241,7 +238,7 @@ public:
 	*/
 	virtual void set_windowsize(scr_size size);
 
-	bool infowin_event(event_t const*) OVERRIDE;
+	//bool infowin_event(event_t const*) OVERRIDE;
 
 	bool action_triggered(gui_action_creator_t*, value_t) OVERRIDE;
 

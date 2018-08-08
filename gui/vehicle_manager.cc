@@ -88,14 +88,12 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	int y_pos = 5;
 
-	scr_coord dummy_coords(D_MARGIN_LEFT, D_MARGIN_TOP);
-
-	bt_show_only_owned.init(button_t::square_state, translator::translate("show_only_owned_vehicles"), dummy_coords, scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	bt_show_only_owned.init(button_t::square_state, translator::translate("show_only_owned_vehicles"), scr_coord(D_MARGIN_LEFT, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_show_only_owned.add_listener(this);
-	bt_show_only_owned.set_tooltip(translator::translate("If_unticked_it_shows_all_available_vehicles"));
+	bt_show_only_owned.set_tooltip(translator::translate("If_unticked_all_available_vehicles_are_shown"));
 	bt_show_only_owned.pressed = true;
 	show_only_owned = bt_show_only_owned.pressed;
-	bt_show_only_owned.set_pos(scr_coord(10, y_pos));
+	//bt_show_only_owned.set_pos(scr_coord(10, y_pos));
 	add_component(&bt_show_only_owned);
 
 	y_pos += D_BUTTON_HEIGHT;
@@ -130,8 +128,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		tabs_to_index[max_idx++] = waytype_t::road_wt;
 	}
 	if (!vehicle_builder_t::get_info(water_wt).empty()) {
-tabs.add_tab(&dummy, translator::translate("Ship"), skinverwaltung_t::schiffshaltsymbol, translator::translate("Ship"));
-tabs_to_index[max_idx++] = waytype_t::water_wt;
+		tabs.add_tab(&dummy, translator::translate("Ship"), skinverwaltung_t::schiffshaltsymbol, translator::translate("Ship"));
+		tabs_to_index[max_idx++] = waytype_t::water_wt;
 	}
 	if (runway_t::default_runway) {
 		tabs.add_tab(&dummy, translator::translate("Air"), skinverwaltung_t::airhaltsymbol, translator::translate("Air"));
@@ -189,9 +187,9 @@ tabs_to_index[max_idx++] = waytype_t::water_wt;
 
 	y_pos += D_BUTTON_HEIGHT;
 
-	selected_index = 0;
+	selected_index = -1;
 
-	build_vehicle_list();
+	//build_vehicle_list();
 	build_desc_list();
 
 	// Sizes:
@@ -208,9 +206,7 @@ tabs_to_index[max_idx++] = waytype_t::water_wt;
 
 
 vehicle_manager_t::~vehicle_manager_t()
-{
-	//delete[] owned_vehicles;
-	
+{	
 	for (int i = 0; i <vehicle_desc_infos.get_count(); i++)
 	{
 		delete[] vehicle_desc_infos.get_element(i);
@@ -226,27 +222,28 @@ vehicle_manager_t::~vehicle_manager_t()
 /**
  * Mouse clicks are hereby reported to the GUI-Components
  */
-bool vehicle_manager_t::infowin_event(const event_t *ev)
-{
-	if (IS_LEFTRELEASE(ev)) {
-
-		//return true;
-	}
-	else if (IS_RIGHTRELEASE(ev)) {
-		//return true;
-	}
-	return gui_frame_t::infowin_event(ev);
-}
+//bool vehicle_manager_t::infowin_event(const event_t *ev)
+//{
+//	if (IS_LEFTRELEASE(ev)) {
+//		//return true;
+//	}
+//	else if (IS_RIGHTRELEASE(ev)) {
+//		//return true;
+//	}
+//	return gui_frame_t::infowin_event(ev);
+//}
 
 
 bool vehicle_manager_t::action_triggered( gui_action_creator_t *comp, value_t v )           // 28-Dec-01    Markus Weber    Added
 {
+	// waytype tabs
 	if (comp == &tabs) {
 		int const tab = tabs.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab;
 		selected_tab = tabs_to_index[tab];
 		build_desc_list();
 	}
+
 	if (comp == &bt_show_only_owned)
 	{
 		bt_show_only_owned.pressed = !bt_show_only_owned.pressed;
@@ -256,7 +253,6 @@ bool vehicle_manager_t::action_triggered( gui_action_creator_t *comp, value_t v 
 
 	// sort by what
 	if (comp == &combo_sorter_desc) {
-		// sort by what
 		sint32 sort_mode = combo_sorter_desc.get_selection();
 		if (sort_mode < 0)
 		{
@@ -275,12 +271,37 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 {
 	gui_frame_t::draw(pos, size);
 
+	bool update_vehicle_list = false;
+	bool update_vehicle_desc_list = false;
 
-	//if (old_selected_index != selected_index)
-	//{
-	//	old_selected_index = selected_index;
-	//	build_vehicle_list();
-	//}
+	// This handles the selection of the vehicles in the "desc" section
+	for (int i = 0; i < vehicle_desc_infos.get_count(); i++)
+	{
+		if (vehicle_desc_infos.get_element(i)->is_selected())
+		{
+			if (selected_index != i)
+			{
+				if (i < vehicle_descs.get_count())
+				{
+					vehicle_for_display = vehicle_descs.get_element(i);
+					selected_index = i;
+
+					for (int j = 0; j < vehicle_desc_infos.get_count(); j++)
+					{
+						if (j != selected_index)
+						{
+							vehicle_desc_infos.get_element(j)->set_selection(false);
+						}
+					}
+					update_vehicle_list = true;
+					break;
+				}
+			}
+		}
+	}
+
+
+
 
 	updated_amount_owned_vehicles = 0;
 	way_type = (waytype_t)selected_tab;
@@ -296,6 +317,11 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	{
 		old_amount_of_owned_vehicles = updated_amount_owned_vehicles;
 		build_desc_list();
+	}
+
+	if (update_vehicle_list)
+	{
+		build_vehicle_list();
 	}
 }
 
@@ -322,132 +348,193 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 }
 
-void vehicle_manager_t::vehicle_on_display()
+void vehicle_manager_t::sort_vehicles(bool veh_desc)
 {
-	//for (int i = 0; i < vehicle_desc_infos.get_count(); i++)
-	//{
-	//	if (vehicle_desc_infos.get_element(i)->is_selected())
-	//	{
-	//		if (selected_index != i)
-	//		{
-	//			vehicle_desc_infos.get_element(selected_index)->set_selection(false);
-	//			vehicle_for_display = vehicle_descs.get_element(i);
-	//			selected_index = i;
-	//		}
-	//	}
-	//}
+	if (veh_desc)
+	{
+		if (sortby_desc == by_desc_name || sortby_desc == by_desc_intro_year)
+		{
+			std::sort(vehicle_descs.begin(), vehicle_descs.end(), compare_vehicle_desc);
+		}
 
-	//// Build the list of the vehicles we have actually selected
-	//for (int i = 0; i < vehicle_infos.get_count(); i++)
-	//{
-	//	if (vehicle_infos.get_element(i)->is_selected())
-	//	{
-	//		selected_vehicles.append(vehicles.get_element(i));
-	//	}
-	//}
+		//How many of each vehicles do we own?
+		if (sortby_desc == by_desc_amount)
+		{
+			uint16* tmp_amounts;
+			tmp_amounts = new uint16[amount_of_vehicle_descs];
+			for (int i = 0; i < amount_of_vehicle_descs; i++)
+			{
+				tmp_amounts[i] = 0;
+			}
+
+			for (int i = 0; i < amount_of_vehicle_descs; i++)
+			{
+				for (unsigned j = 0; j < amount_of_vehicles_we_own; j++)
+				{
+					if (vehicle_descs.get_element(i) == vehicle_we_own.get_element(j)->get_desc())
+					{
+						tmp_amounts[i]++;
+					}
+				}
+			}
+
+			vehicle_descs_pr_name.clear();
+			vehicle_descs_pr_name.resize(amount_of_vehicle_descs);
+
+			// create a new list to keep track of which index number each desc had originally and match the index number to the value we want to sort by
+			char **name_with_amount = new char *[amount_of_vehicle_descs];
+			for (int i = 0; i < amount_of_vehicle_descs; i++)
+			{
+				vehicle_descs_pr_name.append(vehicle_descs.get_element(i));
+
+				name_with_amount[i] = new char[50];
+				if (name_with_amount[i] != nullptr)
+				{
+					sprintf(name_with_amount[i], "%u.%u.",tmp_amounts[i], i);
+				}
+			}
+
+			std::sort(name_with_amount, name_with_amount + amount_of_vehicle_descs, compare_vehicle_desc_amount);
+
+			// now clear the old list, so we can start build it from scratch again in the new order
+			vehicle_descs.clear();
+			char c[1] = { 'a' }; // Need to give c some value, since the forloop depends on it
+			char accumulated_amount[10] = { 0 };
+			char accumulated_index[10] = { 0 };
+
+			int info_section;
+			int char_offset;
+
+			for (int i = 0; i < amount_of_vehicle_descs; i++)
+			{
+				for (int i = 0; i < 10; i++)
+				{
+					accumulated_amount[i] = '\0';
+					accumulated_index[i] = '\0';
+				}
+				char_offset = 0;
+				info_section = 0;
+				c[0] = 'a';
+				for (int j = 0; *c != '\0'; j++)
+				{
+					*c = name_with_amount[i][j];
+					if (*c == '.') // Index change
+					{
+						info_section++;
+						if (info_section == 1) // First section done: The amount of this vehicle, not interrested....
+						{
+							char_offset = j + 1;
+						}
+						else if (info_section == 2) // Second section done: Bingo, the old index number
+						{
+							break;
+						}
+					}
+					else
+					{
+						if (info_section == 0)
+						{
+							accumulated_amount[j] = *c;
+						}
+						else if (info_section == 1)
+						{
+							accumulated_index[j - char_offset] = *c;
+						}
+					}
+				}
+				uint16 veh_amount = std::atoi(accumulated_amount);
+				uint32 veh_index = std::atoi(accumulated_index);
+
+
+
+				for (int j = 0; j < amount_of_vehicle_descs; j++)
+				{
+					if (j == veh_index)
+					{
+						vehicle_desc_t * info = vehicle_descs_pr_name.get_element(j);
+						vehicle_descs.append(info);
+						break;
+					}
+				}
+			}
+			delete[] tmp_amounts;
+			for (int i = 0; i < amount_of_vehicle_descs; i++)
+			{
+				if (name_with_amount[i] != nullptr)
+				{
+					delete[] name_with_amount[i];
+				}
+			}
+		}
+	}
+}
+
+// Sorting, for the different types of vehicles
+bool vehicle_manager_t::compare_vehicle_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
+{
+	sint32 result = 0;
+
+	switch (sortby_desc) {
+	default:
+	case by_desc_name:
+		result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+		break;
+	case by_desc_intro_year:
+		result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
+		break;
+		//case by_desc_issues:
+		//	result = cnv1.get_id() - cnv2.get_id();
+		//	break;
+	}
+	return result < 0;
 }
 
 
-void vehicle_manager_t::sort_vehicles(bool it_is_descs)
+bool vehicle_manager_t::compare_vehicle_desc_amount(char* veh1, char* veh2)
 {
-	//if (it_is_descs)
-	//{
-	//	if (sortby_desc == by_desc_name || sortby_desc == by_desc_intro_year)
-	//	{
-	//		std::sort(vehicle_descs.begin(), vehicle_descs.end(), compare_vehicle_desc);
-	//	}
+	sint32 result = 0;
 
-	//	// How many of each vehicles do we own?
-	//	amount_of_vehicles = vehicles.get_count();
+	switch (sortby_desc) {
+	default:
+	case by_desc_amount:
 
-	//	uint16 *owned_vehicles = new uint16[amount_of_vehicle_descs];
-	//	for (int i = 0; i < amount_of_vehicle_descs; i++)
-	//	{
-	//		owned_vehicles[i] = 0;
-	//	}
-	//	for (int i = 0; i < amount_of_vehicle_descs; i++)
-	//	{
-	//		for (int j = 0; j < amount_of_vehicles; j++)
-	//		{
-	//			if (vehicle_descs.get_element(i) == vehicles.get_element(j)->get_desc())
-	//			{
-	//				owned_vehicles[i]++;
-	//			}
-	//		}
-	//	}
+		char c[1] = { 0 };
+		char accumulated_char_a[10] = { 0 };
+		for (int i = 0; *c != '.'; i++)
+		{
+			*c = veh1[i];
+			if (*c == '.')
+			{
+				break;
+			}
+			else
+			{
+				accumulated_char_a[i] = *c;
+			}
+		}
+		uint16 veh1_amount = std::atoi(accumulated_char_a);
 
+		char d[1] = { 0 };
+		char accumulated_char_b[10] = { 0 };
+		for (int i = 0; *d != '.'; i++)
+		{
+			*d = veh2[i];
+			if (*d == '.')
+			{
+				break;
+			}
+			else
+			{
+				accumulated_char_b[i] = *d;
+			}
+		}
+		uint16 veh2_amount = std::atoi(accumulated_char_b);
 
-	//	if (sortby_desc == by_desc_amount)
-	//	{
-	//		vehicle_descs_pr_name.resize(amount_of_vehicle_descs);
-	//		vehicle_descs_pr_name.clear();
-	//		for (int i = 0; i < amount_of_vehicle_descs; i++)
-	//		{
-	//			vehicle_descs_pr_name.append(vehicle_descs.get_element(i));
-	//			char *tmp_name = new char[512]();
-	//			if (tmp_name != nullptr)
-	//			{
-	//				sprintf(tmp_name, "%u.%u.", owned_vehicles[i], i);
-	//				name_with_amount[i] = tmp_name;
-	//			}
-	//		}
-	//		std::sort(name_with_amount, name_with_amount + amount_of_vehicle_descs, compare_vehicle_desc_amount);
-
-	//		vehicle_descs.clear();
-	//		char c[1] = { 'a' }; // Need to give c some value, since the forloop depends on it
-	//		char accumulated_amount[10] = { 0 };
-	//		char accumulated_index[10] = { 0 };
-	//		int info_section;
-	//		int char_offset;
-
-	//		for (int i = 0; i < amount_of_vehicle_descs; i++)
-	//		{
-	//			char_offset = 0;
-	//			info_section = 0;
-	//			c[0] = 'a';
-	//			for (int j = 0; *c != '\0'; j++)
-	//			{
-	//				*c = name_with_amount[i][j];
-	//				if (*c == '.') // Index change
-	//				{
-	//					info_section++;
-	//					if (info_section == 1) // First section done: The amount of this vehicle, not interrested....
-	//					{
-	//						char_offset = j + 1;
-	//					}
-	//					else if (info_section == 2) // Second section done: Bingo, the previous index number
-	//					{
-	//						break;
-	//					}
-	//				}
-	//				else
-	//				{
-	//					if (info_section == 0)
-	//					{
-	//						accumulated_amount[j] = *c;
-	//					}
-	//					else if (info_section == 1)
-	//					{
-	//						accumulated_index[j - char_offset] = *c;
-	//					}
-	//				}
-	//			}
-	//			uint16 veh_amount = std::atoi(accumulated_amount);
-	//			uint32 veh_index = std::atoi(accumulated_index);
-
-
-	//			for (int j = 0; j < amount_of_vehicle_descs; j++)
-	//			{
-	//				if (j == veh_index)
-	//				{
-	//					vehicle_desc_t * info = vehicle_descs_pr_name.get_element(j);
-	//					vehicle_descs.append(info);
-	//					owned_vehicles[j] = veh_amount;
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+		result = veh1_amount - veh2_amount;
+		return result > 0;
+		break;
+	}
+	//return false;
 }
 
 
@@ -455,10 +542,10 @@ void vehicle_manager_t::build_desc_list()
 {
 	int counter = 0;
 	way_type = (waytype_t)selected_tab;
-	vehicle_descs.clear();
 
-	vector_tpl<vehicle_t*> vehicle_we_own;
+
 	vehicle_we_own.clear();
+	vehicle_descs.clear();
 
 	// How many vehicles do we own?
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
@@ -471,6 +558,7 @@ void vehicle_manager_t::build_desc_list()
 	}
 	vehicle_we_own.resize(counter);
 	vehicle_descs.resize(counter);
+
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
@@ -481,10 +569,30 @@ void vehicle_manager_t::build_desc_list()
 		}
 	}
 
-
-	if (!show_only_owned)
+	if (show_only_owned)
 	{
-		counter = 0; // We need to count again, since we now count EVERY type of vehicle
+		// Fill the vector with the desc's we own
+		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
+				{
+					vehicle_t* v = cnv->get_vehicle(veh);
+					vehicle_descs.append((vehicle_desc_t*)v->get_desc());
+					for (int i = 0; i < vehicle_descs.get_count() - 1; i++)
+					{
+						if (vehicle_descs.get_element(i) == v->get_desc())
+						{
+							vehicle_descs.remove_at(i);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		counter = 0; // We need to count again, since we now count even vehicles we do not own
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
 		{
 			counter++;
@@ -497,55 +605,38 @@ void vehicle_manager_t::build_desc_list()
 		}
 
 	}
-	else
+	
+
+	amount_of_vehicle_descs = vehicle_descs.get_count();
+	amount_of_vehicles_we_own = vehicle_we_own.get_count();
+	
+	sort_vehicles(true);
+	
+
+	// count how many of each "desc" we own
+	uint16* desc_amounts;
+	desc_amounts = new uint16[vehicle_descs.get_count()];
+	for (int i = 0; i <  vehicle_descs.get_count(); i++)
 	{
-		// Fill the vector with the desc's we own
-		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-				{
-					vehicle_t* v = cnv->get_vehicle(veh);
-					vehicle_descs.append((vehicle_desc_t*)v->get_desc());
-					for (int i = 0; i < vehicle_descs.get_count()-1; i++)
-					{
-						if (vehicle_descs.get_element(i) == v->get_desc())
-						{
-							vehicle_descs.remove_at(i);
-						}
-					}
-				}
-			}
-		}
+		desc_amounts[i] = 0;
 	}
 
-	
-	uint16 *owned_vehicles;
-	owned_vehicles = new uint16[vehicle_descs.get_count()];
-	
-	for (int i = 0; i < counter; i++)
+	for (int i = 0; i <  vehicle_descs.get_count(); i++)
 	{
-		owned_vehicles[i] = 0;
-	}
-
-	for (int i = 0; i < vehicle_descs.get_count(); i++)
-	{
-		for (unsigned j = 0; j < vehicle_we_own.get_count(); j++)
+		for (int j = 0; j < amount_of_vehicles_we_own; j++)
 		{
 			if (vehicle_descs.get_element(i) == vehicle_we_own.get_element(j)->get_desc())
 			{
-				owned_vehicles[i]++;
+				desc_amounts[i]++;
 			}
 		}
 	}
-
-	amount_of_vehicle_descs = vehicle_descs.get_count();
-
-	//sort_vehicles(true);
 
 	{
 		int i, icnv = 0;
 		icnv = vehicle_descs.get_count();
 		cont_veh_desc.remove_all();
+		vehicle_desc_infos.clear();
 		if (icnv > 500)
 		{
 			icnv = 500;
@@ -553,7 +644,7 @@ void vehicle_manager_t::build_desc_list()
 		int ypos = 10;
 		for (i = 0; i < icnv; i++) {
 
-			gui_vehicle_desc_info_t* const cinfo = new gui_vehicle_desc_info_t(vehicle_descs.get_element(i), owned_vehicles[i]);
+			gui_vehicle_desc_info_t* const cinfo = new gui_vehicle_desc_info_t(vehicle_descs.get_element(i), desc_amounts[i]);
 			cinfo->set_pos(scr_coord(0, ypos));
 			cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
 			vehicle_desc_infos.append(cinfo);
@@ -561,9 +652,13 @@ void vehicle_manager_t::build_desc_list()
 			ypos += max(cinfo->image_height, 40);
 
 		}
+		vehicle_desc_infos.set_count(icnv);
 		cont_veh_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	}
 	build_vehicle_list();
+
+	// delete the amount of vehicles array
+	delete[] desc_amounts;
 }
 
 void vehicle_manager_t::build_vehicle_list()
@@ -571,7 +666,6 @@ void vehicle_manager_t::build_vehicle_list()
 	int counter = 0;
 	way_type = (waytype_t)selected_tab;
 	vehicles_to_show.clear();
-	//vehicle_on_display();
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
@@ -600,6 +694,9 @@ void vehicle_manager_t::build_vehicle_list()
 		}
 	}
 
+	//amount_of_vehicles = vehicles.get_count();
+	amount_of_vehicles = vehicles_to_show.get_count();
+
 	//sort_vehicles(false);
 
 	{
@@ -611,6 +708,7 @@ void vehicle_manager_t::build_vehicle_list()
 			icnv = 500;
 		}
 		cont_veh.remove_all();
+		vehicle_infos.clear();
 
 		vehicles_to_show.resize(icnv);
 		int ypos = 0;
@@ -625,83 +723,12 @@ void vehicle_manager_t::build_vehicle_list()
 				ypos += max(cinfo->image_height, 40);
 			}
 		}
+		vehicle_infos.set_count(icnv);
 		cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH-12, ypos));
 	}
 	display(scr_coord(0, 0));
 }
 
-
-
-// Sorting, for the different types of vehicles
-bool vehicle_manager_t::compare_vehicle_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
-{
-	sint32 result = 0;
-
-	switch (sortby_desc) {
-	default:
-	case by_desc_name:
-		result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
-		break;
-	case by_desc_intro_year:
-		result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
-		break;
-	//case by_desc_issues:
-	//	result = cnv1.get_id() - cnv2.get_id();
-	//	break;
-	}
-	return result < 0;
-}
-
-
-bool vehicle_manager_t::compare_vehicle_desc_amount(char* veh1, char* veh2)
-{
-	sint32 result = 0;
-
-	switch (sortby_desc) {
-	default:
-	case by_desc_amount:
-		char c[1] = { 0 };
-		char accumulated_char[10] = { 0 };
-		for (int i = 0; *c != '.'; i++)
-		{
-			*c = veh1[i];
-			if (*c == '.')
-			{
-				break;
-			}
-			else
-			{
-				accumulated_char[i] = *c;
-			}
-		}
-		int veh1_amount = std::atoi(accumulated_char);
-
-		c[0] = '\0';
-		*accumulated_char = { 0 };
-		for (int i = 0; *c != '.'; i++)
-		{
-			*c = veh2[i];
-			if (*c == '.')
-			{
-				break;
-			}
-			else
-			{
-				accumulated_char[i] = *c;
-			}
-		}
-		int veh2_amount = std::atoi(accumulated_char);
-
-		result = veh1_amount - veh2_amount;
-		return result > 0;
-		break;
-	}
-
-
-
-
-	return false;
-}
 
 uint32 vehicle_manager_t::get_rdwr_id()
 {
@@ -710,6 +737,7 @@ uint32 vehicle_manager_t::get_rdwr_id()
 
 void vehicle_manager_t::display_this_vehicle(vehicle_desc_t* veh)
 {
+	//vehicle_for_display = veh;
 	//vehicle_desc_t show_vehicle = *veh;
 	//return show_vehicle;
 }
@@ -736,6 +764,7 @@ bool gui_vehicle_desc_info_t::infowin_event(const event_t *ev)
 {
 		if (IS_LEFTRELEASE(ev)) {
 			selected = !selected;
+			//vehicle_manager_t::display_this_vehicle(veh);
 			//vehicle_manager_t vema;
 			//vema.display_this_vehicle(veh);
 						return true;
@@ -768,6 +797,7 @@ void gui_vehicle_desc_info_t::draw(scr_coord offset)
 		int ypos_name = 0;
 		int suitable_break;
 		int used_caracters = 0;
+		image_height = 0;
 		COLOR_VAL text_color = COL_BLACK;
 		sprintf(name, translator::translate(veh->get_name()));
 		sprintf(name_display, name);
@@ -916,6 +946,8 @@ void gui_vehicle_info_t::draw(scr_coord offset)
 	clip_dimension clip = display_get_clip_wh();
 	if (!((pos.y + offset.y) > clip.yy || (pos.y + offset.y) < clip.y - 32) /*&& veh.is_bound()*/) {
 
+		image_height = 0;
+
 		COLOR_VAL text_color = COL_BLACK;
 		scr_coord_val x, y, w, h;
 		const image_id image = veh->get_loaded_image();
@@ -947,7 +979,7 @@ void gui_vehicle_info_t::draw(scr_coord offset)
 			int left = pos.x + offset.x + xoff + 4;
 			display_base_img(image, left - x, pos.y + offset.y + 13 - y - h / 2, veh->get_owner()->get_player_nr(), false, true);
 
+			image_height = h;
 		}
-		image_height = h;
 	}
 }
