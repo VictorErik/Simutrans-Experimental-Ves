@@ -23,6 +23,7 @@
 #include "halt_list_stats.h"
 #include "../simline.h"
 #include "../simconvoi.h"
+#include "../simworld.h"
 
 class player_t;
 
@@ -86,6 +87,8 @@ private:
 	*/
 	vehicle_t* veh;
 
+	sint32 mean_convoi_speed;
+
 	bool selected;
 
 public:
@@ -104,6 +107,7 @@ public:
 	void draw(scr_coord offset);
 	
 	bool is_selected() { return selected; }
+	bool set_selection(bool sel) { return selected = sel; }
 
 	int image_height;
 };
@@ -134,13 +138,15 @@ private:
 
 	gui_container_t cont_veh_desc, cont_veh, dummy;
 	gui_scrollpane_t scrolly_vehicle_descs, scrolly_vehicles;
-	gui_tab_panel_t tabs;
+	gui_tab_panel_t tabs_waytype;
+	gui_tab_panel_t tabs_info;
 	gui_combobox_t combo_sorter_desc;
 	gui_combobox_t combo_sorter;
 
-	button_t bt_show_only_owned;
-	button_t bt_deselect_all_desc;
-	bool show_only_owned;
+	button_t bt_show_available_vehicles;
+	button_t bt_select_all;
+	bool show_available_vehicles;
+	bool select_all;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_t sortby;
@@ -154,8 +160,7 @@ private:
 
 
 	waytype_t way_type;
-	vector_tpl<vehicle_t*> vehicles;
-	vector_tpl<vehicle_t*> vehicles_to_show;
+	vector_tpl<vehicle_t*> vehicle_list;
 	vector_tpl<vehicle_t*> vehicle_we_own;
 	vector_tpl<vehicle_desc_t*> vehicle_descs;
 	vector_tpl<vehicle_desc_t*> vehicle_descs_pr_name;
@@ -177,7 +182,9 @@ private:
 	gui_label_t lb_amount_of_vehicles;
 
 	vehicle_desc_t* vehicle_for_display;
-	int selected_index;
+	int selected_index_desc;
+	int updated_amount_selected_index_vehicle;
+	int old_amount_selected_index_vehicle = -1;
 	int updated_amount_owned_vehicles;
 	int old_amount_of_owned_vehicles = -1;
 	bool show_all_individual_vehicles;
@@ -196,13 +203,13 @@ public:
 	void vehicle_manager_t::build_vehicle_list();
 	void vehicle_manager_t::build_desc_list();
 	void vehicle_manager_t::sort_vehicles(bool);
+	void vehicle_manager_t::update_tabs();
+	void vehicle_manager_t::build_vehicle_info();
 
 	static bool vehicle_manager_t::compare_vehicle_desc(vehicle_desc_t*, vehicle_desc_t*);
 
 	static bool vehicle_manager_t::compare_vehicle_desc_amount(char*, char*);
-
-	static void vehicle_manager_t::display_this_vehicle(vehicle_desc_t* veh);
-
+	
 	/**
 	* in top-level windows the name is displayed in titlebar
 	* @return the non-translated component name
@@ -241,6 +248,8 @@ public:
 	//bool infowin_event(event_t const*) OVERRIDE;
 
 	bool action_triggered(gui_action_creator_t*, value_t) OVERRIDE;
+
+
 
 
 	//// following: rdwr stuff
