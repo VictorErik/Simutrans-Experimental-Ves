@@ -34,7 +34,7 @@ class player_t;
 *
 * @author Hj. Malthaner
 */
-class gui_vehicle_desc_info_t : public gui_world_component_t
+class gui_desc_info_t : public gui_world_component_t
 {
 private:
 	player_t *player;
@@ -52,7 +52,7 @@ public:
 	* @param cnv, the handler for the Convoi to be displayed.
 	* @author Hj. Malthaner
 	*/
-	gui_vehicle_desc_info_t::gui_vehicle_desc_info_t(vehicle_desc_t* veh, uint16 amount);
+	gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 amount);
 
 	bool infowin_event(event_t const*) OVERRIDE;
 	bool selected = false;
@@ -77,7 +77,7 @@ public:
 *
 * @author Hj. Malthaner
 */
-class gui_vehicle_info_t : public gui_world_component_t
+class gui_veh_info_t : public gui_world_component_t
 {
 private:
 	player_t *player;
@@ -96,7 +96,7 @@ public:
 	* @param cnv, the handler for the Convoi to be displayed.
 	* @author Hj. Malthaner
 	*/
-	gui_vehicle_info_t::gui_vehicle_info_t(vehicle_t* veh);
+	gui_veh_info_t::gui_veh_info_t(vehicle_t* veh);
 
 	bool infowin_event(event_t const*) OVERRIDE;
 
@@ -127,29 +127,32 @@ public:
 		SORT_MODES_DESC = 3
 	};
 
-	enum sort_mode_t {
-		by_name = 0,
+	enum sort_mode_veh_t {
+		by_age = 0,
 		by_odometer = 1,
-		by_issues = 2, // Experimental: If the vehicle has any issues, like out of production, can upgrade, etc
-		SORT_MODES = 3
+		//by_issues = 2, // Experimental: If the vehicle has any issues, like out of production, can upgrade, etc
+		SORT_MODES_VEH = 2
 	};
 private:
 	player_t *player;
 
-	gui_container_t cont_veh_desc, cont_veh, dummy;
-	gui_scrollpane_t scrolly_vehicle_descs, scrolly_vehicles;
+	gui_container_t cont_desc, cont_veh, dummy;
+	gui_scrollpane_t scrolly_desc, scrolly_veh;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_info;
 	gui_combobox_t combo_sorter_desc;
-	gui_combobox_t combo_sorter;
+	gui_combobox_t combo_sorter_veh;
 
 	button_t bt_show_available_vehicles;
 	button_t bt_select_all;
+	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
 	bool show_available_vehicles;
 	bool select_all;
+	bool just_selected_all = false;
+	bool page_turn_veh = false;
 
 	static sort_mode_desc_t sortby_desc;
-	static sort_mode_t sortby;
+	static sort_mode_veh_t sortby_veh;
 	static bool sortreverse;
 
 	// All vehicles
@@ -160,37 +163,44 @@ private:
 
 
 	waytype_t way_type;
-	vector_tpl<vehicle_t*> vehicle_list;
+	vector_tpl<vehicle_desc_t*> desc_list;
+	vector_tpl<vehicle_desc_t*> desc_list_pr_name;
+	vector_tpl<vehicle_t*> veh_list;
+	vector_tpl<vehicle_t*> veh_selection;
 	vector_tpl<vehicle_t*> vehicle_we_own;
-	vector_tpl<vehicle_desc_t*> vehicle_descs;
-	vector_tpl<vehicle_desc_t*> vehicle_descs_pr_name;
-	vector_tpl<vehicle_t*> selected_vehicles;
 
 
 	// vector of convoy info objects that are being displayed
-	vector_tpl<gui_convoiinfo_t *> convoy_infos;
-	vector_tpl<gui_vehicle_info_t *> vehicle_infos;
-	vector_tpl<gui_vehicle_desc_info_t *> vehicle_desc_infos;
+	//vector_tpl<gui_convoiinfo_t *> cnv_info;
+	vector_tpl<gui_veh_info_t *> veh_info;
+	vector_tpl<gui_desc_info_t *> desc_info;
 	
 	void display(scr_coord pos);
 
-	uint32 amount_of_vehicle_descs;
-	uint32 amount_of_vehicles;
-	uint32 amount_of_vehicles_we_own;
+	uint32 amount_desc;
+	uint32 amount_veh;
+	uint32 amount_veh_owned;
 
-	gui_label_t lb_amount_of_vehicle_descs;
-	gui_label_t lb_amount_of_vehicles;
+	gui_label_t lb_amount_desc;
+	gui_label_t lb_amount_veh;
+	gui_label_t lb_desc_page;
+	gui_label_t lb_veh_page;
 
 	vehicle_desc_t* vehicle_for_display;
-	int selected_index_desc;
-	int updated_amount_selected_index_vehicle;
-	int old_amount_selected_index_vehicle = -1;
-	int updated_amount_owned_vehicles;
-	int old_amount_of_owned_vehicles = -1;
+	int selected_desc_index;
+	int new_count_veh_selection;
+	int old_count_veh_selection = -1;
+	int new_count_owned_veh;
+	int old_count_owned_veh = -1;
 	bool show_all_individual_vehicles;
 
+	int page_display_desc = 1;
+	int page_display_veh = 1;
+	int page_amount_desc = 1;
+	int page_amount_veh = 1;
+
 	static const char *sort_text_desc[SORT_MODES_DESC];
-	static const char *sort_text[SORT_MODES];
+	static const char *sort_text_veh[SORT_MODES_VEH];
 
 
 
@@ -200,15 +210,21 @@ public:
 
 	vehicle_manager_t();
 
-	void vehicle_manager_t::build_vehicle_list();
 	void vehicle_manager_t::build_desc_list();
-	void vehicle_manager_t::sort_vehicles(bool);
+	void vehicle_manager_t::build_veh_list();
+	void vehicle_manager_t::display_desc_list();
+	void vehicle_manager_t::display_veh_list();
+
+
 	void vehicle_manager_t::update_tabs();
-	void vehicle_manager_t::build_vehicle_info();
+	void vehicle_manager_t::build_veh_selection();
 
-	static bool vehicle_manager_t::compare_vehicle_desc(vehicle_desc_t*, vehicle_desc_t*);
+	void vehicle_manager_t::sort_desc();
+	void vehicle_manager_t::sort_veh();
+	static bool vehicle_manager_t::compare_desc(vehicle_desc_t*, vehicle_desc_t*);
+	static bool vehicle_manager_t::compare_veh(vehicle_t*, vehicle_t*);
 
-	static bool vehicle_manager_t::compare_vehicle_desc_amount(char*, char*);
+	static bool vehicle_manager_t::compare_desc_amount(char*, char*);
 	
 	/**
 	* in top-level windows the name is displayed in titlebar
