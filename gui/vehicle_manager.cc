@@ -1203,7 +1203,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		display_get_base_image_offset(image, &x, &y, &w, &h);
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(h, 40) - 2, COL_DARK_BLUE, MN_GREY4, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(h, 40) - 2, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 
@@ -1350,7 +1350,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		display_get_base_image_offset(image, &x, &y, &w, &h);
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(h, 50) - 2, COL_DARK_BLUE, MN_GREY4, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(h, 50) - 2, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 		// name wont be necessary, since we get the name from the left hand column and also elsewhere.

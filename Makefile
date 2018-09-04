@@ -358,6 +358,7 @@ SOURCES += gui/trafficlight_info.cc
 SOURCES += gui/vehicle_class_manager.cc
 SOURCES += gui/welt.cc
 SOURCES += gui/tool_selector
+SOURCES += gui/vehicle_manager.cc
 SOURCES += network/checksum.cc
 SOURCES += network/memory_rw.cc
 SOURCES += network/network.cc
@@ -474,6 +475,7 @@ SOURCES += gui/components/gui_convoy_label.cc
 SOURCES += gui/replace_frame.cc
 SOURCES += dataobj/livery_scheme.cc
 SOURCES += dataobj/replace_data.cc
+SOURCES += dataobj/consist_order_t.cc
 
 ifeq ($(BACKEND),allegro)
   SOURCES  += simsys_d.cc
