@@ -224,6 +224,8 @@ public:
 	static bool vehicle_manager_t::compare_veh(vehicle_t*, vehicle_t*);
 
 	static bool vehicle_manager_t::compare_desc_amount(char*, char*);
+
+	static int vehicle_manager_t::find_veh_state_index(vehicle_t*);
 	
 	/**
 	* in top-level windows the name is displayed in titlebar

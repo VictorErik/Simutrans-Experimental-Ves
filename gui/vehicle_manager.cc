@@ -803,6 +803,56 @@ void vehicle_manager_t::sort_veh()
 
 }
 
+int vehicle_manager_t::find_veh_state_level(vehicle_t* veh)
+{
+	int veh_status_level = 0;
+	// First lets go through the state of the convoy to see if there is anything
+	switch (veh->get_convoi()->get_state())
+	{
+		// Akut states:
+	case convoi_t::NO_ROUTE:
+	case convoi_t::NO_ROUTE_TOO_COMPLEX:
+	case convoi_t::EMERGENCY_STOP:
+	case convoi_t::OUT_OF_RANGE:
+	case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
+	case convoi_t::CAN_START_TWO_MONTHS:
+		veh_status_level = 6;
+		break;
+
+		//Action required states:
+
+		//Observation required states:
+	case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
+		veh_status_level = 4;
+		break;
+
+		//Normal states(driving):
+	case convoi_t::WAITING_FOR_CLEARANCE:
+	case convoi_t::CAN_START:
+	case convoi_t::CAN_START_ONE_MONTH:
+		veh_status_level = 3;
+		break;
+
+		//Normal states(loading):
+	case convoi_t::MAINTENANCE:
+	case convoi_t::OVERHAUL:
+	case convoi_t::REPLENISHING:
+	case convoi_t::AWAITING_TRIGGER:
+	case convoi_t::LOADING:
+	case convoi_t::REVERSING:
+		veh_status_level = 2;
+		break;
+
+	case convoi_t::DRIVING:
+		veh_status_level = 1;
+		break;
+
+	default:
+		veh_status_level = 0;
+		break;
+	}
+	return veh_status_level;
+}
 
 bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 {
@@ -817,101 +867,9 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 		//result = sgn(veh1->get_odometer() - veh2->get_odometer()); // This sort mode only gets active when individual vehicle odometer gets tracked
 		break;
 	case by_state: // This sort mode sorts the vehicles in the most pressing states top
-		int veh1_status_level = 0;
-		int veh2_status_level = 0;
-		switch (veh1->get_convoi()->get_state())
-		{	
-		// Akut states:
-		case convoi_t::NO_ROUTE:
-		case convoi_t::NO_ROUTE_TOO_COMPLEX:
-		case convoi_t::EMERGENCY_STOP:
-		case convoi_t::OUT_OF_RANGE:
-		case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
-		case convoi_t::CAN_START_TWO_MONTHS:
-			veh1_status_level = 6;
-			break;
-
-		//Action required states:
-
-		//Observation required states:
-		case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
-			veh1_status_level = 4;
-			break;
-
-			//Normal states(driving):
-		case convoi_t::WAITING_FOR_CLEARANCE:
-		case convoi_t::CAN_START:
-		case convoi_t::CAN_START_ONE_MONTH:
-			veh1_status_level = 3;
-			break;
-
-			//Normal states(loading):
-		case convoi_t::MAINTENANCE:
-		case convoi_t::OVERHAUL:
-		case convoi_t::REPLENISHING:
-		case convoi_t::AWAITING_TRIGGER:
-		case convoi_t::LOADING:
-		case convoi_t::REVERSING:
-			veh1_status_level = 2;
-			break;
-
-		case convoi_t::DRIVING:
-			veh1_status_level = 1;
-			break;
-
-		default:
-			veh1_status_level = 0;
-
-
-			break;
-		}
-
-		switch (veh2->get_convoi()->get_state())
-		{
-			// Akut states:
-		case convoi_t::NO_ROUTE:
-		case convoi_t::NO_ROUTE_TOO_COMPLEX:
-		case convoi_t::EMERGENCY_STOP:
-		case convoi_t::OUT_OF_RANGE:
-		case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
-		case convoi_t::CAN_START_TWO_MONTHS:
-			veh2_status_level = 6;
-			break;
-
-			//Action required states:
-
-			//Observation required states:
-		case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
-			veh2_status_level = 4;
-			break;
-
-			//Normal states(driving):
-		case convoi_t::WAITING_FOR_CLEARANCE:
-		case convoi_t::CAN_START:
-		case convoi_t::CAN_START_ONE_MONTH:
-			veh2_status_level = 3;
-			break;
-
-			//Normal states(loading):
-		case convoi_t::MAINTENANCE:
-		case convoi_t::OVERHAUL:
-		case convoi_t::REPLENISHING:
-		case convoi_t::AWAITING_TRIGGER:
-		case convoi_t::LOADING:
-		case convoi_t::REVERSING:
-			veh2_status_level = 2;
-			break;
-
-		case convoi_t::DRIVING:
-			veh2_status_level = 1;
-			break;
-
-		default:
-			veh2_status_level = 0;
-
-
-			break;
-		}
+		int veh1_status_level = find_veh_state_level(veh1);
+		int veh2_status_level = find_veh_state_level(veh2);
+	
 		result = veh2_status_level - veh1_status_level;
 		break;
 	}
