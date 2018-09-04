@@ -75,7 +75,8 @@ const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 {
 	"age",
-	"odometer"
+	"odometer",
+	"state"
 };
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
@@ -795,7 +796,7 @@ void vehicle_manager_t::sort_desc()
 	
 void vehicle_manager_t::sort_veh()
 {
-	if (sortby_veh == by_age || sortby_veh == by_odometer)
+	if (sortby_veh == by_age || sortby_veh == by_odometer || sortby_veh == by_state)
 	{
 		std::sort(veh_list.begin(), veh_list.end(), compare_veh);
 	}
@@ -815,9 +816,104 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 	case by_odometer:
 		//result = sgn(veh1->get_odometer() - veh2->get_odometer()); // This sort mode only gets active when individual vehicle odometer gets tracked
 		break;
-		//case by_desc_issues:
-		//	result = cnv1.get_id() - cnv2.get_id();
-		//	break;
+	case by_state: // This sort mode sorts the vehicles in the most pressing states top
+		int veh1_status_level = 0;
+		int veh2_status_level = 0;
+		switch (veh1->get_convoi()->get_state())
+		{	
+		// Akut states:
+		case convoi_t::NO_ROUTE:
+		case convoi_t::NO_ROUTE_TOO_COMPLEX:
+		case convoi_t::EMERGENCY_STOP:
+		case convoi_t::OUT_OF_RANGE:
+		case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
+		case convoi_t::CAN_START_TWO_MONTHS:
+			veh1_status_level = 6;
+			break;
+
+		//Action required states:
+
+		//Observation required states:
+		case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
+			veh1_status_level = 4;
+			break;
+
+			//Normal states(driving):
+		case convoi_t::WAITING_FOR_CLEARANCE:
+		case convoi_t::CAN_START:
+		case convoi_t::CAN_START_ONE_MONTH:
+			veh1_status_level = 3;
+			break;
+
+			//Normal states(loading):
+		case convoi_t::MAINTENANCE:
+		case convoi_t::OVERHAUL:
+		case convoi_t::REPLENISHING:
+		case convoi_t::AWAITING_TRIGGER:
+		case convoi_t::LOADING:
+		case convoi_t::REVERSING:
+			veh1_status_level = 2;
+			break;
+
+		case convoi_t::DRIVING:
+			veh1_status_level = 1;
+			break;
+
+		default:
+			veh1_status_level = 0;
+
+
+			break;
+		}
+
+		switch (veh2->get_convoi()->get_state())
+		{
+			// Akut states:
+		case convoi_t::NO_ROUTE:
+		case convoi_t::NO_ROUTE_TOO_COMPLEX:
+		case convoi_t::EMERGENCY_STOP:
+		case convoi_t::OUT_OF_RANGE:
+		case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
+		case convoi_t::CAN_START_TWO_MONTHS:
+			veh2_status_level = 6;
+			break;
+
+			//Action required states:
+
+			//Observation required states:
+		case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
+			veh2_status_level = 4;
+			break;
+
+			//Normal states(driving):
+		case convoi_t::WAITING_FOR_CLEARANCE:
+		case convoi_t::CAN_START:
+		case convoi_t::CAN_START_ONE_MONTH:
+			veh2_status_level = 3;
+			break;
+
+			//Normal states(loading):
+		case convoi_t::MAINTENANCE:
+		case convoi_t::OVERHAUL:
+		case convoi_t::REPLENISHING:
+		case convoi_t::AWAITING_TRIGGER:
+		case convoi_t::LOADING:
+		case convoi_t::REVERSING:
+			veh2_status_level = 2;
+			break;
+
+		case convoi_t::DRIVING:
+			veh2_status_level = 1;
+			break;
+
+		default:
+			veh2_status_level = 0;
+
+
+			break;
+		}
+		result = veh2_status_level - veh1_status_level;
+		break;
 	}
 	return result < 0;
 }
@@ -1488,11 +1584,8 @@ void gui_veh_info_t::draw(scr_coord offset)
 				}
 				else
 				{
-					//use median speed to avoid flickering
-					mean_convoi_speed += speed_to_kmh(cnv->get_akt_speed() * 4);
-					mean_convoi_speed /= 2;
 					const sint32 max_speed = veh->get_desc()->get_topspeed();
-					sprintf(speed_text, translator::translate("%i km/h (max. %ikm/h)"), (mean_convoi_speed + 3) / 4, max_speed);
+					sprintf(speed_text, translator::translate("%i km/h (max. %ikm/h)"), speed_to_kmh(cnv->get_akt_speed()), max_speed);
 					speed_color = text_color;
 				}
 			}

@@ -130,8 +130,8 @@ public:
 	enum sort_mode_veh_t {
 		by_age = 0,
 		by_odometer = 1,
-		//by_issues = 2, // Experimental: If the vehicle has any issues, like out of production, can upgrade, etc
-		SORT_MODES_VEH = 2
+		by_state = 2, 
+		SORT_MODES_VEH = 3
 	};
 private:
 	player_t *player;
