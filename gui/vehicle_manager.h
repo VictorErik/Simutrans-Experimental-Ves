@@ -157,7 +157,6 @@ private:
 
 	// All vehicles
 	//vector_tpl<quickstone_tpl<vehicle_desc_t>> vehicle_descs;
-	//vector_tpl<vehiclehandle_t> vehicles;
 	//vehicle_t *veh;
 	//vector_tpl<gui_image_list_t::image_data_t*> veh_im;
 
