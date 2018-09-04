@@ -560,6 +560,8 @@ public:
 	*/
 	uint32 get_cargo_weight() const;
 
+	uint32 get_cargo_carried() const;
+
 	const char * get_cargo_name() const;
 
 	/**

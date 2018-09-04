@@ -807,31 +807,33 @@ void vehicle_manager_t::sort_veh()
 int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 {
 	int veh_issue_level = 0;
-	// First lets go through the state of the convoy to see if there is anything
+	// Vehicle issue levels:
+	int fatal_state = 100;
+
 	switch (veh->get_convoi()->get_state())
 	{
-		// Akut states:
+		// Fatal states:
 	case convoi_t::NO_ROUTE:
 	case convoi_t::NO_ROUTE_TOO_COMPLEX:
 	case convoi_t::EMERGENCY_STOP:
 	case convoi_t::OUT_OF_RANGE:
 	case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
 	case convoi_t::CAN_START_TWO_MONTHS:
-		veh_issue_level = 6;
+		veh_issue_level = fatal_state;
 		break;
 
 		//Action required states:
 
 		//Observation required states:
 	case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
-		veh_issue_level = 4;
+		veh_issue_level = 9;
 		break;
 
 		//Normal states(driving):
 	case convoi_t::WAITING_FOR_CLEARANCE:
 	case convoi_t::CAN_START:
 	case convoi_t::CAN_START_ONE_MONTH:
-		veh_issue_level = 3;
+		veh_issue_level = 8;
 		break;
 
 		//Normal states(loading):
@@ -839,7 +841,38 @@ int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 	case convoi_t::OVERHAUL:
 	case convoi_t::REPLENISHING:
 	case convoi_t::AWAITING_TRIGGER:
+		veh_issue_level = 7;
+		break;
 	case convoi_t::LOADING:
+	{
+		char waiting_time[64];
+		veh->get_convoi()->snprintf_remaining_loading_time(waiting_time, sizeof(waiting_time));
+		if (veh->get_convoi()->get_schedule()->get_current_entry().is_flag_set(schedule_entry_t::wait_for_time))
+		{
+			// "Waiting for schedule. %s left"
+			veh_issue_level = 4;
+		}
+		else if (veh->get_convoi()->get_loading_limit())
+		{
+			if (veh->get_convoi()->is_wait_infinite() && strcmp(waiting_time, "0:00"))
+			{
+				// "Loading(%i->%i%%), %s left"
+				veh_issue_level = 5;
+			}
+			else
+			{
+				// "Loading(%i->%i%%)"
+				veh_issue_level = 6;
+			}
+		}
+		else
+		{
+			// "Normal loading"
+			veh_issue_level = 3;
+		}
+	}
+	break;
+
 	case convoi_t::REVERSING:
 		veh_issue_level = 2;
 		break;
@@ -859,7 +892,7 @@ int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 	}
 	if (air_vehicle && air_vehicle->is_runway_too_short() == true)
 	{
-		veh_issue_level = 6;
+		veh_issue_level = fatal_state;
 	}
 
 	return veh_issue_level;
@@ -1639,13 +1672,23 @@ void gui_veh_info_t::draw(scr_coord offset)
 				const uint32 tiles_to_city = shortest_distance(gr->get_pos().get_2d(), (koord)city->get_pos());
 				const double km_per_tile = welt->get_settings().get_meters_per_tile() / 1000.0;
 				const double km_to_city = (double)tiles_to_city * km_per_tile;
-				sprintf(city_text, "vicinity_of %s (%ikm)", city->get_name(), (int)km_to_city);
+				sprintf(city_text, translator::translate("vicinity_of %s (%ikm)"), city->get_name(), (int)km_to_city);
 			}
 		}
 		display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, city_text, ALIGN_LEFT, text_color, true) + 2;
 
 		ypos_name = 0;
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;
+
+		// Carried amount
+		if (veh->get_desc()->get_total_capacity() > 0)
+		{
+			char amount[256];
+			sprintf(amount, "%3d %s %s\n", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
+				veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
+		}
+		ypos_name += LINESPACE;
 
 		// age		
 		char year[20];

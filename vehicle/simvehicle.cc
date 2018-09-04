@@ -2103,6 +2103,18 @@ uint32 vehicle_t::get_cargo_weight() const
 	return weight;
 }
 
+uint32 vehicle_t::get_cargo_carried() const
+{
+	uint32 amount = 0;
+	for (uint8 i = 0; i < number_of_classes; i++)
+	{
+		FOR(slist_tpl<ware_t>, const& c, fracht[i])
+		{
+			amount += c.menge;
+		}
+	}
+	return amount;
+}
 
 const char *vehicle_t::get_cargo_name() const
 {
