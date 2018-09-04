@@ -76,11 +76,12 @@ const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 {
 	"age",
 	"odometer",
-	"state"
+	"issues",
+	"location"
 };
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
-vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_age;
+vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
 
 vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	gui_frame_t( translator::translate("vehicle_manager"), player_),
@@ -796,16 +797,16 @@ void vehicle_manager_t::sort_desc()
 	
 void vehicle_manager_t::sort_veh()
 {
-	if (sortby_veh == by_age || sortby_veh == by_odometer || sortby_veh == by_state)
+	if (sortby_veh == by_age || sortby_veh == by_odometer || sortby_veh == by_issue || sortby_veh == by_location)
 	{
 		std::sort(veh_list.begin(), veh_list.end(), compare_veh);
 	}
 
 }
 
-int vehicle_manager_t::find_veh_state_level(vehicle_t* veh)
+int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 {
-	int veh_status_level = 0;
+	int veh_issue_level = 0;
 	// First lets go through the state of the convoy to see if there is anything
 	switch (veh->get_convoi()->get_state())
 	{
@@ -816,21 +817,21 @@ int vehicle_manager_t::find_veh_state_level(vehicle_t* veh)
 	case convoi_t::OUT_OF_RANGE:
 	case convoi_t::WAITING_FOR_CLEARANCE_TWO_MONTHS:
 	case convoi_t::CAN_START_TWO_MONTHS:
-		veh_status_level = 6;
+		veh_issue_level = 6;
 		break;
 
 		//Action required states:
 
 		//Observation required states:
 	case convoi_t::WAITING_FOR_CLEARANCE_ONE_MONTH:
-		veh_status_level = 4;
+		veh_issue_level = 4;
 		break;
 
 		//Normal states(driving):
 	case convoi_t::WAITING_FOR_CLEARANCE:
 	case convoi_t::CAN_START:
 	case convoi_t::CAN_START_ONE_MONTH:
-		veh_status_level = 3;
+		veh_issue_level = 3;
 		break;
 
 		//Normal states(loading):
@@ -840,18 +841,28 @@ int vehicle_manager_t::find_veh_state_level(vehicle_t* veh)
 	case convoi_t::AWAITING_TRIGGER:
 	case convoi_t::LOADING:
 	case convoi_t::REVERSING:
-		veh_status_level = 2;
+		veh_issue_level = 2;
 		break;
 
 	case convoi_t::DRIVING:
-		veh_status_level = 1;
+		veh_issue_level = 1;
 		break;
 
 	default:
-		veh_status_level = 0;
+		veh_issue_level = 0;
 		break;
 	}
-	return veh_status_level;
+	air_vehicle_t* air_vehicle = NULL;
+	if (veh->get_waytype() == air_wt)
+	{
+		air_vehicle = (air_vehicle_t*)veh;
+	}
+	if (air_vehicle && air_vehicle->is_runway_too_short() == true)
+	{
+		veh_issue_level = 6;
+	}
+
+	return veh_issue_level;
 }
 
 bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
@@ -861,17 +872,67 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 	switch (sortby_veh) {
 	default:
 	case by_age:
+	{
 		result = sgn(veh1->get_purchase_time() - veh2->get_purchase_time());
-		break;
+	}
+	break;
+
 	case by_odometer:
+	{
 		//result = sgn(veh1->get_odometer() - veh2->get_odometer()); // This sort mode only gets active when individual vehicle odometer gets tracked
+	}
+	break;
+
+	case by_issue: // This sort mode sorts the vehicles in the most pressing states top
+	{
+		result = find_veh_issue_level(veh2) - find_veh_issue_level(veh1);
+	}
+	break;
+
+	case by_location:
+	{
+		char city_name1[256];
+		grund_t *gr1 = welt->lookup(veh1->get_pos());
+		stadt_t *city1 = welt->get_city(gr1->get_pos().get_2d());
+		if (city1)
+		{
+			sprintf(city_name1, "%s", city1->get_name());
+		}
+		else
+		{
+			city1 = welt->find_nearest_city(gr1->get_pos().get_2d());
+			if (city1)
+			{
+				const uint32 tiles_to_city = shortest_distance(gr1->get_pos().get_2d(), (koord)city1->get_pos());
+				const double km_per_tile = welt->get_settings().get_meters_per_tile() / 1000.0;
+				const double km_to_city = (double)tiles_to_city * km_per_tile;
+				sprintf(city_name1, "%s%i", city1->get_name(), (int)km_to_city); // Add the x's to differentiate between inside and in vicinity of cities
+			}
+		}
+
+		char city_name2[256];
+		grund_t *gr2 = welt->lookup(veh2->get_pos());
+		stadt_t *city2 = welt->get_city(gr2->get_pos().get_2d());
+		if (city2)
+		{
+			sprintf(city_name2, "%s", city2->get_name());
+		}
+		else
+		{
+			city2 = welt->find_nearest_city(gr2->get_pos().get_2d());
+			if (city2)
+			{
+				const uint32 tiles_to_city = shortest_distance(gr2->get_pos().get_2d(), (koord)city2->get_pos());
+				const double km_per_tile = welt->get_settings().get_meters_per_tile() / 1000.0;
+				const double km_to_city = (double)tiles_to_city * km_per_tile;
+				sprintf(city_name2, "%s%i", city2->get_name(), (int)km_to_city); // Add the x's to differentiate between inside and in vicinity of cities
+			}
+		}
+
+		result = strcmp(city_name1, city_name2);
+	}
 		break;
-	case by_state: // This sort mode sorts the vehicles in the most pressing states top
-		int veh1_status_level = find_veh_state_level(veh1);
-		int veh2_status_level = find_veh_state_level(veh2);
-	
-		result = veh2_status_level - veh1_status_level;
-		break;
+
 	}
 	return result < 0;
 }
@@ -1542,8 +1603,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 				}
 				else
 				{
-					const sint32 max_speed = veh->get_desc()->get_topspeed();
-					sprintf(speed_text, translator::translate("%i km/h (max. %ikm/h)"), speed_to_kmh(cnv->get_akt_speed()), max_speed);
+					sprintf(speed_text, translator::translate("%i km/h"), speed_to_kmh(cnv->get_akt_speed()));
 					speed_color = text_color;
 				}
 			}
@@ -1565,13 +1625,24 @@ void gui_veh_info_t::draw(scr_coord offset)
 		ypos_name += LINESPACE;
 		// Near a city?
 		grund_t *gr = welt->lookup(veh->get_pos());
+		char city_text[256];
 		stadt_t *city = welt->get_city(gr->get_pos().get_2d());
 		if (city)
 		{
-			display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, city->get_name(), ALIGN_LEFT, text_color, true) + 2;
+			sprintf(city_text, "%s", city->get_name());
 		}
-
-
+		else
+		{
+			city = welt->find_nearest_city(gr->get_pos().get_2d());
+			if (city)
+			{
+				const uint32 tiles_to_city = shortest_distance(gr->get_pos().get_2d(), (koord)city->get_pos());
+				const double km_per_tile = welt->get_settings().get_meters_per_tile() / 1000.0;
+				const double km_to_city = (double)tiles_to_city * km_per_tile;
+				sprintf(city_text, "vicinity_of %s (%ikm)", city->get_name(), (int)km_to_city);
+			}
+		}
+		display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, city_text, ALIGN_LEFT, text_color, true) + 2;
 
 		ypos_name = 0;
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;

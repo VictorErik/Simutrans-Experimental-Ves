@@ -130,8 +130,9 @@ public:
 	enum sort_mode_veh_t {
 		by_age = 0,
 		by_odometer = 1,
-		by_state = 2, 
-		SORT_MODES_VEH = 3
+		by_issue = 2,
+		by_location = 3,
+		SORT_MODES_VEH = 4
 	};
 private:
 	player_t *player;
@@ -225,7 +226,7 @@ public:
 
 	static bool vehicle_manager_t::compare_desc_amount(char*, char*);
 
-	static int vehicle_manager_t::find_veh_state_index(vehicle_t*);
+	static int vehicle_manager_t::find_veh_issue_level(vehicle_t*);
 	
 	/**
 	* in top-level windows the name is displayed in titlebar
