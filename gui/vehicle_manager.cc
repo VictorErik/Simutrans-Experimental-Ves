@@ -544,39 +544,66 @@ void vehicle_manager_t::update_tabs()
 	bool truck = false;
 	bool ship = false;
 	bool air = false;
-
+	const uint16 month_now = welt->get_timeline_year_month();
 
 
 	if (show_available_vehicles) // TODO: make it timeline dependent, so it doesnt show unavailable vehicles
 	{
 		if (maglev_t::default_maglev) {
-			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-			{
-				//if (info->get)
-				desc_list.append(info);
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::maglev_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					maglev = true;
+				}
 			}
-			maglev = true;
 		}
 		if (monorail_t::default_monorail) {
-			monorail = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::monorail_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					monorail = true;
+				}
+			}
 		}
 		if (schiene_t::default_schiene) {
-			train = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::track_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					train = true;
+				}
+			}
 		}
 		if (narrowgauge_t::default_narrowgauge) {
-			narrowgauge = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::narrowgauge_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					narrowgauge = true;
+				}
+			}
 		}
 		if (!vehicle_builder_t::get_info(tram_wt).empty()) {
-			tram = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::tram_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					tram = true;
+				}
+			}
 		}
 		if (strasse_t::default_strasse) {
-			truck = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::road_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					truck = true;
+				}
+			}
 		}
 		if (!vehicle_builder_t::get_info(water_wt).empty()) {
-			ship = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::water_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					ship = true;
+				}
+			}
 		}
 		if (runway_t::default_runway) {
-			air = true;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::air_wt)) {
+				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+					air = true;
+				}
+			}
 		}
 	}
 
@@ -1045,69 +1072,45 @@ void vehicle_manager_t::build_desc_list()
 	way_type = (waytype_t)selected_tab_waytype;
 	page_amount_desc = 1;
 	page_display_desc = 1;
+	const uint16 month_now = welt->get_timeline_year_month();
 
 	vehicle_we_own.clear();
 	desc_list.clear();
 
-	// How many vehicles do we own?
-	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-			{
-				counter++;
+	// Reset the sizes to the maximum theoretical amount.
+	FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+	{
+		counter++;
+	}
+	desc_list.resize(counter);
+	vehicle_we_own.resize(counter);
+
+	// Populate the window with all available vehicles, if desired
+	if (show_available_vehicles) {
+		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
+			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				desc_list.append(info);
 			}
 		}
 	}
-	vehicle_we_own.resize(counter);
-	desc_list.resize(counter);
 
+	// Then populate the list with additional vehicles we might own.
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-			{
+			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
 				vehicle_t* v = cnv->get_vehicle(veh);
 				vehicle_we_own.append(v);
-			}
-		}
-	}
-
-	if (!show_available_vehicles)
-	{
-		// Fill the vector with only the desc's we own
-		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-				{
-					vehicle_t* v = cnv->get_vehicle(veh);
-					desc_list.append((vehicle_desc_t*)v->get_desc());
-					for (int i = 0; i < desc_list.get_count() - 1; i++)
-					{
-						if (desc_list.get_element(i) == v->get_desc())
-						{
-							desc_list.remove_at(i);
-							break;
-						}
+				desc_list.append((vehicle_desc_t*)v->get_desc());
+				for (int i = 0; i < desc_list.get_count() - 1; i++)	{
+					if (desc_list.get_element(i) == v->get_desc()) {
+						desc_list.remove_at(i);
+						break;
 					}
 				}
 			}
 		}
 	}
-	else
-	{
-		counter = 0; // We need to count again, since we now count even vehicles we do not own
-		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-		{
-			counter++;
-		}
-		desc_list.resize(counter);
 
-		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-		{
-			desc_list.append(info);
-		}
-
-	}
-	
 
 	amount_desc = desc_list.get_count();
 	amount_veh_owned = vehicle_we_own.get_count();
@@ -1115,6 +1118,88 @@ void vehicle_manager_t::build_desc_list()
 
 	display_desc_list();
 }
+
+
+//void vehicle_manager_t::build_desc_list()
+//{
+//	int counter = 0;
+//	way_type = (waytype_t)selected_tab_waytype;
+//	page_amount_desc = 1;
+//	page_display_desc = 1;
+//	const uint16 month_now = welt->get_timeline_year_month();
+//
+//	vehicle_we_own.clear();
+//	desc_list.clear();
+//
+//	// How many vehicles do we own?
+//	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+//		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+//			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
+//			{
+//				counter++;
+//			}
+//		}
+//	}
+//	vehicle_we_own.resize(counter);
+//	desc_list.resize(counter);
+//
+//	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+//		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+//			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
+//			{
+//				vehicle_t* v = cnv->get_vehicle(veh);
+//				vehicle_we_own.append(v);
+//			}
+//		}
+//	}
+//
+//	if (!show_available_vehicles)
+//	{
+//		// Fill the vector with only the desc's we own
+//		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+//			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+//				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
+//				{
+//					vehicle_t* v = cnv->get_vehicle(veh);
+//					desc_list.append((vehicle_desc_t*)v->get_desc());
+//					for (int i = 0; i < desc_list.get_count() - 1; i++)
+//					{
+//						if (desc_list.get_element(i) == v->get_desc())
+//						{
+//							desc_list.remove_at(i);
+//							break;
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
+//	else
+//	{
+//		counter = 0; // We need to count again, since we now count even vehicles we do not own
+//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+//		{
+//			counter++;
+//		}
+//		desc_list.resize(counter);
+//
+//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+//		{
+////			if (!info->is_future(month_now) && !info->is_retired(month_now)) 
+//			{
+//				desc_list.append(info);
+//			}
+//		}
+//
+//	}
+//	
+//
+//	amount_desc = desc_list.get_count();
+//	amount_veh_owned = vehicle_we_own.get_count();
+//	page_amount_desc = ceil((double)desc_list.get_count() / 500);
+//
+//	display_desc_list();
+//}
 
 
 void vehicle_manager_t::display_desc_list()
