@@ -52,7 +52,7 @@ public:
 	* @param cnv, the handler for the Convoi to be displayed.
 	* @author Hj. Malthaner
 	*/
-	gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 amount);
+	gui_desc_info_t(vehicle_desc_t* veh, uint16 amount);
 
 	bool infowin_event(event_t const*) OVERRIDE;
 	bool selected = false;
@@ -96,7 +96,7 @@ public:
 	* @param cnv, the handler for the Convoi to be displayed.
 	* @author Hj. Malthaner
 	*/
-	gui_veh_info_t::gui_veh_info_t(vehicle_t* veh);
+	gui_veh_info_t(vehicle_t* veh);
 
 	bool infowin_event(event_t const*) OVERRIDE;
 
@@ -210,23 +210,23 @@ public:
 
 	vehicle_manager_t();
 
-	void vehicle_manager_t::build_desc_list();
-	void vehicle_manager_t::build_veh_list();
-	void vehicle_manager_t::display_desc_list();
-	void vehicle_manager_t::display_veh_list();
+	void build_desc_list();
+	void build_veh_list();
+	void display_desc_list();
+	void display_veh_list();
 
 
-	void vehicle_manager_t::update_tabs();
-	void vehicle_manager_t::build_veh_selection();
+	void update_tabs();
+	void build_veh_selection();
 
-	void vehicle_manager_t::sort_desc();
-	void vehicle_manager_t::sort_veh();
-	static bool vehicle_manager_t::compare_desc(vehicle_desc_t*, vehicle_desc_t*);
-	static bool vehicle_manager_t::compare_veh(vehicle_t*, vehicle_t*);
+	void sort_desc();
+	void sort_veh();
+	static bool compare_desc(vehicle_desc_t*, vehicle_desc_t*);
+	static bool compare_veh(vehicle_t*, vehicle_t*);
 
-	static bool vehicle_manager_t::compare_desc_amount(char*, char*);
+	static bool compare_desc_amount(char*, char*);
 
-	static int vehicle_manager_t::find_veh_issue_level(vehicle_t*);
+	static int find_veh_issue_level(vehicle_t*);
 	
 	/**
 	* in top-level windows the name is displayed in titlebar
