@@ -70,7 +70,9 @@ const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
 	"name",
 	"intro_year",
-	"amount"
+	"amount",
+	"cargo_type_and_capacity",
+	"speed"
 };
 const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 {
@@ -705,7 +707,7 @@ void vehicle_manager_t::update_tabs()
 
 void vehicle_manager_t::sort_desc()
 {
-	if (sortby_desc == by_desc_name || sortby_desc == by_desc_intro_year)
+	if (sortby_desc != by_desc_amount)
 	{
 		std::sort(desc_list.begin(), desc_list.end(), compare_desc);
 	}
@@ -1007,11 +1009,28 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	case by_desc_name:
 		result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
 		break;
+	
 	case by_desc_intro_year:
 		result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
 		break;
-		//case by_desc_issues:
-		//	result = cnv1.get_id() - cnv2.get_id();
+	
+	case by_desc_cargo_type_and_capacity:
+		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+		{
+			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+		}
+		else
+		{
+			result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+		}
+		break;
+
+	case by_desc_speed:
+		result = sgn(veh2->get_topspeed() - veh1->get_topspeed());
+		break;
+		
+	//case by_desc_issues:
+		//	result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
 		//	break;
 	}
 	return result < 0;

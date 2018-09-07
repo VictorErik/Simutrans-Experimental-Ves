@@ -123,8 +123,10 @@ public:
 		by_desc_name = 0,
 		by_desc_intro_year = 1,
 		by_desc_amount = 2,
+		by_desc_cargo_type_and_capacity = 3,
+		by_desc_speed = 4,
 		//by_desc_issues = 3, // Experimental: If the vehicle_desc has any issues, like out of production, can upgrade, etc
-		SORT_MODES_DESC = 3
+		SORT_MODES_DESC = 5
 	};
 
 	enum sort_mode_veh_t {
