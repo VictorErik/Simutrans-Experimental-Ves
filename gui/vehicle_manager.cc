@@ -1139,91 +1139,23 @@ void vehicle_manager_t::build_desc_list()
 }
 
 
-//void vehicle_manager_t::build_desc_list()
-//{
-//	int counter = 0;
-//	way_type = (waytype_t)selected_tab_waytype;
-//	page_amount_desc = 1;
-//	page_display_desc = 1;
-//	const uint16 month_now = welt->get_timeline_year_month();
-//
-//	vehicle_we_own.clear();
-//	desc_list.clear();
-//
-//	// How many vehicles do we own?
-//	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-//		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-//			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-//			{
-//				counter++;
-//			}
-//		}
-//	}
-//	vehicle_we_own.resize(counter);
-//	desc_list.resize(counter);
-//
-//	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-//		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-//			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-//			{
-//				vehicle_t* v = cnv->get_vehicle(veh);
-//				vehicle_we_own.append(v);
-//			}
-//		}
-//	}
-//
-//	if (!show_available_vehicles)
-//	{
-//		// Fill the vector with only the desc's we own
-//		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-//			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-//				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-//				{
-//					vehicle_t* v = cnv->get_vehicle(veh);
-//					desc_list.append((vehicle_desc_t*)v->get_desc());
-//					for (int i = 0; i < desc_list.get_count() - 1; i++)
-//					{
-//						if (desc_list.get_element(i) == v->get_desc())
-//						{
-//							desc_list.remove_at(i);
-//							break;
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//	else
-//	{
-//		counter = 0; // We need to count again, since we now count even vehicles we do not own
-//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-//		{
-//			counter++;
-//		}
-//		desc_list.resize(counter);
-//
-//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-//		{
-////			if (!info->is_future(month_now) && !info->is_retired(month_now)) 
-//			{
-//				desc_list.append(info);
-//			}
-//		}
-//
-//	}
-//	
-//
-//	amount_desc = desc_list.get_count();
-//	amount_veh_owned = vehicle_we_own.get_count();
-//	page_amount_desc = ceil((double)desc_list.get_count() / 500);
-//
-//	display_desc_list();
-//}
-
-
 void vehicle_manager_t::display_desc_list()
 {
+	vehicle_desc_t* old_selected_desc = NULL;
+	if (desc_info.get_count() > 0)
+	{
+		for (int i = 0; i < desc_info.get_count(); i++)
+		{
+			if (desc_info[i]->is_selected())
+			{
+				old_selected_desc = desc_info[i]->get_desc();
+				break;
+			}
+		}
+	}
+
 	sort_desc();
+	
 	// count how many of each "desc" we own
 	uint16* desc_amounts;
 	desc_amounts = new uint16[desc_list.get_count()];
@@ -1268,10 +1200,26 @@ void vehicle_manager_t::display_desc_list()
 	}
 
 	// When the list is built, this presets the selected vehicle and assign it to the "vehicle_for_display"
+
 	if (desc_info.get_count() > 0)
 	{
-		desc_info[0]->set_selection(true);
-		vehicle_for_display = desc_list.get_element(0);
+		if (old_selected_desc)
+		{
+			for (int i = 0; i < desc_info.get_count(); i++)
+			{
+				if (desc_info[i]->get_desc() == old_selected_desc)
+				{
+					desc_info[i]->set_selection(true);
+					vehicle_for_display = desc_list.get_element(i);
+					break;
+				}
+			}
+		}
+		else
+		{
+			desc_info[0]->set_selection(true);
+			vehicle_for_display = desc_list.get_element(0);
+		}
 	}
 	build_veh_list();
 

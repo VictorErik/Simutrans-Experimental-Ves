@@ -59,6 +59,7 @@ public:
 
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
+	vehicle_desc_t* get_desc() { return veh; }
 	
 	/**
 	* Draw the component
