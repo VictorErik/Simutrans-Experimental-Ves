@@ -50,16 +50,17 @@
 #include "../boden/wege/schiene.h"
 #include "../boden/wege/strasse.h"
 
+#include "../descriptor/intro_dates.h"
+
 
 #include "karte.h"
 
-#define VEHICLE_NAME_COLUMN_WIDTH ((D_BUTTON_WIDTH*4)+11+4)
+#define VEHICLE_NAME_COLUMN_WIDTH ((D_BUTTON_WIDTH*5)+11+4)
 #define VEHICLE_NAME_COLUMN_HEIGHT (250)
 #define INFORMATION_COLUMN_HEIGHT (400)
 #define RIGHT_HAND_COLUMN (D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH + 10)
 #define SCL_HEIGHT (15*LINESPACE)
 
-//static linehandle_t selected_line[simline_t::MAX_LINE_TYPE];
 static uint16 tabs_to_index_waytype[8];
 static uint16 tabs_to_index_information[8];
 static uint8 max_idx = 0;
@@ -537,7 +538,6 @@ void vehicle_manager_t::update_tabs()
 	// tab panel
 	tabs_waytype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4, SCL_HEIGHT));
 	max_idx = 0;
-	tabs_waytype.clear();
 	bool maglev = false;
 	bool monorail = false;
 	bool train = false;
@@ -548,6 +548,22 @@ void vehicle_manager_t::update_tabs()
 	bool air = false;
 	const uint16 month_now = welt->get_timeline_year_month();
 
+	// Store the waytype of the previously selected tab, so we dont loose track of what vehicle we had selected
+	waytype_t* old_selected_tab = NULL;
+	if (tabs_waytype.get_count() > 0)
+	{
+		for (int i = 0; i < tabs_waytype.get_count(); i++)
+		{
+			if (tabs_waytype.get_active_tab_index() == i)
+			{
+				old_selected_tab = (waytype_t*)tabs_to_index_waytype[i];
+				//old_selected_tab = (waytype_t*)selected_tab_waytype;
+				break;
+			}
+		}
+	}
+
+	tabs_waytype.clear();
 
 	if (show_available_vehicles) // TODO: make it timeline dependent, so it doesnt show unavailable vehicles
 	{
@@ -694,11 +710,31 @@ void vehicle_manager_t::update_tabs()
 		tabs_to_index_waytype[max_idx++] = waytype_t::air_wt;
 	}
 
-	// no tabs to show at all??? Show a tab to display the reason
 	if (max_idx <= 0)
 	{
+		// no tabs to show at all??? Show a tab to display the reason
 		tabs_waytype.add_tab(&dummy, translator::translate("no_vehicles_to_show"));
 		tabs_to_index_waytype[max_idx++] = waytype_t::air_wt;
+	}
+
+	else
+	{
+		// When the tabs are built, this presets the previous selected tab, if possible
+		if (old_selected_tab)
+		{
+			for (int i = 0; i < tabs_waytype.get_count(); i++)
+			{
+				if (old_selected_tab == (waytype_t*)tabs_to_index_waytype[i])
+				{
+					tabs_waytype.set_active_tab_index(i);
+					break;
+				}
+			}
+		}
+		else
+		{
+			tabs_waytype.set_active_tab_index(0);
+		}
 	}
 	selected_tab_waytype = tabs_to_index_waytype[tabs_waytype.get_active_tab_index()];
 }
@@ -941,7 +977,7 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 
 	case by_odometer:
 	{
-		//result = sgn(veh1->get_odometer() - veh2->get_odometer()); // This sort mode only gets active when individual vehicle odometer gets tracked
+		//result = sgn(veh1->get_odometer() - veh2->get_odometer()); // This sort mode is not possible yet
 	}
 	break;
 
@@ -1015,14 +1051,18 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		break;
 	
 	case by_desc_cargo_type_and_capacity:
-		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+		// TODO: Make vehicles with no capacity go to the bottom of the list
 		{
-			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+			if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+			{
+				result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+			}
+			else
+			{
+				result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+			}
 		}
-		else
-		{
-			result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
-		}
+
 		break;
 
 	case by_desc_speed:
@@ -1200,7 +1240,6 @@ void vehicle_manager_t::display_desc_list()
 	}
 
 	// When the list is built, this presets the selected vehicle and assign it to the "vehicle_for_display"
-
 	if (desc_info.get_count() > 0)
 	{
 		if (old_selected_desc)
@@ -1211,6 +1250,7 @@ void vehicle_manager_t::display_desc_list()
 				{
 					desc_info[i]->set_selection(true);
 					vehicle_for_display = desc_list.get_element(i);
+					scrolly_desc.set_scroll_position(0, desc_info.get_element(i)->get_pos().y - 30);
 					break;
 				}
 			}
@@ -1219,8 +1259,10 @@ void vehicle_manager_t::display_desc_list()
 		{
 			desc_info[0]->set_selection(true);
 			vehicle_for_display = desc_list.get_element(0);
+			scrolly_desc.set_scroll_position(0, 0);
 		}
 	}
+
 	build_veh_list();
 
 	// delete the amount of vehicles array
@@ -1395,15 +1437,48 @@ void gui_desc_info_t::draw(scr_coord offset)
 		int used_caracters = 0;
 		image_height = 0;
 		COLOR_VAL text_color = COL_BLACK;
+		const uint16 month_now = welt->get_timeline_year_month();
+		bool upgrades = false;
+		bool retired = false;
+		bool only_as_upgrade = false;
+		int fillbox_height = 4 * LINESPACE;
+
 		sprintf(name, translator::translate(veh->get_name()));
 		sprintf(name_display, name);
+
+		// First, we need to know how much text is going to be, since the "selected" blue field has to be drawn before all the text
+		// Upgrades. We only want to show that a vehicle can upgrade if we own it
+		if (veh->get_upgrades_count() > 0 && amount > 0)
+		{
+			for (int i = 0; i < veh->get_upgrades_count(); i++)
+			{
+				if (veh->get_upgrades(i)) {
+					if (!veh->get_upgrades(i)->is_future(month_now) && (!veh->get_upgrades(i)->is_retired(month_now)))					{
+						upgrades = true;
+						fillbox_height += LINESPACE;
+						break;
+					}
+				}
+			}
+		}
+
+		if (veh->is_retired(month_now)) {
+			retired = true;
+			fillbox_height += LINESPACE;
+		}
+
+		if (veh->is_available_only_as_upgrade())
+		{
+			only_as_upgrade = true;
+			fillbox_height += LINESPACE;
+		}
 
 		scr_coord_val x, y, w, h;
 		const image_id image = veh->get_base_image();
 		display_get_base_image_offset(image, &x, &y, &w, &h);
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(h, 40) - 2, COL_DARK_BLUE, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(max(h,fillbox_height),40) - 2, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 
@@ -1472,8 +1547,15 @@ void gui_desc_info_t::draw(scr_coord offset)
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;
 
 		// Byggår
-		char year[10];
-		sprintf(year, "%s: %u", translator::translate("since"), veh->get_intro_year_month() / 12);
+		char year[20];
+		if (veh->get_retire_year_month() != DEFAULT_RETIRE_DATE * 12)
+		{
+			sprintf(year, "%s: %u-%u", translator::translate("available"), veh->get_intro_year_month() / 12, veh->get_retire_year_month() / 12);
+		}
+		else
+		{
+			sprintf(year, "%s: %u", translator::translate("available_from"), veh->get_intro_year_month() / 12);
+		}
 		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, year, ALIGN_RIGHT, text_color, true);
 		ypos_name += LINESPACE;
 
@@ -1482,20 +1564,89 @@ void gui_desc_info_t::draw(scr_coord offset)
 		sprintf(amount_of_vehicles, "%s: %u", translator::translate("amount"), amount);
 		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, amount_of_vehicles, ALIGN_RIGHT, text_color, true);
 		ypos_name += LINESPACE;
-		
-		// Messages
 
+		// Load
+		if (veh->get_total_capacity() > 0)
+		{
+			char load[20];
+			//sprintf(load, ": %u", veh->get_total_capacity());
+			char extra_pass[8];
+			if (veh->get_overcrowded_capacity() > 0)
+			{
+				sprintf(extra_pass, " (%i)", veh->get_overcrowded_capacity());
+			}
+			else
+			{
+				extra_pass[0] = '\0';
+			}
+
+			sprintf(load,"%i%s%s %s\n",	veh->get_total_capacity(), extra_pass, translator::translate(veh->get_freight_type()->get_mass()),
+				veh->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_freight_type()->get_name()) : translator::translate(veh->get_freight_type()->get_catg_name()));
+
+			int entry = display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, load, ALIGN_RIGHT, text_color, true);
+
+			if (veh->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+			{
+				display_color_img(skinverwaltung_t::passengers->get_image_id(0), pos.x + offset.x + 2 + xpos_extra - entry - 16, pos.y + offset.y + 7 + ypos_name, 0, false, false);
+			}
+			else if (veh->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+			{
+				display_color_img(skinverwaltung_t::mail->get_image_id(0), pos.x + offset.x + 2 + xpos_extra - entry - 16, pos.y + offset.y + 7 + ypos_name, 0, false, false);
+			}
+			else
+			{
+				display_color_img(skinverwaltung_t::goods->get_image_id(0), pos.x + offset.x + 2 + xpos_extra - entry - 16, pos.y + offset.y + 7 + ypos_name, 0, false, false);
+			}
+
+			ypos_name += LINESPACE;
+		}
+		// Issues
+		{
+			COLOR_VAL issue_color = COL_BLACK;
+			char issues[100] = "\0";
+
+			if (upgrades) {
+				sprintf(issues, "%s", translator::translate("upgrades_available"));
+				issue_color = selected ? text_color : COL_PURPLE;
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, issues, ALIGN_RIGHT, issue_color, true);
+				ypos_name += LINESPACE;
+
+			}
+
+			if (retired) {
+				if (veh->get_running_cost(welt) > veh->get_running_cost())
+				{
+					sprintf(issues, "%s", translator::translate("obsolete"));
+					issue_color = selected ? text_color : COL_DARK_BLUE;
+				}
+				else
+				{
+					sprintf(issues, "%s", translator::translate("out_of_production"));
+					issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
+				}
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, issues, ALIGN_RIGHT, issue_color, true);
+				ypos_name += LINESPACE;
+			}
+
+			if (only_as_upgrade) {
+				sprintf(issues, "%s", translator::translate("only_as_upgrade"));
+				issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, issues, ALIGN_RIGHT, issue_color, true);
+				ypos_name += LINESPACE;
+			}
+		}
 
 		const int xoff = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH;
 		int left = pos.x + offset.x + xoff + 4;
-		display_base_img(image, left - x, pos.y + offset.y + 13 - y - h / 2, player_nr, false, true);
+		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
 
 		//// Antal, displayed on top of the image
 		//sprintf(amount_of_vehicles, "%u", amount);
 		//display_proportional_clip(left, pos.y + offset.y + 13, amount_of_vehicles, ALIGN_RIGHT, SYSCOL_TEXT_HIGHLIGHT, true);
 		//ypos_name += LINESPACE;
 
-		image_height = h;
+		ypos_name += LINESPACE*2;
+		image_height = max(h,ypos_name);
 
 	}
 }
@@ -1736,7 +1887,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		if (veh->get_desc()->get_total_capacity() > 0)
 		{
 			char amount[256];
-			sprintf(amount, "%3d %s %s\n", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
+			sprintf(amount, "%i%s %s\n", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
 				veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
 			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
 		}
@@ -1757,7 +1908,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 
 		const int xoff = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH;
 		int left = pos.x + offset.x + xoff + 4;
-		display_base_img(image, left - x, pos.y + offset.y + 13 - y - h / 2, veh->get_owner()->get_player_nr(), false, true);
+		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, veh->get_owner()->get_player_nr(), false, true);
 
 		image_height = h;
 
