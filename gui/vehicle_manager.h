@@ -159,6 +159,9 @@ private:
 	static sort_mode_veh_t sortby_veh;
 	static bool sortreverse;
 
+	const int desc_pr_page = 500;
+	const int veh_pr_page = 500;
+
 	// All vehicles
 	//vector_tpl<quickstone_tpl<vehicle_desc_t>> vehicle_descs;
 	//vehicle_t *veh;
@@ -202,9 +205,13 @@ private:
 	int page_amount_desc = 1;
 	int page_amount_veh = 1;
 
+	bool page_turn_desc = false;
+
 	static const char *sort_text_desc[SORT_MODES_DESC];
 	static const char *sort_text_veh[SORT_MODES_VEH];
 
+	vehicle_desc_t* previously_selected_desc;
+	bool restore_desc_selection = false;
 
 
 public:
@@ -218,9 +225,10 @@ public:
 	void display_desc_list();
 	void display_veh_list();
 
-
 	void update_tabs();
 	void build_veh_selection();
+
+	void save_previously_selected_desc();
 
 	void sort_desc();
 	void sort_veh();
