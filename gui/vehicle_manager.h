@@ -140,7 +140,7 @@ public:
 private:
 	player_t *player;
 
-	gui_container_t cont_desc, cont_veh, dummy;
+	gui_container_t cont_desc, cont_veh, cont_desc_info, dummy;
 	gui_scrollpane_t scrolly_desc, scrolly_veh;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_info;
@@ -211,7 +211,11 @@ private:
 	static const char *sort_text_veh[SORT_MODES_VEH];
 
 	vehicle_desc_t* previously_selected_desc;
+	vehicle_desc_t* desc_info_text;
 	bool restore_desc_selection = false;
+
+	scr_coord desc_info_text_pos;
+	scr_coord scrolly_desc_pos;
 
 
 public:
@@ -224,6 +228,8 @@ public:
 	void build_veh_list();
 	void display_desc_list();
 	void display_veh_list();
+
+	void draw_general_vehicle_information(const scr_coord& pos);
 
 	void update_tabs();
 	void build_veh_selection();
