@@ -27,8 +27,57 @@
 
 class player_t;
 
-#ifndef gui_vehicle_desc_info_h
-#define gui_vehicle_desc_info_h
+#ifndef gui_upgrade_info_h
+#define gui_upgrade_info_h
+/**
+* One element of the vehicle list display
+*
+* @author Hj. Malthaner
+*/
+class gui_upgrade_info_t : public gui_world_component_t
+{
+private:
+	player_t *player;
+	uint8 player_nr;
+	/**
+	* Handle Convois to be displayed.
+	* @author Hj. Malthaner
+	*/
+	vehicle_desc_t* upgrade;
+	vehicle_desc_t* existing;
+
+	uint16 amount;
+
+public:
+	/**
+	* @param cnv, the handler for the Convoi to be displayed.
+	* @author Hj. Malthaner
+	*/
+	gui_upgrade_info_t(vehicle_desc_t* upgrade, vehicle_desc_t* existing);
+
+	bool infowin_event(event_t const*) OVERRIDE;
+	bool selected = false;
+	bool open_info = false;
+
+	bool is_selected() { return selected; }
+	bool set_selection(bool sel) { return selected = sel; }
+	bool is_open_info() { return open_info; }
+
+	vehicle_desc_t* get_upgrade() { return upgrade; }
+	vehicle_desc_t* get_existing() { return existing; }
+
+	/**
+	* Draw the component
+	* @author Hj. Malthaner
+	*/
+	void draw(scr_coord offset);
+
+	int image_height;
+};
+
+#endif
+#ifndef gui_desc_info_h
+#define gui_desc_info_h
 /**
 * One element of the vehicle list display
 *
@@ -71,8 +120,8 @@ public:
 };
 
 #endif
-#ifndef gui_vehicleinfo_h
-#define gui_vehicleinfo_h
+#ifndef gui_veh_info_h
+#define gui_veh_info_h
 /**
 * One element of the vehicle list display
 *
@@ -139,9 +188,10 @@ public:
 	};
 private:
 	player_t *player;
+	uint8 player_nr;
 
-	gui_container_t cont_desc, cont_veh, cont_desc_info, dummy;
-	gui_scrollpane_t scrolly_desc, scrolly_veh;
+	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_maintenance_info, dummy;
+	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_info;
 	gui_combobox_t combo_sorter_desc;
@@ -150,6 +200,8 @@ private:
 	button_t bt_show_available_vehicles;
 	button_t bt_select_all;
 	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
+	button_t bt_upgrade;
+
 	bool show_available_vehicles;
 	bool select_all;
 	bool just_selected_all = false;
@@ -180,6 +232,7 @@ private:
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;
 	vector_tpl<gui_veh_info_t *> veh_info;
 	vector_tpl<gui_desc_info_t *> desc_info;
+	vector_tpl<gui_upgrade_info_t *> upgrade_info;
 	
 	void display(scr_coord pos);
 
@@ -192,7 +245,7 @@ private:
 	gui_label_t lb_desc_page;
 	gui_label_t lb_veh_page;
 
-	vehicle_desc_t* vehicle_for_display;
+	vehicle_desc_t* vehicle_for_display = NULL;
 	int selected_desc_index;
 	int new_count_veh_selection;
 	int old_count_veh_selection = -1;
@@ -218,6 +271,10 @@ private:
 	scr_coord scrolly_desc_pos;
 
 
+	vehicle_desc_t* vehicle_as_upgrade = NULL;
+	int selected_upgrade_index;
+
+
 public:
 	vehicle_manager_t(player_t* player);
 	~vehicle_manager_t();
@@ -229,7 +286,10 @@ public:
 	void display_desc_list();
 	void display_veh_list();
 
-	void draw_general_vehicle_information(const scr_coord& pos);
+	void build_upgrade_list();
+
+	void draw_general_information(const scr_coord& pos);
+	void draw_maintenance_information(const scr_coord& pos);
 
 	void update_tabs();
 	void build_veh_selection();

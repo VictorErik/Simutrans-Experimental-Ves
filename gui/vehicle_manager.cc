@@ -55,9 +55,11 @@
 
 #include "karte.h"
 
-#define VEHICLE_NAME_COLUMN_WIDTH ((D_BUTTON_WIDTH*5)+11+4)
+#define VEHICLE_NAME_COLUMN_WIDTH ((D_BUTTON_WIDTH*5)+15)
 #define VEHICLE_NAME_COLUMN_HEIGHT (250)
-#define INFORMATION_COLUMN_HEIGHT (400)
+#define INFORMATION_COLUMN_HEIGHT (20*LINESPACE)
+#define UPGRADE_LIST_COLUMN_WIDTH (D_BUTTON_WIDTH*4 + 19)
+#define UPGRADE_LIST_COLUMN_HEIGHT (INFORMATION_COLUMN_HEIGHT - LINESPACE*2)
 #define RIGHT_HAND_COLUMN (D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH + 10)
 #define SCL_HEIGHT (15*LINESPACE)
 
@@ -110,7 +112,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_desc_page(NULL, SYSCOL_TEXT, gui_label_t::centered),
 	lb_veh_page(NULL, SYSCOL_TEXT, gui_label_t::centered),
 	scrolly_desc(&cont_desc),
-	scrolly_veh(&cont_veh)
+	scrolly_veh(&cont_veh),
+	scrolly_upgrade(&cont_upgrade)
 {
 
 	int y_pos = 5;
@@ -242,11 +245,11 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	tabs_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH*2, SCL_HEIGHT));
 	
 	// general information
-	tabs_info.add_tab(&cont_desc_info, translator::translate("general_information"));
+	tabs_info.add_tab(&dummy, translator::translate("general_information"));
 	tabs_to_index_information[max_idx_information++] = 0;
 
-	// upgrades
-	tabs_info.add_tab(&dummy, translator::translate("upgrades"));
+	// maintenance information
+	tabs_info.add_tab(&cont_maintenance_info, translator::translate("maintenance_information"));
 	tabs_to_index_information[max_idx_information++] = 1;
 	
 	// details
@@ -261,16 +264,38 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	desc_info_text_pos = scr_coord(D_MARGIN_LEFT, y_pos);
 	selected_desc_index = -1;
+	selected_upgrade_index = -1;
 /*
 	cont_desc_info.set_pos(scr_coord(desc_info_text_ypos));
 	cont_desc_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH * 2, INFORMATION_COLUMN_HEIGHT));*/
+
+	scr_coord dummy(D_MARGIN_LEFT, D_MARGIN_TOP);
+	{
+		bt_upgrade.init(button_t::roundbox, translator::translate("upgrade"), dummy, D_BUTTON_SIZE);
+		bt_upgrade.add_listener(this);
+		bt_upgrade.set_tooltip(translator::translate("next_page"));
+		//bt_upgrade.set_visible(false);
+		cont_maintenance_info.add_component(&bt_upgrade);
+
+
+		// Upgrade list
+		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_upgrade.set_show_scroll_y(true);
+		scrolly_upgrade.set_scroll_amount_y(40);
+		scrolly_upgrade.set_visible(true);
+		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
+		cont_maintenance_info.add_component(&scrolly_upgrade);
+
+
+	}
 
 	//build_vehicle_list();
 	build_desc_list();
 
 	// Sizes:
 	const int min_width = (VEHICLE_NAME_COLUMN_WIDTH * 2) + (D_MARGIN_LEFT*3);
-	const int min_height = VEHICLE_NAME_COLUMN_HEIGHT + INFORMATION_COLUMN_HEIGHT;
+	//const int min_height = VEHICLE_NAME_COLUMN_HEIGHT + INFORMATION_COLUMN_HEIGHT + D_BUTTON_HEIGHT * 2 + LINESPACE + D_BUTTON_HEIGHT + D_BUTTON_HEIGHT * 2;
+	const int min_height = tabs_info.get_pos().y + D_BUTTON_HEIGHT*2 + LINESPACE + INFORMATION_COLUMN_HEIGHT;
 
 	set_min_windowsize(scr_size(min_width, min_height));
 	set_windowsize(scr_size(min_width, min_height));
@@ -290,6 +315,11 @@ vehicle_manager_t::~vehicle_manager_t()
 	{
 		delete[] veh_info.get_element(i);
 	}
+	for (int i = 0; i <upgrade_info.get_count(); i++)
+	{
+		delete[] upgrade_info.get_element(i);
+	}
+	
 }
 
 bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v)           // 28-Dec-01    Markus Weber    Added
@@ -429,8 +459,129 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 	}
 	return true;
 }
+void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
+{
+	char buf[1024];
+	char tmp[50];
+	const vehicle_desc_t *desc_info_text = NULL;
+	desc_info_text = vehicle_for_display;
+	int pos_y = 0;
+	int pos_x = 0;
+	const uint16 month_now = welt->get_timeline_year_month();
+	player_nr = welt->get_active_player_nr();
+	int column_1 = 0;
+	int column_2 = D_BUTTON_WIDTH * 4 + D_MARGIN_LEFT;
+	int column_3 = D_BUTTON_WIDTH * 6 + D_MARGIN_LEFT;
 
-void vehicle_manager_t::draw_general_vehicle_information(const scr_coord& pos)
+
+	// This section is originally fetched from the gui_convoy_assembler_t, however is modified to display colors for different entries, such as reassigned classes, increased maintenance etc.
+	buf[0] = '\0';
+	if (desc_info_text) {
+
+		// column 1
+		vehicle_as_potential_convoy_t convoy(*desc_info_text);
+		int linespace_skips = 0;
+
+		pos_y += LINESPACE * 3;
+		// Age
+		uint16 max_age = 0;
+		uint16 min_age = month_now;
+		if (veh_selection.get_count() > 0)
+		{
+			for (uint8 j = 0; j < veh_selection.get_count(); j++)
+			{
+				vehicle_t* veh = veh_selection.get_element(j);
+				if (veh->get_purchase_time() / 12 > max_age)
+				{
+					max_age = month_now / 12 - veh->get_purchase_time() / 12;
+				}
+				if (veh->get_purchase_time() / 12 <= min_age)
+				{
+					min_age = month_now / 12 - veh->get_purchase_time() / 12;
+				}
+
+			}
+			if (max_age < 0)
+			{
+				max_age = 0;
+			}
+			if (min_age < 0)
+			{
+				min_age = 0;
+			}
+
+			char age_entry[128] = "\0";
+
+			if (max_age != min_age)
+			{
+				sprintf(age_entry, "%i - %i", min_age, max_age);
+			}
+			else
+			{
+				sprintf(age_entry, "%i", max_age);
+			}
+			if (max_age < 2)
+			{
+				sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("year"));
+			}
+			else
+			{
+				sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("years"));
+			}
+			display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
+		}
+
+		pos_y += LINESPACE * 5;
+		
+		
+		pos_x = column_2;
+		pos_y = 0;
+
+		// Upgrade button
+		bt_upgrade.set_pos(scr_coord(pos_x, pos_y));
+
+		pos_x = column_3;
+		pos_y = 0;
+		// Upgrade information			
+
+		int amount_of_upgrades = 0;
+
+		sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_to"));
+		display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
+		pos_y += LINESPACE * 2;
+
+		scrolly_upgrade.set_pos(scr_coord(D_MARGIN_LEFT + pos_x, pos_y));
+
+		if (desc_info_text->get_upgrades_count() > 0)
+		{
+			int ypos = 10;
+			for (int i = 0; i < desc_info_text->get_upgrades_count(); i++)
+			{
+				const vehicle_desc_t* upgrade = desc_info_text->get_upgrades(i);
+				if (upgrade)
+				{
+					if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+					{
+						amount_of_upgrades++;
+						break;
+					}
+				}
+			}
+		}
+		if (amount_of_upgrades <= 0)
+		{
+			pos_y += LINESPACE;
+			sprintf(buf, "%s", translator::translate("keine"));
+			display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
+			pos_y += LINESPACE;
+		}
+
+	}
+
+	// Odometer
+}
+
+void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 {
 	char buf[1024];
 	const vehicle_desc_t *desc_info_text = NULL;
@@ -577,69 +728,6 @@ void vehicle_manager_t::draw_general_vehicle_information(const scr_coord& pos)
 		}
 		n += sprintf(buf + n, "\n");
 
-
-		//// (Upgrade information)
-		//if (desc_info_text->get_upgrades_count() > 0)
-		//{
-		//	const uint16 month_now = welt->get_timeline_year_month();
-		//	int amount_of_upgrades = 0;
-		//	int max_display_of_upgrades = 3;
-		//	for (int i = 0; i < desc_info_text->get_upgrades_count(); i++)
-		//	{
-		//		//if (!desc_info_text->get_upgrades(i)->is_future(month_now) && (!desc_info_text->get_upgrades(i)->is_retired(month_now)))
-		//		{
-		//			amount_of_upgrades++;
-		//		}
-		//	}
-		//	if (amount_of_upgrades > 0)
-		//	{
-		//		n += sprintf(buf + n, "%s:\n", translator::translate("this_vehicle_can_upgrade_to"));
-		//		for (uint8 i = 0; i < min(desc_info_text->get_upgrades_count(), max_display_of_upgrades); i++)
-		//		{
-		//			//if (!desc_info_text->get_upgrades(i)->is_future(month_now) && (!desc_info_text->get_upgrades(i)->is_retired(month_now)))
-		//			{
-		//				//money_to_string(tmp, desc_info_text->get_upgrades(i)->get_upgrade_price() / 100);
-		//				//n += sprintf(buf + n, " - %s (%8s)\n", translator::translate(desc_info_text->get_upgrades(i)->get_name()), tmp);
-		//				
-		//			}
-		//		}
-		//		if (amount_of_upgrades > max_display_of_upgrades)
-		//		{
-		//			
-		//			n += sprintf(buf + n, "+ %i %s\n", amount_of_upgrades - max_display_of_upgrades, translator::translate("additional_upgrades"));
-		//			}
-		//	}
-		//}
-		//else
-		//{
-		//	linespace_skips += 2;
-		//}
-		//// (Livery information)
-		//for (auto scheme : *welt->get_settings().get_livery_schemes())
-		//{
-		//	//if (scheme->is_available(welt->get_timeline_year_month()))
-		//	{
-		//		if (desc_info_text->check_livery(scheme->get_name()))
-		//		{
-		//			n += sprintf(buf + n, "%s\n", scheme->get_name());
-		//		}
-		//	}
-		//}
-
-
-		////else
-		//{
-		//	linespace_skips += 2;
-		//}
-
-		//
-		//if (linespace_skips > 0)
-		//{
-		//	for (int i = 0; i < linespace_skips; i++)
-		//	{
-		//		n += sprintf(buf + n, "\n");
-		//	}
-		//}
 		linespace_skips = 0;
 
 		// Engine information:
@@ -985,11 +1073,28 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	new_count_veh_selection = 0;
 	for (int i = 0; i < veh_info.get_count(); i++)
 	{
-		if (veh_info.get_element(i)->is_selected())
+		if (upgrade_info.get_element(i)->is_selected())
 		{
-			new_count_veh_selection++;
+			if (selected_upgrade_index != i)
+			{
+				if (i < upgrade_info.get_count())
+				{
+					vehicle_as_upgrade = upgrade_info.get_element(i)->get_upgrade();
+					selected_upgrade_index = i;
+
+					for (int j = 0; j < upgrade_info.get_count(); j++)
+					{
+						if (j != selected_upgrade_index)
+						{
+							upgrade_info.get_element(j)->set_selection(false);
+						}
+					}
+					break;
+				}
+			}
 		}
 	}
+
 	if (old_count_veh_selection != new_count_veh_selection)
 	{
 		old_count_veh_selection = new_count_veh_selection;
@@ -1029,11 +1134,15 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	int info_display = (uint16)selected_tab_information;
 	if (info_display == 0)
 	{
-		draw_general_vehicle_information(pos + desc_info_text_pos);
+		draw_general_information(pos + desc_info_text_pos);
 	}
 	else if (info_display == 1)
 	{
-
+		if (update_veh_list)
+		{
+			build_upgrade_list();
+		}
+		draw_maintenance_information(pos + desc_info_text_pos);
 	}
 	else if (info_display == 2)
 	{
@@ -1689,6 +1798,40 @@ bool vehicle_manager_t::compare_desc_amount(char* veh1, char* veh2)
 	//return false;
 }
 
+void vehicle_manager_t::build_upgrade_list()
+{
+	// Build the list of upgrades to this vehicle			
+	cont_upgrade.remove_all();
+	upgrade_info.clear();
+	if (vehicle_for_display)
+	{
+		if (vehicle_for_display->get_upgrades_count() > 0)
+		{
+			const uint16 month_now = welt->get_timeline_year_month();
+
+			upgrade_info.resize(vehicle_for_display->get_upgrades_count());
+
+			int ypos = 10;
+			for (int i = 0; i < vehicle_for_display->get_upgrades_count(); i++)
+			{
+				vehicle_desc_t* upgrade = (vehicle_desc_t*)vehicle_for_display->get_upgrades(i);
+				if (upgrade)
+				{
+					if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+					{
+						gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(upgrade, vehicle_for_display);
+						cinfo->set_pos(scr_coord(0, ypos));
+						cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
+						upgrade_info.append(cinfo);
+						cont_upgrade.add_component(cinfo);
+						ypos += max(cinfo->image_height, 40);
+					}
+				}
+			}
+			cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
+		}
+	}
+}
 
 void vehicle_manager_t::build_desc_list()
 {
@@ -1854,12 +1997,13 @@ void vehicle_manager_t::display_desc_list()
 		}
 	}
 	restore_desc_selection = false;
-	build_veh_list();
 	//scrolly_desc.draw(scrolly_desc.get_pos() +/*scrolly_desc_pos + */win_get_pos(this));
 	scrolly_desc.set_scroll_position(0, scroll_y);
 	
 	// delete the amount of vehicles array
 	delete[] desc_amounts;
+	build_veh_list();
+	build_upgrade_list();
 }
 
 void vehicle_manager_t::build_veh_list()
@@ -1975,6 +2119,303 @@ uint32 vehicle_manager_t::get_rdwr_id()
 {
 	return magic_vehicle_manager_t+player->get_player_nr();
 }
+
+// Here we model up each entries in the lists:
+// We start with the vehicle_desc entries, ie vehicle models:
+
+gui_upgrade_info_t::gui_upgrade_info_t(vehicle_desc_t* upgrade_, vehicle_desc_t* existing_)
+{
+	this->upgrade = upgrade_;
+	existing = existing_;
+	player_nr = welt->get_active_player_nr();
+
+	draw(scr_coord(0, 0));
+}
+
+/**
+* Events werden hiermit an die GUI-components
+* gemeldet
+* @author Hj. Malthaner
+*/
+bool gui_upgrade_info_t::infowin_event(const event_t *ev)
+{
+	if (IS_LEFTRELEASE(ev)) {
+		selected = !selected;
+		//selected = true;
+		return true;
+	}
+	else if (IS_RIGHTRELEASE(ev)) {
+		open_info = true;
+		return true;
+	}
+
+	return false;
+}
+
+
+/**
+* Draw the component
+* @author Hj. Malthaner
+*/
+void gui_upgrade_info_t::draw(scr_coord offset)
+{
+	clip_dimension clip = display_get_clip_wh();
+	if (!((pos.y + offset.y) > clip.yy || (pos.y + offset.y) < clip.y - 32)) {
+		// Name colors:
+		// Black:		ok!
+		// Dark blue:	obsolete
+		// Pink:		Can upgrade
+
+		int max_caracters = D_BUTTON_WIDTH / 5; // each character is ca 5 pixels wide.
+		int look_for_spaces_or_separators = 5;
+		char name[256] = "\0"; // Translated name of the vehicle. Will not be modified
+		char name_display[256] = "\0"; // The string that will be sent to the screen
+		int y_pos = 0;
+		int x_pos = 0;
+		int suitable_break;
+		int used_caracters = 0;
+		image_height = 0;
+		COLOR_VAL text_color = COL_BLACK;
+		const uint16 month_now = welt->get_timeline_year_month();
+		bool upgrades = false;
+		bool retired = false;
+		bool only_as_upgrade = false;
+		int fillbox_height = 4 * LINESPACE;
+		bool display_bakground = false;
+
+		sprintf(name, translator::translate(upgrade->get_name()));
+		sprintf(name_display, name);
+
+		// First, we need to know how much text is going to be, since the "selected" blue field has to be drawn before all the text
+		// Upgrades. We only want to show that a vehicle can upgrade if we own it
+
+
+		if (upgrade->is_retired(month_now)) {
+			retired = true;
+			fillbox_height += LINESPACE;
+		}
+
+
+		scr_coord_val x, y, w, h;
+		const image_id image = upgrade->get_base_image();
+		display_get_base_image_offset(image, &x, &y, &w, &h);
+		const int xoff = 0;
+		int left = pos.x + offset.x + xoff + 4;
+
+
+		if (selected)
+		{
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(max(h, fillbox_height), 40) - 2, COL_DARK_BLUE, true);
+			text_color = COL_WHITE;
+		}
+
+
+		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
+
+		int image_offset = min(w + 10,D_BUTTON_WIDTH);
+		if (w > image_offset)
+		{
+			display_bakground = true;
+		}
+		if (display_bakground)
+		{
+			if (selected)
+			{
+				display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + 6 + y_pos, VEHICLE_NAME_COLUMN_WIDTH - image_offset, LINESPACE * 3, COL_DARK_BLUE, 50);
+			}
+			else
+			{
+				display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + 6 + y_pos, VEHICLE_NAME_COLUMN_WIDTH - image_offset, LINESPACE * 3, MN_GREY4, 50);
+			}
+		}
+
+		// In order to show the name, but to prevent suuuuper long translations to ruin the layout, this will divide the name into several lines if necesary
+		if (name[max_caracters] != '\0')
+		{
+			// Ok, our name is too long to be displayed in one line. Time to chup it up
+			for (int i = 1; i <= 3; i++)
+			{
+				suitable_break = max_caracters;
+				if (name_display[max_caracters] == '\0')
+				{// Finally last line of name
+					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + 6 + y_pos, name_display, ALIGN_LEFT, text_color, true);
+					y_pos += LINESPACE;
+					break;
+				}
+				else
+				{
+					bool natural_separator = false;
+					for (int j = 0; j < look_for_spaces_or_separators; j++)
+					{	// Move down to second line
+						if (name_display[max_caracters - j] == '(' || name_display[max_caracters - j] == '{' || name_display[max_caracters - j] == '[')
+						{
+							suitable_break = max_caracters - j;
+							used_caracters += suitable_break;
+							name_display[suitable_break] = '\0';
+							natural_separator = true;
+							break;
+						}
+						// Stay on upper line
+						else if (name_display[max_caracters - j] == ' ' || name_display[max_caracters - j] == '-' || name_display[max_caracters - j] == '/' ||/*name_display[max_caracters - j] == '.' || */ name_display[max_caracters - j] == ',' || name_display[max_caracters - j] == ';' || name_display[max_caracters - j] == ')' || name_display[max_caracters - j] == '}' || name_display[max_caracters - j] == ']')
+						{
+							suitable_break = max_caracters - j + 1;
+							used_caracters += suitable_break;
+							name_display[suitable_break] = '\0';
+							natural_separator = true;
+							break;
+						}
+					}
+					// No suitable breakpoint, divide line with "-"
+					if (!natural_separator)
+					{
+						suitable_break = max_caracters;
+						used_caracters += suitable_break;
+						name_display[suitable_break] = '-';
+						name_display[suitable_break + 1] = '\0';
+					}
+
+					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + 6 + y_pos, name_display, ALIGN_LEFT, text_color, true);
+
+					// Reset the string
+					name_display[0] = '\0';
+					for (int j = 0; j < 256; j++)
+					{
+						name_display[j] = name[used_caracters + j];
+					}
+				}
+				y_pos += LINESPACE;
+			}
+		}
+		else
+		{ // Ok, name is short enough to fit one line
+			display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + 6 + y_pos, name, ALIGN_LEFT, text_color, true);
+		}
+
+		y_pos = 0;
+		x_pos = UPGRADE_LIST_COLUMN_WIDTH - 14;
+
+		// Bygg�r
+		char year[20];
+		sprintf(year, "%s: %u", translator::translate("available_until"), upgrade->get_retire_year_month() / 12);
+		display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, year, ALIGN_RIGHT, text_color, true);
+		y_pos += LINESPACE;
+
+		// Following section compares different values between the old and the new vehicle, to see what is upgraded
+
+		COLOR_VAL difference_color = COL_DARK_GREEN;
+		char tmp[50];
+		// Load
+		if (upgrade->get_total_capacity() != existing->get_total_capacity())
+		{
+			char extra_pass[8];
+
+			int difference = upgrade->get_total_capacity() - existing->get_total_capacity();
+			if (difference > 0)
+			{
+				sprintf(tmp, "+%i", difference);
+				difference_color = COL_DARK_GREEN;
+			}
+			else
+			{
+				sprintf(tmp, "%i", difference);
+				difference_color = COL_RED;
+			}
+
+			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+			if (upgrade->get_overcrowded_capacity() > 0)
+			{
+				sprintf(extra_pass, " (%i)", upgrade->get_overcrowded_capacity());
+			}
+			else
+			{
+				extra_pass[0] = '\0';
+			}
+
+			sprintf(tmp, "%i%s%s %s ", upgrade->get_total_capacity(), extra_pass, translator::translate(upgrade->get_freight_type()->get_mass()),
+				upgrade->get_freight_type()->get_catg() == 0 ? translator::translate(upgrade->get_freight_type()->get_name()) : translator::translate(upgrade->get_freight_type()->get_catg_name()));
+
+			entry += display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);		
+
+			if (upgrade->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+			{
+				display_color_img(skinverwaltung_t::passengers->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + 7 + y_pos, 0, false, false);
+			}
+			else if (upgrade->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+			{
+				display_color_img(skinverwaltung_t::mail->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + 7 + y_pos, 0, false, false);
+			}
+			else
+			{
+				display_color_img(skinverwaltung_t::goods->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + 7 + y_pos, 0, false, false);
+			}
+
+			y_pos += LINESPACE;
+		}
+
+		// top speed
+		if (upgrade->get_topspeed() != existing->get_topspeed())
+		{
+			int difference = upgrade->get_topspeed() - existing->get_topspeed();
+			if (difference > 0)
+			{
+				sprintf(tmp, "+%i", difference);
+				difference_color = COL_DARK_GREEN;
+			}
+			else
+			{
+				sprintf(tmp, "%i", difference);
+				difference_color = COL_RED;
+			}
+			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+			sprintf(tmp, translator::translate("top_speed: %i km/h "), upgrade->get_topspeed());
+			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+		}
+		// weight
+		// loading time
+		// brake force
+		// power
+		// tractive effort
+
+
+
+		// Issues
+
+		COLOR_VAL issue_color = COL_BLACK;
+		char issues[100] = "\0";
+
+		if (retired)
+		{
+			if (upgrade->get_running_cost(welt) > upgrade->get_running_cost())
+			{
+				sprintf(issues, "%s", translator::translate("obsolete"));
+				issue_color = selected ? text_color : COL_DARK_BLUE;
+			}
+			else
+			{
+				sprintf(issues, "%s", translator::translate("out_of_production"));
+				issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
+			}
+			display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, issues, ALIGN_LEFT, issue_color, true);
+			y_pos += LINESPACE;
+		}
+
+		if (only_as_upgrade)
+		{
+			sprintf(issues, "%s", translator::translate("only_as_upgrade"));
+			issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
+			display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, issues, ALIGN_LEFT, issue_color, true);
+			y_pos += LINESPACE;
+		}
+
+
+
+
+		y_pos += LINESPACE * 2;
+		image_height = max(h, y_pos);
+
+	}
+}
+
 
 
 
