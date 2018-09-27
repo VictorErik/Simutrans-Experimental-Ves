@@ -135,9 +135,9 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	y_pos += D_BUTTON_HEIGHT;
 
-	bt_select_all.init(button_t::square_state, translator::translate("select_all"), scr_coord(RIGHT_HAND_COLUMN, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	bt_select_all.init(button_t::square_state, translator::translate("preselect_all"), scr_coord(RIGHT_HAND_COLUMN, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_select_all.add_listener(this);
-	bt_select_all.set_tooltip(translator::translate("select_all_vehicles_in_the_list"));
+	bt_select_all.set_tooltip(translator::translate("preselects_all_vehicles_in_the_list_automatically"));
 	bt_select_all.pressed = false;
 	select_all = bt_select_all.pressed;
 	//bt_select_all.set_pos(scr_coord(10, y_pos));
@@ -208,33 +208,33 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_desc_prev_page.init(button_t::arrowleft, NULL, scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - 110, y_pos));
 	bt_desc_prev_page.add_listener(this);
 	bt_desc_prev_page.set_tooltip(translator::translate("previous_page"));
-	//bt_desc_prev_page.set_visible(false);
+	bt_desc_prev_page.set_visible(false);
 	add_component(&bt_desc_prev_page);
 
 	lb_desc_page.set_pos(scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - 90, y_pos));
-	//lb_desc_page.set_visible(false);
+	lb_desc_page.set_visible(false);
 	add_component(&lb_desc_page);
 
 	bt_desc_next_page.init(button_t::arrowright, NULL, scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - gui_theme_t::gui_arrow_right_size.w, y_pos));
 	bt_desc_next_page.add_listener(this);
 	bt_desc_next_page.set_tooltip(translator::translate("next_page"));
-	//bt_desc_next_page.set_visible(false);
+	bt_desc_next_page.set_visible(false);
 	add_component(&bt_desc_next_page);
 
 	bt_veh_prev_page.init(button_t::arrowleft, NULL, scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - 110, y_pos));
 	bt_veh_prev_page.add_listener(this);
 	bt_veh_prev_page.set_tooltip(translator::translate("previous_page"));
-	//bt_veh_prev_page.set_visible(false);
+	bt_veh_prev_page.set_visible(false);
 	add_component(&bt_veh_prev_page);
 
 	lb_veh_page.set_pos(scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - 90, y_pos));
-	//lb_veh_page.set_visible(false);
+	lb_veh_page.set_visible(false);
 	add_component(&lb_veh_page);
 
 	bt_veh_next_page.init(button_t::arrowright, NULL, scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - gui_theme_t::gui_arrow_right_size.w, y_pos));
 	bt_veh_next_page.add_listener(this);
 	bt_veh_next_page.set_tooltip(translator::translate("next_page"));
-	//bt_veh_next_page.set_visible(false);
+	bt_veh_next_page.set_visible(false);
 	add_component(&bt_veh_next_page);
 		
 
@@ -270,13 +270,16 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	cont_desc_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH * 2, INFORMATION_COLUMN_HEIGHT));*/
 
 	scr_coord dummy(D_MARGIN_LEFT, D_MARGIN_TOP);
+
+	// The information tabs have objects attached to some containers.
+
+	// Maintenance tab:
 	{
 		bt_upgrade.init(button_t::roundbox, translator::translate("upgrade"), dummy, D_BUTTON_SIZE);
 		bt_upgrade.add_listener(this);
-		bt_upgrade.set_tooltip(translator::translate("next_page"));
-		//bt_upgrade.set_visible(false);
+		bt_upgrade.set_tooltip(translator::translate("upgrade"));
+		bt_upgrade.set_visible(false);
 		cont_maintenance_info.add_component(&bt_upgrade);
-
 
 		// Upgrade list
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
@@ -286,15 +289,12 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
 		cont_maintenance_info.add_component(&scrolly_upgrade);
 
-
 	}
 
-	//build_vehicle_list();
 	build_desc_list();
 
 	// Sizes:
 	const int min_width = (VEHICLE_NAME_COLUMN_WIDTH * 2) + (D_MARGIN_LEFT*3);
-	//const int min_height = VEHICLE_NAME_COLUMN_HEIGHT + INFORMATION_COLUMN_HEIGHT + D_BUTTON_HEIGHT * 2 + LINESPACE + D_BUTTON_HEIGHT + D_BUTTON_HEIGHT * 2;
 	const int min_height = tabs_info.get_pos().y + D_BUTTON_HEIGHT*2 + LINESPACE + INFORMATION_COLUMN_HEIGHT;
 
 	set_min_windowsize(scr_size(min_width, min_height));
@@ -324,7 +324,6 @@ vehicle_manager_t::~vehicle_manager_t()
 
 bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v)           // 28-Dec-01    Markus Weber    Added
 {
-	// waytype tabs
 	if (comp == &tabs_waytype) {
 		int const tab = tabs_waytype.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab_waytype;
@@ -342,7 +341,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		selected_tab_information = tabs_to_index_information[tab];
 	}
 	
-
 	if (comp == &bt_show_available_vehicles)
 	{
 		bt_show_available_vehicles.pressed = !bt_show_available_vehicles.pressed;
@@ -377,7 +375,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		display(scr_coord(0,0));
 	}
 
-	// sort by what
 	if (comp == &combo_sorter_desc) {
 		sint32 sort_mode = combo_sorter_desc.get_selection();
 		if (sort_mode < 0)
@@ -400,7 +397,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		sortby_veh = (sort_mode_veh_t)sort_mode;
 		display_veh_list();
 	}
-	
 
 	if (comp == &bt_desc_prev_page)
 	{
@@ -464,7 +460,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	char buf[1024];
 	char tmp[50];
 	const vehicle_desc_t *desc_info_text = NULL;
-	desc_info_text = vehicle_for_display;
+	desc_info_text = desc_for_display;
 	int pos_y = 0;
 	int pos_x = 0;
 	const uint16 month_now = welt->get_timeline_year_month();
@@ -474,7 +470,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	int column_3 = D_BUTTON_WIDTH * 6 + D_MARGIN_LEFT;
 
 
-	// This section is originally fetched from the gui_convoy_assembler_t, however is modified to display colors for different entries, such as reassigned classes, increased maintenance etc.
 	buf[0] = '\0';
 	if (desc_info_text) {
 
@@ -542,8 +537,8 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 
 		pos_x = column_3;
 		pos_y = 0;
-		// Upgrade information			
 
+		// Upgrade information			
 		int amount_of_upgrades = 0;
 
 		sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_to"));
@@ -585,7 +580,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 {
 	char buf[1024];
 	const vehicle_desc_t *desc_info_text = NULL;
-	desc_info_text = vehicle_for_display;
+	desc_info_text = desc_for_display;
 	int pos_y = 0;
 
 	// This section is originally fetched from the gui_convoy_assembler_t, however is modified to display colors for different entries, such as reassigned classes, increased maintenance etc.
@@ -601,10 +596,8 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		{
 			sprintf(buf + n, " (%s)", translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]));
 		}
-
 		display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		pos_y += LINESPACE;
-
 
 		// Cost information:
 		// If any SELECTED vehicles, find out what their resale values are. If different resale values, then show the range
@@ -628,11 +621,9 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 		char tmp[128];
 		money_to_string(tmp, desc_info_text->get_value() / 100.0, false);
-
 		sprintf(buf, translator::translate("Cost: %8s"), tmp);
 		int extra_x = display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		extra_x += 5;
-
 		char resale_entry[128] = "\0";
 		if (max_resale_value != -1)
 		{
@@ -697,6 +688,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 		pos_y += LINESPACE*2;
 		n = 0;
+
 		// Physics information:
 		n += sprintf(buf + n, "%s %3d km/h\n", translator::translate("Max. speed:"), desc_info_text->get_topspeed());
 		n += sprintf(buf + n, "%s %4.1ft\n", translator::translate("Weight:"), desc_info_text->get_weight() / 1000.0); // Convert kg to tonnes
@@ -780,7 +772,6 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			n += sprintf(buf + n, translator::translate("Constructed by %s"), copyright);
 		}
 		n += sprintf(buf + n, "\n");
-
 		display_multiline_text(pos.x, pos.y + pos_y, buf, SYSCOL_TEXT);
 
 		// column 2
@@ -788,7 +779,6 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		pos_y = 0;
 		n = 0;
 		linespace_skips = 0;
-
 		n += sprintf(buf + n, "%s %s %04d\n",
 			translator::translate("Intro. date:"),
 			translator::get_month_name(desc_info_text->get_intro_year_month() % 12),
@@ -1031,14 +1021,6 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 {
 	gui_frame_t::draw(pos, size);
 
-	
-	// details window
-
-	// upgrade window
-
-
-
-
 	bool update_veh_list = false;
 	bool update_desc_list = false;
 	bool no_desc_selected = true;
@@ -1054,7 +1036,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 				{
 					if (i < desc_list.get_count())
 					{
-						vehicle_for_display = desc_list.get_element(i);
+						desc_for_display = desc_list.get_element(i);
 						selected_desc_index = i;
 
 						for (int j = 0; j < desc_info.get_count(); j++)
@@ -1073,7 +1055,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	}
 	if (no_desc_selected)
 	{
-		vehicle_for_display = NULL;
+		desc_for_display = NULL;
 		update_veh_list = true;
 		selected_desc_index = -1;
 	}
@@ -1154,7 +1136,11 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 		build_veh_list();
 	}
 
-
+	// The "draw" information in the info tabs are fetched here
+	// 0 = general information
+	// 1 = maintenance information
+	// 2 = echonomics information
+	// 3 = advanced actions
 	int info_display = (uint16)selected_tab_information;
 	if (info_display == 0)
 	{
@@ -1207,15 +1193,12 @@ void vehicle_manager_t::display(scr_coord pos)
 	lb_veh_page.set_text_pointer(buf_veh_page_select);
 	lb_veh_page.set_tooltip(buf_veh_page_tooltip);
 	lb_veh_page.set_align(gui_label_t::centered);
-
-
 }
 
 
 void vehicle_manager_t::set_windowsize(scr_size size)
 {
 	gui_frame_t::set_windowsize(size);
-
 }
 
 void vehicle_manager_t::update_tabs()
@@ -1242,7 +1225,6 @@ void vehicle_manager_t::update_tabs()
 			if (tabs_waytype.get_active_tab_index() == i)
 			{
 				old_selected_tab = (waytype_t*)tabs_to_index_waytype[i];
-				//old_selected_tab = (waytype_t*)selected_tab_waytype;
 				break;
 			}
 		}
@@ -1250,7 +1232,8 @@ void vehicle_manager_t::update_tabs()
 
 	tabs_waytype.clear();
 
-	if (show_available_vehicles) // TODO: make it timeline dependent, so it doesnt show unavailable vehicles
+	// If the "show available vehicles" is selected, this will show all vehicles in the pakset, if they are currently in production, hence the required tabs are enabled:
+	if (show_available_vehicles)
 	{
 		if (maglev_t::default_maglev) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::maglev_wt)) {
@@ -1310,7 +1293,7 @@ void vehicle_manager_t::update_tabs()
 		}
 	}
 
-	// show tabs for the vehicles we own, even though there might be no available vehicles for that category
+	// always enable tabs for the vehicles we own, even though there might be no available vehicles for that category
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if ((cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == waytype_t::maglev_wt)) {
 			maglev = true;
@@ -1360,7 +1343,6 @@ void vehicle_manager_t::update_tabs()
 		}
 	}
 
-
 	// now we can create the actual tabs
 	if (maglev) {
 		tabs_waytype.add_tab(&dummy, translator::translate("Maglev"), skinverwaltung_t::maglevhaltsymbol, translator::translate("Maglev"));
@@ -1395,16 +1377,15 @@ void vehicle_manager_t::update_tabs()
 		tabs_to_index_waytype[max_idx_waytype++] = waytype_t::air_wt;
 	}
 
+	// no tabs to show at all??? Show a tab to display the reason
 	if (max_idx_waytype <= 0)
 	{
-		// no tabs to show at all??? Show a tab to display the reason
 		tabs_waytype.add_tab(&dummy, translator::translate("no_vehicles_to_show"));
 		tabs_to_index_waytype[max_idx_waytype++] = waytype_t::air_wt;
 	}
-
+	// When the tabs are built, this presets the previous selected tab, if possible
 	else
 	{
-		// When the tabs are built, this presets the previous selected tab, if possible
 		if (old_selected_tab)
 		{
 			for (int i = 0; i < tabs_waytype.get_count(); i++)
@@ -1433,9 +1414,12 @@ void vehicle_manager_t::sort_desc()
 		std::sort(desc_list.begin(), desc_list.end(), compare_desc);
 	}
 
-	//How many of each vehicles do we own?
+	// This sort mode is special, since the vehicles them self dont know how many they are. Instead, the vehicles are counted and stored in strings together with the vehicles current index number.
+	// Those strings are then what is being sent to the std::sort, where it will decode the string to find out the "amount" number coded in the string. When the array of strings have been sorted,
+	// the desc_list is then cleared and being built up again from the bottom, comparing the desc's old index number (which has also been saved in its own array) to the index numbers decoded from the strings.
 	if (sortby_desc == by_desc_amount)
 	{
+		// count each vehcle we own and create a new uint16 for each one.
 		uint16* tmp_amounts;
 		tmp_amounts = new uint16[amount_desc];
 		for (int i = 0; i < amount_desc; i++)
@@ -1443,6 +1427,7 @@ void vehicle_manager_t::sort_desc()
 			tmp_amounts[i] = 0;
 		}
 
+		// count how many of each vehicle we have.
 		for (int i = 0; i < amount_desc; i++)
 		{
 			for (unsigned j = 0; j < amount_veh_owned; j++)
@@ -1453,15 +1438,14 @@ void vehicle_manager_t::sort_desc()
 				}
 			}
 		}
+		desc_list_old_index.clear();
+		desc_list_old_index.resize(amount_desc);
 
-		desc_list_pr_name.clear();
-		desc_list_pr_name.resize(amount_desc);
-
-		// create a new list to keep track of which index number each desc had originally and match the index number to the value we want to sort by
+		// create a new list of strings to keep track of which index number each desc had originally and match the index number to the amount value, which we want to sort by.
 		char **name_with_amount = new char *[amount_desc];
 		for (int i = 0; i < amount_desc; i++)
 		{
-			desc_list_pr_name.append(desc_list.get_element(i));
+			desc_list_old_index.append(desc_list.get_element(i));
 
 			name_with_amount[i] = new char[50];
 			if (name_with_amount[i] != nullptr)
@@ -1470,14 +1454,14 @@ void vehicle_manager_t::sort_desc()
 			}
 		}
 
+		// sort the strings!
 		std::sort(name_with_amount, name_with_amount + amount_desc, compare_desc_amount);
 
-		// now clear the old list, so we can start build it from scratch again in the new order
+		// now clear the old list, so we can start build it from scratch again.
 		desc_list.clear();
-		char c[1] = { 'a' }; // Need to give c some value, since the forloop depends on it
+		char c[1] = { 'a' }; // need to give c some value, since the forloop depends on it. The strings returned from the sorter will always have a number as its first value, so we should be safe
 		char accumulated_amount[10] = { 0 };
 		char accumulated_index[10] = { 0 };
-
 		int info_section;
 		int char_offset;
 
@@ -1494,19 +1478,19 @@ void vehicle_manager_t::sort_desc()
 			for (int j = 0; *c != '\0'; j++)
 			{
 				*c = name_with_amount[i][j];
-				if (*c == '.') // Index change
-				{
+				if (*c == '.')
+				{ // Section separator recorded, find out which section is done.
 					info_section++;
-					if (info_section == 1) // First section done: The amount of this vehicle, not interrested....
-					{
+					if (info_section == 1)
+					{ // First section done: The amount of this vehicle, not interrested....
 						char_offset = j + 1;
 					}
-					else if (info_section == 2) // Second section done: Bingo, the old index number
-					{
+					else if (info_section == 2)
+					{ // Second section done: Bingo, the old index number. Cut the loop here, since we got what we need
 						break;
 					}
 				}
-				else
+				else // still a number of some kind, keep track of it
 				{
 					if (info_section == 0)
 					{
@@ -1521,18 +1505,18 @@ void vehicle_manager_t::sort_desc()
 			uint16 veh_amount = std::atoi(accumulated_amount);
 			uint32 veh_index = std::atoi(accumulated_index);
 
-
-
+			// match the decoded index numbers with the old index number of the desc and append it to the actual desc_list.
 			for (int j = 0; j < amount_desc; j++)
 			{
 				if (j == veh_index)
 				{
-					vehicle_desc_t * info = desc_list_pr_name.get_element(j);
+					vehicle_desc_t * info = desc_list_old_index.get_element(j);
 					desc_list.append(info);
 					break;
 				}
 			}
 		}
+
 		delete[] tmp_amounts;
 		for (int i = 0; i < amount_desc; i++)
 		{
@@ -1551,11 +1535,14 @@ void vehicle_manager_t::sort_veh()
 	{
 		std::sort(veh_list.begin(), veh_list.end(), compare_veh);
 	}
-
 }
 
 int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 {
+	// This section will rank the different 'issues' or problems that vehicles may suffer in order to sort by them.
+	// Most critical issues, like "stuck", "emergency stop", "out of range" and other similar issues are given the highest rank.
+	// TODO: When more states are introduced, like "overhaul" and "lay over", those needs to be included as well.
+
 	int veh_issue_level = 0;
 	// Vehicle issue levels:
 	int fatal_state = 100;
@@ -1598,26 +1585,22 @@ int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 		char waiting_time[64];
 		veh->get_convoi()->snprintf_remaining_loading_time(waiting_time, sizeof(waiting_time));
 		if (veh->get_convoi()->get_schedule()->get_current_entry().is_flag_set(schedule_entry_t::wait_for_time))
-		{
-			// "Waiting for schedule. %s left"
+		{// "Waiting for schedule. %s left"			
 			veh_issue_level = 4;
 		}
 		else if (veh->get_convoi()->get_loading_limit())
 		{
 			if (veh->get_convoi()->is_wait_infinite() && strcmp(waiting_time, "0:00"))
-			{
-				// "Loading(%i->%i%%), %s left"
+			{// "Loading(%i->%i%%), %s left"				
 				veh_issue_level = 5;
 			}
 			else
-			{
-				// "Loading(%i->%i%%)"
+			{// "Loading(%i->%i%%)"				
 				veh_issue_level = 6;
 			}
 		}
 		else
-		{
-			// "Normal loading"
+		{// "Normal loading"			
 			veh_issue_level = 3;
 		}
 	}
@@ -1644,14 +1627,12 @@ int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 	{
 		veh_issue_level = fatal_state;
 	}
-
 	return veh_issue_level;
 }
 
 bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 {
 	sint32 result = 0;
-
 	switch (sortby_veh) {
 	default:
 	case by_age:
@@ -1691,10 +1672,9 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 					const uint32 tiles_to_city = shortest_distance(gr1->get_pos().get_2d(), (koord)city1->get_pos());
 					const double km_per_tile = welt->get_settings().get_meters_per_tile() / 1000.0;
 					const double km_to_city = (double)tiles_to_city * km_per_tile;
-					sprintf(city_name1, "%s%i", city1->get_name(), (int)km_to_city); // Add the x's to differentiate between inside and in vicinity of cities
+					sprintf(city_name1, "%s%i", city1->get_name(), (int)km_to_city); // Add the distance value to the name to sort by distance to city as well
 				}
 			}
-
 			char city_name2[256];
 			grund_t *gr2 = welt->lookup(veh2->get_pos());
 			stadt_t *city2 = welt->get_city(gr2->get_pos().get_2d());
@@ -1710,7 +1690,7 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 					const uint32 tiles_to_city = shortest_distance(gr2->get_pos().get_2d(), (koord)city2->get_pos());
 					const double km_per_tile = welt->get_settings().get_meters_per_tile() / 1000.0;
 					const double km_to_city = (double)tiles_to_city * km_per_tile;
-					sprintf(city_name2, "%s%i", city2->get_name(), (int)km_to_city); // Add the x's to differentiate between inside and in vicinity of cities
+					sprintf(city_name2, "%s%i", city2->get_name(), (int)km_to_city); // Add the distance value to the name to sort by distance to city as well
 				}
 			}
 			result = strcmp(city_name1, city_name2);
@@ -1732,7 +1712,6 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 	return result < 0;
 }
 
-// Sorting, for the different types of vehicles
 bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 {
 	sint32 result = 0;
@@ -1766,7 +1745,7 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		result = sgn(veh2->get_topspeed() - veh1->get_topspeed());
 		break;
 		
-	//case by_desc_issues:
+	//case by_desc_issues: (not implemented yet)
 		//	result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
 		//	break;
 	}
@@ -1818,7 +1797,6 @@ bool vehicle_manager_t::compare_desc_amount(char* veh1, char* veh2)
 		return result > 0;
 		break;
 	}
-	//return false;
 }
 
 void vehicle_manager_t::build_upgrade_list()
@@ -1826,23 +1804,21 @@ void vehicle_manager_t::build_upgrade_list()
 	// Build the list of upgrades to this vehicle			
 	cont_upgrade.remove_all();
 	upgrade_info.clear();
-	if (vehicle_for_display)
+	if (desc_for_display)
 	{
-		if (vehicle_for_display->get_upgrades_count() > 0)
+		if (desc_for_display->get_upgrades_count() > 0)
 		{
 			const uint16 month_now = welt->get_timeline_year_month();
-
-			upgrade_info.resize(vehicle_for_display->get_upgrades_count());
-
+			upgrade_info.resize(desc_for_display->get_upgrades_count());
 			int ypos = 10;
-			for (int i = 0; i < vehicle_for_display->get_upgrades_count(); i++)
+			for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
 			{
-				vehicle_desc_t* upgrade = (vehicle_desc_t*)vehicle_for_display->get_upgrades(i);
+				vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
 				if (upgrade)
 				{
 					if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
 					{
-						gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(upgrade, vehicle_for_display);
+						gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
 						cinfo->set_pos(scr_coord(0, ypos));
 						cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
 						upgrade_info.append(cinfo);
@@ -1858,16 +1834,16 @@ void vehicle_manager_t::build_upgrade_list()
 
 void vehicle_manager_t::build_desc_list()
 {
+	// Build the list of desc's
 	int counter = 0;
 	way_type = (waytype_t)selected_tab_waytype;
 	page_amount_desc = 1;
 	page_display_desc = 1;
 	const uint16 month_now = welt->get_timeline_year_month();
-
 	vehicle_we_own.clear();
 	desc_list.clear();
 
-	// Reset the sizes to the maximum theoretical amount.
+	// Reset the sizes to the maximum theoretical amount, which is the amount of vehicles we own.
 	FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
 	{
 		counter++;
@@ -1875,7 +1851,7 @@ void vehicle_manager_t::build_desc_list()
 	desc_list.resize(counter);
 	vehicle_we_own.resize(counter);
 
-	// Populate the window with all available vehicles, if desired
+	// If true, populate the list with all available vehicles
 	if (show_available_vehicles) {
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
 			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
@@ -1884,7 +1860,7 @@ void vehicle_manager_t::build_desc_list()
 		}
 	}
 
-	// Then populate the list with additional vehicles we might own.
+	// Then populate the list with any additional vehicles we might own, but has not yet been populated, for instance due to being out of production.
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
@@ -1900,42 +1876,57 @@ void vehicle_manager_t::build_desc_list()
 			}
 		}
 	}
-
-
 	amount_desc = desc_list.get_count();
 	amount_veh_owned = vehicle_we_own.get_count();
-	page_amount_desc = ceil((double)desc_list.get_count() / desc_pr_page);
 
+	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
+	page_amount_desc = ceil((double)desc_list.get_count() / desc_pr_page);
+	if (page_amount_desc > 1)
+	{
+		bt_desc_next_page.set_visible(true);
+			bt_desc_prev_page.set_visible(true);
+			lb_desc_page.set_visible(true);
+	}
+	else
+	{
+		bt_desc_next_page.set_visible(false);
+		bt_desc_prev_page.set_visible(false);
+		lb_desc_page.set_visible(false);
+	}
 	display_desc_list();
 }
 
 void vehicle_manager_t::save_previously_selected_desc()
 {
-	previously_selected_desc = vehicle_for_display;
+	// When we need to remember what vehicle was selected, for instance due to resorting, this will remember it.
+	old_desc_for_display = desc_for_display;
 }
 
 void vehicle_manager_t::display_desc_list()
 {
+	// This creates the graphical list of the desc's.
+	// Start by sorting...
 	sort_desc();
 
-	if (previously_selected_desc)	// locate page we anticipate the previously selected desc will appear on
+	// if true, locate how far down the list it is, and anticipate the page it will appear on
+	if (old_desc_for_display)
 	{
 		for (int i = 0; i < desc_list.get_count(); i++)
 		{
-			if (desc_list.get_element(i) == previously_selected_desc)
+			if (desc_list.get_element(i) == old_desc_for_display)
 			{
 				page_display_desc = ceil(((double)i + 1) / desc_pr_page);
 			}
 		}
 	}
-	// count how many of each "desc" we own
+
+	// count how many of each "desc" we own using an array of uint16's
 	uint16* desc_amounts;
 	desc_amounts = new uint16[desc_list.get_count()];
 	for (int i = 0; i < desc_list.get_count(); i++)
 	{
 		desc_amounts[i] = 0;
 	}
-
 	for (int i = 0; i < desc_list.get_count(); i++)
 	{
 		for (int j = 0; j < amount_veh_owned; j++)
@@ -1946,48 +1937,43 @@ void vehicle_manager_t::display_desc_list()
 			}
 		}
 	}
-	int scroll_y = 0;
 
+	// Calculate how many entries we need. If multiple pages exists, locate what page is currently displayed and store the index value for the first vehicle on that page into the "offset_index"
+	int i, icnv = 0;
+	int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
+	icnv = min(desc_list.get_count(), desc_pr_page);
+	if (icnv > desc_list.get_count() - offset_index)
 	{
-		int i, icnv = 0;
-		int page = (page_display_desc * desc_pr_page) - desc_pr_page;
-		icnv = min(desc_list.get_count(), desc_pr_page);
-		if (icnv > desc_list.get_count() - page)
+		icnv = desc_list.get_count() - offset_index;
+	}
+	int ypos = 10;
+	cont_desc.remove_all();
+	desc_info.clear();
+	desc_info.resize(desc_pr_page);
+
+	// Assemble the list of vehicles and preselect the previously selected vehicle if found. If there is no old desc for display, remove the desc for display
+	for (i = 0; i < icnv; i++) {
+		gui_desc_info_t* const cinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index]);
+		cinfo->set_pos(scr_coord(0, ypos));
+		cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
+		desc_info.append(cinfo);
+		cont_desc.add_component(cinfo);
+		ypos += max(cinfo->image_height, 40);
+		if (old_desc_for_display == desc_list.get_element(i + offset_index))
 		{
-			icnv = desc_list.get_count() - page;
+			selected_desc_index = i;
+			cinfo->set_selection(true);
+			set_desc_scroll_position = desc_info[i]->get_pos().y - 60;
+			reposition_desc_scroll = true;
 		}
-		int ypos = 10;
-		cont_desc.remove_all();
-		desc_info.clear();
-		desc_info.resize(desc_pr_page);
-
-
-		for (i = 0; i < icnv; i++) {
-			gui_desc_info_t* const cinfo = new gui_desc_info_t(desc_list.get_element(i + page), desc_amounts[i + page]);
-			cinfo->set_pos(scr_coord(0, ypos));
-			cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
-			desc_info.append(cinfo);
-			cont_desc.add_component(cinfo);
-			ypos += max(cinfo->image_height, 40);
-			if (previously_selected_desc == desc_list.get_element(i + page))
-			{
-				scroll_y = desc_info[i]->get_pos().y-10;
-				selected_desc_index = i;
-				cinfo->set_selection(true);
-				set_desc_scroll_position = desc_info[i]->get_pos().y - 60;
-				reposition_desc_scroll = true;
-			}
-		}
-		desc_info.set_count(icnv);
-		cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	}
-
-	if (!previously_selected_desc)
+	desc_info.set_count(icnv);
+	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
+	if (!old_desc_for_display)
 	{
-		vehicle_for_display = NULL;
+		desc_for_display = NULL;
 	}
-	previously_selected_desc = NULL;
-
+	old_desc_for_display = NULL;
 
 	// delete the amount of vehicles array
 	delete[] desc_amounts;
@@ -1997,6 +1983,7 @@ void vehicle_manager_t::display_desc_list()
 
 void vehicle_manager_t::build_veh_list()
 {
+	// This builds the list of vehicles that we own
 	int counter = 0;
 	way_type = (waytype_t)selected_tab_waytype;
 	veh_list.clear();
@@ -2005,7 +1992,7 @@ void vehicle_manager_t::build_veh_list()
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 			{
 				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == vehicle_for_display)
+				if (v->get_desc() == desc_for_display)
 				{
 					counter++;
 				}
@@ -2014,70 +2001,78 @@ void vehicle_manager_t::build_veh_list()
 	}
 	veh_list.resize(counter);
 	
-	// Fill the vectors with the vehicles we own
+	// Populate the vector with the vehicles we own that is also "for display"
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 			{
 				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == vehicle_for_display)
+				if (v->get_desc() == desc_for_display)
 				{
 					veh_list.append(v);
 				}
 			}
 		}
 	}
-
 	amount_veh = veh_list.get_count();
 
-
+	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
 	page_amount_veh = ceil((double)veh_list.get_count() / veh_pr_page);
+	if (page_amount_veh > 1)
+	{
+		bt_veh_next_page.set_visible(true);
+		bt_veh_prev_page.set_visible(true);
+		lb_veh_page.set_visible(true);
+	}
+	else
+	{
+		bt_veh_next_page.set_visible(false);
+		bt_veh_prev_page.set_visible(false);
+		lb_veh_page.set_visible(false);
+	}
 	display_veh_list();
-
 }
 
 void vehicle_manager_t::display_veh_list()
 {
-
+	// This creates the graphical list of the desc's.
+	// Start by sorting...
 	sort_veh();
+
+	// Calculate how many entries we need. If multiple pages exists, locate what page is currently displayed and store the index value for the first vehicle on that page into the "offset_index"
+	int i, icnv = 0;
+	int offset_index = (page_display_veh * veh_pr_page) - veh_pr_page;
+	icnv = min(veh_list.get_count(), veh_pr_page);
+	if (icnv > veh_list.get_count() - offset_index)
 	{
-		// display all individual vehicles
-		int i, icnv = 0;
-		int page = (page_display_veh * veh_pr_page) - veh_pr_page;
-		icnv = min(veh_list.get_count(), veh_pr_page);
-		if (icnv > veh_list.get_count() - page)
-		{
-			icnv = veh_list.get_count() - page;
-		}
-		int ypos = 10;
-
-		cont_veh.remove_all();
-		veh_info.clear();
-		veh_list.resize(icnv);
-		for (i = 0; i < icnv; i++) {
-			if (veh_list.get_element(i) != NULL)
-			{
-				gui_veh_info_t* const cinfo = new gui_veh_info_t(veh_list.get_element(i));
-				cinfo->set_pos(scr_coord(0, ypos));
-				cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 50)));
-				cinfo->set_selection(select_all);
-				veh_info.append(cinfo);
-				cont_veh.add_component(cinfo);
-				ypos += max(cinfo->image_height, 50);
-			}
-		}
-		veh_info.set_count(icnv);
-		cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
-
-
-		build_veh_selection();
+		icnv = veh_list.get_count() - offset_index;
 	}
+	int ypos = 10;
+	cont_veh.remove_all();
+	veh_info.clear();
+	veh_list.resize(icnv);
+
+	// Assemble the list of vehicles and preselect the vehicles directly if "select all" is selected
+	for (i = 0; i < icnv; i++) {
+		if (veh_list.get_element(i) != NULL)
+		{
+			gui_veh_info_t* const cinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index));
+			cinfo->set_pos(scr_coord(0, ypos));
+			cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 50)));
+			cinfo->set_selection(select_all);
+			veh_info.append(cinfo);
+			cont_veh.add_component(cinfo);
+			ypos += max(cinfo->image_height, 50);
+		}
+	}
+	veh_info.set_count(icnv);
+	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
+	build_veh_selection();
 }
 
-
-// This builds the actual array of selected vehicles that we will show info about
 void vehicle_manager_t::build_veh_selection()
 {
+	// This builds the actual array of selected vehicles that we will show info about
 	veh_selection.clear();
 	veh_selection.resize(veh_list.get_count());
 
@@ -2090,12 +2085,12 @@ void vehicle_manager_t::build_veh_selection()
 	}
 	else
 	{
-		int page = (page_display_veh * veh_pr_page) - veh_pr_page;
+		int offset_index = (page_display_veh * veh_pr_page) - veh_pr_page;
 		for (int i = 0; i < veh_info.get_count(); i++)
 		{
 			if (veh_info.get_element(i)->is_selected())
 			{
-				veh_selection.append(veh_list.get_element(i + page));
+				veh_selection.append(veh_list.get_element(i + offset_index));
 			}
 		}
 	}
@@ -2110,14 +2105,12 @@ uint32 vehicle_manager_t::get_rdwr_id()
 }
 
 // Here we model up each entries in the lists:
-// We start with the vehicle_desc entries, ie vehicle models:
-
+// We start with the upgrade entries, ie what desc a particular vehicle can upgrade to:
 gui_upgrade_info_t::gui_upgrade_info_t(vehicle_desc_t* upgrade_, vehicle_desc_t* existing_)
 {
 	this->upgrade = upgrade_;
 	existing = existing_;
 	player_nr = welt->get_active_player_nr();
-
 	draw(scr_coord(0, 0));
 }
 
@@ -2130,7 +2123,6 @@ bool gui_upgrade_info_t::infowin_event(const event_t *ev)
 {
 	if (IS_LEFTRELEASE(ev)) {
 		selected = !selected;
-		//selected = true;
 		return true;
 	}
 	else if (IS_RIGHTRELEASE(ev)) {

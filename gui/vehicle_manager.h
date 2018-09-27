@@ -222,7 +222,7 @@ private:
 
 	waytype_t way_type;
 	vector_tpl<vehicle_desc_t*> desc_list;
-	vector_tpl<vehicle_desc_t*> desc_list_pr_name;
+	vector_tpl<vehicle_desc_t*> desc_list_old_index;
 	vector_tpl<vehicle_t*> veh_list;
 	vector_tpl<vehicle_t*> veh_selection;
 	vector_tpl<vehicle_t*> vehicle_we_own;
@@ -245,7 +245,8 @@ private:
 	gui_label_t lb_desc_page;
 	gui_label_t lb_veh_page;
 
-	vehicle_desc_t* vehicle_for_display = NULL;
+	vehicle_desc_t* desc_for_display = NULL;
+	vehicle_desc_t* old_desc_for_display;
 	int selected_desc_index;
 	int new_count_veh_selection;
 	int old_count_veh_selection = -1;
@@ -263,7 +264,6 @@ private:
 	static const char *sort_text_desc[SORT_MODES_DESC];
 	static const char *sort_text_veh[SORT_MODES_VEH];
 
-	vehicle_desc_t* previously_selected_desc;
 	vehicle_desc_t* desc_info_text;
 	bool restore_desc_selection = false;
 
