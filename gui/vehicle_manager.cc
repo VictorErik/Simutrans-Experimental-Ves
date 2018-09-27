@@ -1974,7 +1974,7 @@ void vehicle_manager_t::display_desc_list()
 				scroll_y = desc_info[i]->get_pos().y-10;
 				selected_desc_index = i;
 				cinfo->set_selection(true);
-				set_desc_scroll_position = desc_info[i]->get_pos().y - 10;
+				set_desc_scroll_position = desc_info[i]->get_pos().y - 60;
 				reposition_desc_scroll = true;
 			}
 		}
