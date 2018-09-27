@@ -270,10 +270,11 @@ private:
 	scr_coord desc_info_text_pos;
 	scr_coord scrolly_desc_pos;
 
-
 	vehicle_desc_t* vehicle_as_upgrade = NULL;
 	int selected_upgrade_index;
 
+	int set_desc_scroll_position = 0;
+	bool reposition_desc_scroll = false;
 
 public:
 	vehicle_manager_t(player_t* player);

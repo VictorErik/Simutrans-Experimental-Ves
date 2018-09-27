@@ -1041,37 +1041,55 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 
 	bool update_veh_list = false;
 	bool update_desc_list = false;
-	//vehicle_for_display = NULL;
+	bool no_desc_selected = true;
 
 	// This handles the selection of the vehicles in the "desc" section
-	for (int i = 0; i < desc_info.get_count(); i++)
 	{
-		if (desc_info.get_element(i)->is_selected())
+		for (int i = 0; i < desc_info.get_count(); i++)
 		{
-			if (selected_desc_index != i)
+			if (desc_info.get_element(i)->is_selected())
 			{
-				if (i < desc_list.get_count())
+				no_desc_selected = false;
+				if (selected_desc_index != i)
 				{
-					vehicle_for_display = desc_list.get_element(i);
-					selected_desc_index = i;
-
-					for (int j = 0; j < desc_info.get_count(); j++)
+					if (i < desc_list.get_count())
 					{
-						if (j != selected_desc_index)
+						vehicle_for_display = desc_list.get_element(i);
+						selected_desc_index = i;
+
+						for (int j = 0; j < desc_info.get_count(); j++)
 						{
-							desc_info.get_element(j)->set_selection(false);
+							if (j != selected_desc_index)
+							{
+								desc_info.get_element(j)->set_selection(false);
+							}
 						}
+						update_veh_list = true;
+						break;
 					}
-					update_veh_list = true;
-					break;
 				}
 			}
 		}
 	}
+	if (no_desc_selected)
+	{
+		vehicle_for_display = NULL;
+		update_veh_list = true;
+		selected_desc_index = -1;
+	}
 
 	// This handles the selection of the vehicles in the "veh" section
-	new_count_veh_selection = 0;
-	for (int i = 0; i < veh_info.get_count(); i++)
+		new_count_veh_selection = 0;
+		for (int i = 0; i < veh_info.get_count(); i++)
+		{
+			if (veh_info.get_element(i)->is_selected())
+			{
+				new_count_veh_selection++;
+			}
+		}
+
+	// This handles the selection of the vehicles in the "upgrade" section
+	for (int i = 0; i < upgrade_info.get_count(); i++)
 	{
 		if (upgrade_info.get_element(i)->is_selected())
 		{
@@ -1093,6 +1111,12 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 				}
 			}
 		}
+	}
+
+	if (reposition_desc_scroll)
+	{
+		scrolly_desc.set_scroll_position(0, set_desc_scroll_position);
+		reposition_desc_scroll = false;
 	}
 
 	if (old_count_veh_selection != new_count_veh_selection)
@@ -1148,7 +1172,6 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	{
 
 	}
-	//gui_container_t::draw(pos);
 
 }
 
@@ -1888,45 +1911,23 @@ void vehicle_manager_t::build_desc_list()
 
 void vehicle_manager_t::save_previously_selected_desc()
 {
-	restore_desc_selection = true;
-	if (desc_info.get_count() > 0)
-	{
-		for (int i = 0; i < desc_info.get_count(); i++)
-		{
-			if (desc_info[i]->is_selected())
-			{
-				previously_selected_desc = desc_info[i]->get_desc();
-				break;
-			}
-		}
-	}
+	previously_selected_desc = vehicle_for_display;
 }
 
 void vehicle_manager_t::display_desc_list()
 {
 	sort_desc();
 
-	if (restore_desc_selection)
+	if (previously_selected_desc)	// locate page we anticipate the previously selected desc will appear on
 	{
-		// Locate what page we anticipate the desc we want to be preselected is at
-		if (desc_list.get_count() > 0)
+		for (int i = 0; i < desc_list.get_count(); i++)
 		{
-			for (int i = 0; i < desc_list.get_count(); i++)
+			if (desc_list.get_element(i) == previously_selected_desc)
 			{
-				if (desc_list.get_element(i) == previously_selected_desc)
-				{
-					page_display_desc = ceil((double)(i + 1) / desc_pr_page);
-					break;
-				}
-				else if (i+1 == desc_list.get_count())
-				{
-					restore_desc_selection = false;
-					previously_selected_desc = NULL;
-				}
+				page_display_desc = ceil(((double)i + 1) / desc_pr_page);
 			}
 		}
 	}
-
 	// count how many of each "desc" we own
 	uint16* desc_amounts;
 	desc_amounts = new uint16[desc_list.get_count()];
@@ -1945,6 +1946,7 @@ void vehicle_manager_t::display_desc_list()
 			}
 		}
 	}
+	int scroll_y = 0;
 
 	{
 		int i, icnv = 0;
@@ -1958,6 +1960,8 @@ void vehicle_manager_t::display_desc_list()
 		cont_desc.remove_all();
 		desc_info.clear();
 		desc_info.resize(desc_pr_page);
+
+
 		for (i = 0; i < icnv; i++) {
 			gui_desc_info_t* const cinfo = new gui_desc_info_t(desc_list.get_element(i + page), desc_amounts[i + page]);
 			cinfo->set_pos(scr_coord(0, ypos));
@@ -1965,41 +1969,26 @@ void vehicle_manager_t::display_desc_list()
 			desc_info.append(cinfo);
 			cont_desc.add_component(cinfo);
 			ypos += max(cinfo->image_height, 40);
-
+			if (previously_selected_desc == desc_list.get_element(i + page))
+			{
+				scroll_y = desc_info[i]->get_pos().y-10;
+				selected_desc_index = i;
+				cinfo->set_selection(true);
+				set_desc_scroll_position = desc_info[i]->get_pos().y - 10;
+				reposition_desc_scroll = true;
+			}
 		}
 		desc_info.set_count(icnv);
 		cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	}
-	scrolly_desc.is_focusable();
 
-	// When the list is built, this presets the selected vehicle and assign it to the "vehicle_for_display"
-	int scroll_y = 0;
-	if (desc_info.get_count() > 0)
+	if (!previously_selected_desc)
 	{
-		if (restore_desc_selection)
-		{
-			for (int i = 0; i < desc_info.get_count(); i++)
-			{
-				if (desc_info[i]->get_desc() == previously_selected_desc)
-				{
-					desc_info[i]->set_selection(true);
-					vehicle_for_display = desc_list.get_element(i);
-					scroll_y = desc_info[i]->get_pos().y - 30;
-					break;
-				}
-			}
-		}
-		else
-		{
-			desc_info[0]->set_selection(true);
-			vehicle_for_display = desc_list.get_element(0);
-			scroll_y = 0;
-		}
+		vehicle_for_display = NULL;
 	}
-	restore_desc_selection = false;
-	//scrolly_desc.draw(scrolly_desc.get_pos() +/*scrolly_desc_pos + */win_get_pos(this));
-	scrolly_desc.set_scroll_position(0, scroll_y);
-	
+	previously_selected_desc = NULL;
+
+
 	// delete the amount of vehicles array
 	delete[] desc_amounts;
 	build_veh_list();
@@ -2294,7 +2283,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 		y_pos = 0;
 		x_pos = UPGRADE_LIST_COLUMN_WIDTH - 14;
 
-		// Byggï¿½r
+		// Byggår
 		char year[20];
 		sprintf(year, "%s: %u", translator::translate("available_until"), upgrade->get_retire_year_month() / 12);
 		display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, year, ALIGN_RIGHT, text_color, true);
@@ -2439,8 +2428,8 @@ gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount)
 bool gui_desc_info_t::infowin_event(const event_t *ev)
 {
 		if (IS_LEFTRELEASE(ev)) {
-			//selected = !selected;
-			selected = true;
+			selected = !selected;
+			//selected = true;
 				return true;
 		}
 		else if (IS_RIGHTRELEASE(ev)) {
