@@ -39,20 +39,10 @@ class gui_upgrade_info_t : public gui_world_component_t
 private:
 	player_t *player;
 	uint8 player_nr;
-	/**
-	* Handle Convois to be displayed.
-	* @author Hj. Malthaner
-	*/
 	vehicle_desc_t* upgrade;
 	vehicle_desc_t* existing;
 
-	uint16 amount;
-
 public:
-	/**
-	* @param cnv, the handler for the Convoi to be displayed.
-	* @author Hj. Malthaner
-	*/
 	gui_upgrade_info_t(vehicle_desc_t* upgrade, vehicle_desc_t* existing);
 
 	bool infowin_event(event_t const*) OVERRIDE;
@@ -205,7 +195,6 @@ private:
 	bool show_available_vehicles;
 	bool select_all;
 	bool just_selected_all = false;
-	bool page_turn_veh = false;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;
@@ -260,6 +249,7 @@ private:
 	int page_amount_veh = 1;
 
 	bool page_turn_desc = false;
+	bool page_turn_veh = false;
 
 	static const char *sort_text_desc[SORT_MODES_DESC];
 	static const char *sort_text_veh[SORT_MODES_VEH];

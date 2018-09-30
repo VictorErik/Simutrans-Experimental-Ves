@@ -333,6 +333,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			just_selected_all = true;
 		}
 		build_desc_list();
+		page_turn_desc = false;
 	}
 
 	if (comp == &tabs_info) {
@@ -347,6 +348,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		show_available_vehicles = bt_show_available_vehicles.pressed;
 		update_tabs();
 		save_previously_selected_desc();
+		page_turn_desc = false;
 		build_desc_list();
 	}
 
@@ -384,6 +386,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		}
 		sortby_desc = (sort_mode_desc_t)sort_mode;
 		save_previously_selected_desc();
+		page_turn_desc = false;
 		display_desc_list();
 	}
 
@@ -408,7 +411,8 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			page_display_desc--;
 		}
-		//page_turn_desc = true;
+		page_turn_desc = true;
+		save_previously_selected_desc();
 		display_desc_list();
 	}
 
@@ -422,7 +426,8 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			page_display_desc++;
 		}
-		//page_turn_desc = true;
+		page_turn_desc = true;
+		save_previously_selected_desc();
 		display_desc_list();
 	}
 
@@ -605,7 +610,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		double min_resale_value = desc_info_text->get_value();
 		if (veh_selection.get_count() > 0)
 		{
-			for (uint8 j = 0; j < veh_selection.get_count(); j++)
+		/*	for (uint8 j = 0; j < veh_selection.get_count(); j++)
 			{
 				vehicle_t* veh = veh_selection.get_element(j);
 				if (veh->calc_sale_value() > max_resale_value)
@@ -616,7 +621,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				{
 					min_resale_value = veh->calc_sale_value();
 				}
-			}
+			}*/
 		}
 
 		char tmp[128];
@@ -1032,16 +1037,18 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 			if (desc_info.get_element(i)->is_selected())
 			{
 				no_desc_selected = false;
-				if (selected_desc_index != i)
+				int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
+				int actual_index = i + offset_index;
+				if (selected_desc_index != actual_index)
 				{
-					if (i < desc_list.get_count())
+					if (actual_index < desc_list.get_count())
 					{
-						desc_for_display = desc_list.get_element(i);
-						selected_desc_index = i;
+						desc_for_display = desc_list.get_element(actual_index);
+						selected_desc_index = actual_index;
 
 						for (int j = 0; j < desc_info.get_count(); j++)
 						{
-							if (j != selected_desc_index)
+							if (j + offset_index != selected_desc_index)
 							{
 								desc_info.get_element(j)->set_selection(false);
 							}
@@ -1053,7 +1060,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 			}
 		}
 	}
-	if (no_desc_selected)
+	if (no_desc_selected && !page_turn_desc)
 	{
 		desc_for_display = NULL;
 		update_veh_list = true;
@@ -1908,16 +1915,21 @@ void vehicle_manager_t::display_desc_list()
 	// Start by sorting...
 	sort_desc();
 
-	// if true, locate how far down the list it is, and anticipate the page it will appear on
+	// if true, locate how far down the list it is, and anticipate the page it will appear on. If we did also not just do the page turn, select the correct page to be displayed.
+	int desc_at_page = 1;
 	if (old_desc_for_display)
 	{
 		for (int i = 0; i < desc_list.get_count(); i++)
 		{
 			if (desc_list.get_element(i) == old_desc_for_display)
 			{
-				page_display_desc = ceil(((double)i + 1) / desc_pr_page);
+				desc_at_page = ceil(((double)i + 1) / desc_pr_page);
 			}
 		}
+	}
+	if (!page_turn_desc)
+	{
+		page_display_desc = desc_at_page;
 	}
 
 	// count how many of each "desc" we own using an array of uint16's
@@ -1961,7 +1973,7 @@ void vehicle_manager_t::display_desc_list()
 		ypos += max(cinfo->image_height, 40);
 		if (old_desc_for_display == desc_list.get_element(i + offset_index))
 		{
-			selected_desc_index = i;
+			selected_desc_index = i + offset_index;
 			cinfo->set_selection(true);
 			set_desc_scroll_position = desc_info[i]->get_pos().y - 60;
 			reposition_desc_scroll = true;
@@ -1969,11 +1981,14 @@ void vehicle_manager_t::display_desc_list()
 	}
 	desc_info.set_count(icnv);
 	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
-	if (!old_desc_for_display)
+	if (!page_turn_desc)
 	{
-		desc_for_display = NULL;
+		if (!old_desc_for_display)
+		{
+			desc_for_display = NULL;
+		}
+		old_desc_for_display = NULL;
 	}
-	old_desc_for_display = NULL;
 
 	// delete the amount of vehicles array
 	delete[] desc_amounts;
