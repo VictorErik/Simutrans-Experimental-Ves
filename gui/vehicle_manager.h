@@ -216,9 +216,11 @@ private:
 	vector_tpl<vehicle_t*> vehicle_we_own;
 
 	// Vehicle selection parameters
-	vector_tpl<bool*> veh_selection;
+	//vector_tpl<bool*> veh_selection;
+	bool* veh_selection;
 	bool bool_select_exists = false;
 	bool veh_is_selected;
+	uint32 success_selected = 0;
 
 	// vector of convoy info objects that are being displayed
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;

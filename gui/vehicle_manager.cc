@@ -321,7 +321,10 @@ vehicle_manager_t::~vehicle_manager_t()
 	{
 		delete[] upgrade_info.get_element(i);
 	}
-	
+	if (bool_select_exists)
+	{
+		delete[] veh_selection;
+	}
 }
 
 bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v)           // 28-Dec-01    Markus Weber    Added
@@ -362,9 +365,9 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			veh_info.get_element(i)->set_selection(select_all);
 		}
-		for (int i = 0; i < veh_selection.get_count(); i++)
+		for (int i = 0; i < veh_list.get_count(); i++)
 		{
-			veh_selection.get_element(i) = select_all;
+			veh_selection[i] = select_all;
 		}
 
 		if (select_all)
@@ -494,7 +497,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		{
 			for (int j = 0; j < veh_list.get_count(); j++)
 			{
-				if (veh_selection.get_element(j) == true)
+				if (veh_selection[j] == true)
 				{
 					vehicle_t* veh = veh_list.get_element(j);
 					if (veh->get_purchase_time() > max_age)
@@ -864,7 +867,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 							uint8 display_class = i;
 							for (uint8 j = 0; j < veh_list.get_count(); j++)
 							{
-								if (veh_selection.get_element(j) == true)
+								if (veh_selection[j] == true)
 								{
 									vehicle_t* veh = veh_list.get_element(j);
 									if (veh)
@@ -1188,20 +1191,20 @@ void vehicle_manager_t::display(scr_coord pos)
 {
 	static cbuffer_t buf_vehicle_descs;
 	buf_vehicle_descs.clear();
-	buf_vehicle_descs.printf(translator::translate("amount_of_vehicle_descs: %u"), amount_desc);
+	buf_vehicle_descs.printf(translator::translate("amount_of_vehicle_descs: %u"), desc_list.get_count());
 	lb_amount_desc.set_text_pointer(buf_vehicle_descs);
 
 	static cbuffer_t buf_vehicle;
 	int selected_vehicles_amount = 0;
-	for (uint8 j = 0; j < veh_list.get_count(); j++)
+	for (int j = 0; j < veh_list.get_count(); j++)
 	{
-		if (veh_selection.get_element(j) == true)
+		if (veh_selection[j] == true)
 		{
 			selected_vehicles_amount++;
 		}
 	}
 	buf_vehicle.clear();
-	buf_vehicle.printf(translator::translate("amount_of_vehicles: %u (%u selected)"), amount_veh, selected_vehicles_amount);
+	buf_vehicle.printf(translator::translate("amount_of_vehicles: %u (%u selected)"), veh_list.get_count(), selected_vehicles_amount);
 	lb_amount_veh.set_text_pointer(buf_vehicle);
 
 	static cbuffer_t buf_desc_page_select;
@@ -2021,13 +2024,9 @@ void vehicle_manager_t::display_desc_list()
 
 void vehicle_manager_t::build_veh_list()
 {
-	bool* bool_select;
 	if (bool_select_exists)
 	{
-		for (int i = 0; i < veh_selection.get_count(); i++)
-		{
-			delete[] veh_selection.get_element(i);
-		}
+		delete[] veh_selection;
 	}
 	bool_select_exists = false;
 
@@ -2035,7 +2034,6 @@ void vehicle_manager_t::build_veh_list()
 	int counter = 0;
 	way_type = (waytype_t)selected_tab_waytype;
 	veh_list.clear();
-	veh_selection.clear();
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
@@ -2049,7 +2047,6 @@ void vehicle_manager_t::build_veh_list()
 		}
 	}
 	veh_list.resize(counter);
-	veh_selection.resize(counter);
 	
 	// Populate the vector with the vehicles we own that is also "for display"
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
@@ -2067,16 +2064,16 @@ void vehicle_manager_t::build_veh_list()
 	amount_veh = veh_list.get_count();
 
 	// create a bunch of bool's to keep track of which "veh" is selected
-	if (amount_veh > 0)
+	//if (amount_veh > 0)
 	{
-		bool_select = new bool[veh_list.get_count()];
+		veh_selection = new (std::nothrow) bool[veh_list.get_count()];
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
-			bool_select[i] = false;
-			veh_selection.append(bool_select);
+			veh_selection[i] = select_all;
 		}
 		veh_is_selected = select_all;
 		bool_select_exists = true;
+
 	}
 	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
 	page_amount_veh = ceil((double)veh_list.get_count() / veh_pr_page);
@@ -2122,7 +2119,7 @@ void vehicle_manager_t::display_veh_list()
 			gui_veh_info_t* const cinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index));
 			cinfo->set_pos(scr_coord(0, ypos));
 			cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 50)));
-			cinfo->set_selection(veh_selection.get_element(i + offset_index));
+			cinfo->set_selection(veh_selection[i + offset_index]);
 			veh_info.append(cinfo);
 			cont_veh.add_component(cinfo);
 			ypos += max(cinfo->image_height, 50);
@@ -2130,6 +2127,7 @@ void vehicle_manager_t::display_veh_list()
 	}
 	veh_info.set_count(icnv);
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
+	display(scr_coord(0, 0));
 	//update_veh_selection(select_all);
 }
 
@@ -2142,7 +2140,7 @@ void vehicle_manager_t::update_veh_selection(bool everythings_selected)
 	{
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
-			veh_selection.get_element(i) = true;
+			veh_selection[i] = true;
 			veh_is_selected = true;
 		}
 		for (int i = 0; i < veh_info.get_count(); i++)
@@ -2158,12 +2156,12 @@ void vehicle_manager_t::update_veh_selection(bool everythings_selected)
 		{
 			if (veh_info.get_element(i)->is_selected())
 			{
-				veh_selection.get_element(i + offset_index) = true;
+				veh_selection[i] = true;
 				veh_is_selected = true;
 			}
 			else
 			{
-				veh_selection.get_element(i + offset_index) = false;
+				veh_selection[i] = false;
 			}
 		}
 	}
