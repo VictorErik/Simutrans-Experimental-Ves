@@ -129,7 +129,7 @@ private:
 
 	sint32 mean_convoi_speed;
 
-	bool selected;
+	bool selected = false;
 
 public:
 	/**
@@ -213,9 +213,12 @@ private:
 	vector_tpl<vehicle_desc_t*> desc_list;
 	vector_tpl<vehicle_desc_t*> desc_list_old_index;
 	vector_tpl<vehicle_t*> veh_list;
-	vector_tpl<vehicle_t*> veh_selection;
 	vector_tpl<vehicle_t*> vehicle_we_own;
 
+	// Vehicle selection parameters
+	vector_tpl<bool*> veh_selection;
+	bool bool_select_exists = false;
+	bool veh_is_selected;
 
 	// vector of convoy info objects that are being displayed
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;
@@ -283,7 +286,7 @@ public:
 	void draw_maintenance_information(const scr_coord& pos);
 
 	void update_tabs();
-	void build_veh_selection();
+	void update_veh_selection(bool everythings_selected);
 
 	void save_previously_selected_desc();
 
