@@ -117,6 +117,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 {
 
 	veh_is_selected = false;
+	goto_this_desc = NULL;
 
 	int y_pos = 5;
 
@@ -282,6 +283,14 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_upgrade.set_tooltip(translator::translate("upgrade"));
 		bt_upgrade.set_visible(false);
 		cont_maintenance_info.add_component(&bt_upgrade);
+
+		bt_upgrade_to_from.init(button_t::roundbox, NULL, dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
+		bt_upgrade_to_from.add_listener(this);
+		bt_upgrade_to_from.set_tooltip(translator::translate("press_to_switch_between_upgrade_to_or_upgrade_from"));
+		bt_upgrade_to_from.set_visible(true);
+		cont_maintenance_info.add_component(&bt_upgrade_to_from);
+
+		display_upgrade_into = true;
 
 		// Upgrade list
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
@@ -474,6 +483,24 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		//page_turn_veh = true;
 		display_veh_list();
 	}
+
+	if (comp == &bt_upgrade_to_from)
+	{
+		display_upgrade_into = !display_upgrade_into;
+
+		if (display_upgrade_into)
+		{
+
+		}
+		else
+		{
+
+		}
+
+		build_upgrade_list();
+	}
+	
+
 	return true;
 }
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
@@ -490,6 +517,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	int column_2 = D_BUTTON_WIDTH * 4 + D_MARGIN_LEFT;
 	int column_3 = D_BUTTON_WIDTH * 6 + D_MARGIN_LEFT;
 
+	bt_upgrade_to_from.set_visible(false);
 
 	buf[0] = '\0';
 	if (desc_info_text) {
@@ -565,11 +593,21 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		pos_x = column_3;
 		pos_y = 0;
 
-		// Upgrade information			
-		int amount_of_upgrades = 0;
 
-		sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_to"));
-		display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
+		// Switch upgrade mode button
+		bt_upgrade_to_from.set_pos(scr_coord(pos_x, pos_y + (LINESPACE / 4)));
+		bt_upgrade_to_from.set_visible(true);
+
+		// Upgrade information			
+		if (display_upgrade_into)
+		{
+			sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_to"));
+		}
+		else
+		{
+			sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_from"));
+		}
+		display_proportional_clip(pos.x + pos_x + bt_upgrade_to_from.get_size().w + 5, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		pos_y += LINESPACE * 2;
 
 		scrolly_upgrade.set_pos(scr_coord(D_MARGIN_LEFT + pos_x, pos_y));
@@ -577,7 +615,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		if (desc_info_text->get_upgrades_count() > 0)
 		{
 			int ypos = 10;
-			for (int i = 0; i < desc_info_text->get_upgrades_count(); i++)
+			/*for (int i = 0; i < desc_info_text->get_upgrades_count(); i++)
 			{
 				const vehicle_desc_t* upgrade = desc_info_text->get_upgrades(i);
 				if (upgrade)
@@ -588,7 +626,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 						break;
 					}
 				}
-			}
+			}*/
 		}
 		if (amount_of_upgrades <= 0)
 		{
@@ -598,6 +636,10 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 			pos_y += LINESPACE;
 		}
 
+	}
+	else
+	{
+		// If no vehicle is selected, set all buttons etc to invisible
 	}
 
 	// Odometer
@@ -1137,6 +1179,22 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 		}
 	}
 
+	// Upgrade section: When right click an entry, display info for that desc.
+	for (int i = 0; i < upgrade_info.get_count(); i++)
+	{
+		if (upgrade_info.get_element(i)->is_open_info())
+		{
+			if (i < upgrade_info.get_count())
+			{
+				goto_this_desc = upgrade_info.get_element(i)->get_upgrade();
+				update_desc_list = true;
+				break;
+			}
+		}
+	}
+	
+	
+
 	if (reposition_desc_scroll)
 	{
 		scrolly_desc.set_scroll_position(0, set_desc_scroll_position);
@@ -1161,7 +1219,11 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 		build_desc_list();
 	}
 
-	if (update_veh_list)
+	if (update_desc_list)
+	{
+		build_desc_list();
+	}
+	else if (update_veh_list)
 	{
 		build_veh_list();
 	}
@@ -1839,35 +1901,77 @@ bool vehicle_manager_t::compare_desc_amount(char* veh1, char* veh2)
 
 void vehicle_manager_t::build_upgrade_list()
 {
-	// Build the list of upgrades to this vehicle			
 	cont_upgrade.remove_all();
 	upgrade_info.clear();
+	int ypos = 10;
+	amount_of_upgrades = 0;
 	if (desc_for_display)
 	{
-		if (desc_for_display->get_upgrades_count() > 0)
+		if (display_upgrade_into) // Build the list of upgrades to this vehicle		
 		{
-			const uint16 month_now = welt->get_timeline_year_month();
-			upgrade_info.resize(desc_for_display->get_upgrades_count());
-			int ypos = 10;
-			for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
+			if (desc_for_display->get_upgrades_count() > 0)
 			{
-				vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
-				if (upgrade)
+				const uint16 month_now = welt->get_timeline_year_month();
+				upgrade_info.resize(desc_for_display->get_upgrades_count());
+				for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
 				{
-					if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+					vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
+					if (upgrade)
 					{
-						gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
-						cinfo->set_pos(scr_coord(0, ypos));
-						cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
-						upgrade_info.append(cinfo);
-						cont_upgrade.add_component(cinfo);
-						ypos += max(cinfo->image_height, 40);
+						if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+						{
+							gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
+							cinfo->set_pos(scr_coord(0, ypos));
+							cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
+							upgrade_info.append(cinfo);
+							cont_upgrade.add_component(cinfo);
+							ypos += max(cinfo->image_height, 40);
+							amount_of_upgrades++;
+						}
 					}
 				}
 			}
-			cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
 		}
+		else // Build the list of vehicles that can upgrade into this vehicle
+		{
+			bool upgrades_from_this;
+			int counter = 0;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+			{
+				counter++;
+			}
+			upgrade_info.resize(counter);
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+			{
+				upgrades_from_this = false;
+				if (info->get_upgrades_count() > 0)
+				{
+					for (int i = 0; i < info->get_upgrades_count(); i++)
+					{
+						vehicle_desc_t* upgrade = (vehicle_desc_t*)info->get_upgrades(i);
+						if (upgrade == desc_for_display)
+						{
+							upgrades_from_this = true;
+							break;
+						}
+					}
+				}
+				if (upgrades_from_this)
+				{
+					gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(info, desc_for_display);
+					cinfo->set_pos(scr_coord(0, ypos));
+					cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
+					upgrade_info.append(cinfo);
+					cont_upgrade.add_component(cinfo);
+					ypos += max(cinfo->image_height, 40);
+					amount_of_upgrades++;
+				}
+			}
+			upgrade_info.resize(amount_of_upgrades);
+		}
+		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
 	}
+
 }
 
 void vehicle_manager_t::build_desc_list()
@@ -1881,7 +1985,7 @@ void vehicle_manager_t::build_desc_list()
 	vehicle_we_own.clear();
 	desc_list.clear();
 
-	// Reset the sizes to the maximum theoretical amount, which is the amount of vehicles we own.
+	// Reset the sizes to the maximum theoretical amount.
 	FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
 	{
 		counter++;
@@ -1889,12 +1993,30 @@ void vehicle_manager_t::build_desc_list()
 	desc_list.resize(counter);
 	vehicle_we_own.resize(counter);
 
-	// If true, populate the list with all available vehicles
+	// If true, populate the list with all available desc's
 	if (show_available_vehicles) {
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
 			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
 				desc_list.append(info);
 			}
+		}
+	}
+
+	// If true, we want this particular desc to be present, even though it might not be in production
+	if (goto_this_desc)
+	{
+		bool this_desc_exists = false;
+		for (int i = 0; i < desc_list.get_count(); i++)
+		{
+			if (desc_list.get_element(i) == goto_this_desc)
+			{
+				this_desc_exists = true;
+				break;
+			}
+		}
+		if (!this_desc_exists)
+		{
+			desc_list.append(goto_this_desc);
 		}
 	}
 
@@ -1930,6 +2052,12 @@ void vehicle_manager_t::build_desc_list()
 		bt_desc_next_page.set_visible(false);
 		bt_desc_prev_page.set_visible(false);
 		lb_desc_page.set_visible(false);
+	}
+	if (goto_this_desc)
+	{
+		desc_for_display = goto_this_desc;
+		save_previously_selected_desc();
+		goto_this_desc = NULL;
 	}
 	display_desc_list();
 }

@@ -191,6 +191,10 @@ private:
 	button_t bt_select_all;
 	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
 	button_t bt_upgrade;
+	button_t bt_upgrade_to_from;
+
+	bool display_upgrade_into;
+	int amount_of_upgrades;
 
 	bool show_available_vehicles;
 	bool select_all;
@@ -256,6 +260,7 @@ private:
 
 	vehicle_desc_t* desc_for_display = NULL;
 	vehicle_desc_t* old_desc_for_display;
+	vehicle_desc_t* goto_this_desc = NULL;
 	int selected_desc_index;
 	int new_count_veh_selection;
 	int old_count_veh_selection = -1;
