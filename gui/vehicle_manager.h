@@ -208,19 +208,29 @@ private:
 	//vehicle_t *veh;
 	//vector_tpl<gui_image_list_t::image_data_t*> veh_im;
 
-
+	
 	waytype_t way_type;
+	
+	// Total list of desc's.
 	vector_tpl<vehicle_desc_t*> desc_list;
+
+	// For some sort modes, when "desc_list" is being sorted, this keeps track of old index numbers
 	vector_tpl<vehicle_desc_t*> desc_list_old_index;
+
+	// Total list of veh's.
 	vector_tpl<vehicle_t*> veh_list;
+
+	// All vehicles we own for a given waytype
 	vector_tpl<vehicle_t*> vehicle_we_own;
 
-	// Vehicle selection parameters
-	//vector_tpl<bool*> veh_selection;
+	// Array of bool's to keep track of which veh's is selected
 	bool* veh_selection;
-	bool bool_select_exists = false;
+
+	// If true, remember to delete "veh_selection"
+	bool bool_veh_selection_exists = false;
+
+	// True if any 'veh' is selected, false if none are selected
 	bool veh_is_selected;
-	uint32 success_selected = 0;
 
 	// vector of convoy info objects that are being displayed
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;

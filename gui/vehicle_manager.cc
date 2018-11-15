@@ -116,7 +116,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	scrolly_upgrade(&cont_upgrade)
 {
 
-	bool_select_exists = false;
+	veh_is_selected = false;
 
 	int y_pos = 5;
 
@@ -321,7 +321,7 @@ vehicle_manager_t::~vehicle_manager_t()
 	{
 		delete[] upgrade_info.get_element(i);
 	}
-	if (bool_select_exists)
+	if (veh_is_selected)
 	{
 		delete[] veh_selection;
 	}
@@ -2024,11 +2024,11 @@ void vehicle_manager_t::display_desc_list()
 
 void vehicle_manager_t::build_veh_list()
 {
-	if (bool_select_exists)
+	if (bool_veh_selection_exists)
 	{
 		delete[] veh_selection;
 	}
-	bool_select_exists = false;
+	bool_veh_selection_exists = false;
 
 	// This builds the list of vehicles that we own
 	int counter = 0;
@@ -2072,7 +2072,7 @@ void vehicle_manager_t::build_veh_list()
 			veh_selection[i] = select_all;
 		}
 		veh_is_selected = select_all;
-		bool_select_exists = true;
+		bool_veh_selection_exists = true;
 
 	}
 	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
