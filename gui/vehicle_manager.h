@@ -213,15 +213,20 @@ private:
 	
 	// Total list of desc's.
 	vector_tpl<vehicle_desc_t*> desc_list;
-
+	// List of desc's that is actually displayed
+	vector_tpl<gui_desc_info_t *> desc_info;
 	// For some sort modes, when "desc_list" is being sorted, this keeps track of old index numbers
 	vector_tpl<vehicle_desc_t*> desc_list_old_index;
 
 	// Total list of veh's.
 	vector_tpl<vehicle_t*> veh_list;
-
+	// List of veh's that is actually displayed
+	vector_tpl<gui_veh_info_t *> veh_info;
 	// All vehicles we own for a given waytype
 	vector_tpl<vehicle_t*> vehicle_we_own;
+
+	// List of upgrades that is displayed
+	vector_tpl<gui_upgrade_info_t *> upgrade_info;
 
 	// Array of bool's to keep track of which veh's is selected
 	bool* veh_selection;
@@ -234,9 +239,9 @@ private:
 
 	// vector of convoy info objects that are being displayed
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;
-	vector_tpl<gui_veh_info_t *> veh_info;
-	vector_tpl<gui_desc_info_t *> desc_info;
-	vector_tpl<gui_upgrade_info_t *> upgrade_info;
+
+
+
 	
 	void display(scr_coord pos);
 
@@ -298,7 +303,7 @@ public:
 	void draw_maintenance_information(const scr_coord& pos);
 
 	void update_tabs();
-	void update_veh_selection(bool everythings_selected);
+	void update_veh_selection();
 
 	void save_previously_selected_desc();
 

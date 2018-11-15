@@ -333,10 +333,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		int const tab = tabs_waytype.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab_waytype;
 		selected_tab_waytype = tabs_to_index_waytype[tab];
-		if (select_all)
-		{
-			just_selected_all = true;
-		}
 		build_desc_list();
 		page_turn_desc = false;
 	}
@@ -378,9 +374,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			old_count_veh_selection = 0;
 		}
-
-		//just_selected_all = true;
-		//update_veh_selection(select_all);
 		display(scr_coord(0, 0));
 	}
 
@@ -405,6 +398,22 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			sort_mode = 0;
 		}
 		sortby_veh = (sort_mode_veh_t)sort_mode;
+
+		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
+		for (int i = 0; i < veh_list.get_count(); i++)
+		{
+			veh_selection[i] = select_all;
+		}
+
+		if (select_all)
+		{
+			old_count_veh_selection = veh_list.get_count();
+		}
+		else
+		{
+			old_count_veh_selection = 0;
+		}
+
 		display_veh_list();
 	}
 
@@ -1098,14 +1107,10 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	if (old_count_veh_selection != new_count_veh_selection)
 	{
 		old_count_veh_selection = new_count_veh_selection;
-		//if (!just_selected_all) // Make sure the change in selected amount was not due to the "select all" button
 		{
-			//select_all = false;
-			//bt_select_all.pressed = false;
-			update_veh_selection(false);
+			update_veh_selection();
 		}
 	}
-	just_selected_all = false;
 
 	// This handles the selection of the vehicles in the "upgrade" section
 	for (int i = 0; i < upgrade_info.get_count(); i++)
@@ -2064,8 +2069,6 @@ void vehicle_manager_t::build_veh_list()
 	amount_veh = veh_list.get_count();
 
 	// create a bunch of bool's to keep track of which "veh" is selected
-	//if (amount_veh > 0)
-	{
 		veh_selection = new (std::nothrow) bool[veh_list.get_count()];
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
@@ -2074,7 +2077,6 @@ void vehicle_manager_t::build_veh_list()
 		veh_is_selected = select_all;
 		bool_veh_selection_exists = true;
 
-	}
 	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
 	page_amount_veh = ceil((double)veh_list.get_count() / veh_pr_page);
 	if (page_amount_veh > 1)
@@ -2128,40 +2130,36 @@ void vehicle_manager_t::display_veh_list()
 	veh_info.set_count(icnv);
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	display(scr_coord(0, 0));
-	//update_veh_selection(select_all);
 }
 
-void vehicle_manager_t::update_veh_selection(bool everythings_selected)
+void vehicle_manager_t::update_veh_selection()
 {
 	// This builds the actual array of selected vehicles that we will show info about
 
 	veh_is_selected = false;
-	if (everythings_selected)
+
+	int offset_index = (page_display_veh * veh_pr_page) - veh_pr_page;
+	for (int i = 0; i < veh_info.get_count(); i++)
+	{
+		if (veh_info.get_element(i)->is_selected())
+		{
+			veh_selection[i + offset_index] = true;
+			veh_is_selected = true;
+		}
+		else
+		{
+			veh_selection[i + offset_index] = false;
+		}
+	}
+
+	if (!veh_is_selected) // any vehicles from other places selected?
 	{
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
-			veh_selection[i] = true;
-			veh_is_selected = true;
-		}
-		for (int i = 0; i < veh_info.get_count(); i++)
-		{
-			veh_info.get_element(i)->set_selection(true);
-		}
-
-	}
-	else
-	{
-		int offset_index = (page_display_veh * veh_pr_page) - veh_pr_page;
-		for (int i = 0; i < veh_info.get_count(); i++)
-		{
-			if (veh_info.get_element(i)->is_selected())
+			if (veh_selection[i] == true)
 			{
-				veh_selection[i] = true;
 				veh_is_selected = true;
-			}
-			else
-			{
-				veh_selection[i] = false;
+				break;
 			}
 		}
 	}
