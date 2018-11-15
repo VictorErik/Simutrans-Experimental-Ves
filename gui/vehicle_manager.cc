@@ -611,23 +611,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		pos_y += LINESPACE * 2;
 
 		scrolly_upgrade.set_pos(scr_coord(D_MARGIN_LEFT + pos_x, pos_y));
-
-		if (desc_info_text->get_upgrades_count() > 0)
-		{
-			int ypos = 10;
-			/*for (int i = 0; i < desc_info_text->get_upgrades_count(); i++)
-			{
-				const vehicle_desc_t* upgrade = desc_info_text->get_upgrades(i);
-				if (upgrade)
-				{
-					if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
-					{
-						amount_of_upgrades++;
-						break;
-					}
-				}
-			}*/
-		}
 		if (amount_of_upgrades <= 0)
 		{
 			pos_y += LINESPACE;
@@ -636,10 +619,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 			pos_y += LINESPACE;
 		}
 
-	}
-	else
-	{
-		// If no vehicle is selected, set all buttons etc to invisible
 	}
 
 	// Odometer
