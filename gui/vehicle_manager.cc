@@ -395,7 +395,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		if (select_all)
 		{
 			old_count_veh_selection = veh_list.get_count();
-			veh_is_selected = true;
+			if (veh_list.get_count() > 0)
+			{
+				veh_is_selected = true;
+			}
 		}
 		else
 		{
@@ -473,7 +476,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			old_count_veh_selection = 0;
 		}
-
 		display_veh_list();
 	}
 
@@ -572,16 +574,23 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	buf[0] = '\0';
 	if (desc_info_text) {
 
+		COLOR_VAL veh_selected_color = SYSCOL_TEXT;
+		if (!veh_is_selected)
+		{
+			veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
+		}
+
 		// column 1
 		vehicle_as_potential_convoy_t convoy(*desc_info_text);
 		int linespace_skips = 0;
 
 		pos_y += LINESPACE * 3;
 		// Age
-		int max_age = 0;
-		int min_age = month_now_absolute;
 		if (veh_is_selected)
 		{
+			int max_age = 0;
+			int min_age = month_now_absolute;
+
 			for (int j = 0; j < veh_list.get_count(); j++)
 			{
 				if (veh_selection[j] == true)
@@ -596,7 +605,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 						min_age = month_now_absolute - veh->get_purchase_time();
 					}
 				}
-
 			}
 			if (max_age < 0)
 			{
@@ -628,12 +636,17 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 			{
 				sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("years"));
 			}
-			display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		}
+		else
+		{
+			sprintf(buf, translator::translate("age:"));
+		}
+		display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+
 
 		pos_y += LINESPACE * 5;
-		
-		
+
+
 		pos_x = column_2;
 		pos_y = 0;
 
@@ -673,6 +686,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 
 	// Odometer
 }
+
 
 void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 {
@@ -2222,7 +2236,7 @@ void vehicle_manager_t::build_veh_list()
 		}
 	}
 	veh_list.resize(counter);
-	
+
 	// Populate the vector with the vehicles we own that is also "for display"
 	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
 		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
@@ -2239,13 +2253,17 @@ void vehicle_manager_t::build_veh_list()
 	amount_veh = veh_list.get_count();
 
 	// create a bunch of bool's to keep track of which "veh" is selected
-		veh_selection = new (std::nothrow) bool[veh_list.get_count()];
-		for (int i = 0; i < veh_list.get_count(); i++)
-		{
-			veh_selection[i] = select_all;
-		}
+	veh_is_selected = false;
+	veh_selection = new (std::nothrow) bool[veh_list.get_count()];
+	for (int i = 0; i < veh_list.get_count(); i++)
+	{
+		veh_selection[i] = select_all;
+	}
+	if (veh_list.get_count() > 0)
+	{
 		veh_is_selected = select_all;
-		bool_veh_selection_exists = true;
+	}
+	bool_veh_selection_exists = true;
 
 	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
 	page_amount_veh = ceil((double)veh_list.get_count() / veh_pr_page);
