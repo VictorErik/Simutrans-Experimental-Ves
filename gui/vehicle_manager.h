@@ -161,12 +161,20 @@ class vehicle_manager_t : public gui_frame_t, public action_listener_t
 public:
 	enum sort_mode_desc_t {
 		by_desc_name = 0,
-		by_desc_intro_year = 1,
-		by_desc_amount = 2,
-		by_desc_cargo_type_and_capacity = 3,
-		by_desc_speed = 4,
-		//by_desc_issues = 3, // Experimental: If the vehicle_desc has any issues, like out of production, can upgrade, etc
-		SORT_MODES_DESC = 5
+		by_desc_issues = 1,
+		by_desc_intro_year = 2,
+		by_desc_amount = 3,
+		by_desc_cargo_type_and_capacity = 4,
+		by_desc_speed = 5,
+		by_desc_upgrades_available = 6,
+		by_desc_catering_level = 7,
+		by_desc_comfort = 8,
+		by_desc_power = 9,
+		by_desc_tractive_effort = 10,
+		by_desc_weight = 11,
+		by_desc_axle_load = 12,
+		by_desc_runway_length = 13,
+		SORT_MODES_DESC = 14
 	};
 
 	enum sort_mode_veh_t {
@@ -193,6 +201,9 @@ private:
 	button_t bt_upgrade;
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
+
+	char sortby_text[50];
+	char displayby_text[50];
 
 	bool display_upgrade_into;
 	int amount_of_upgrades;
@@ -252,10 +263,9 @@ private:
 	uint32 amount_veh;
 	uint32 amount_veh_owned;
 
-	gui_label_t lb_amount_desc;
-	gui_label_t lb_amount_veh;
-	gui_label_t lb_desc_page;
-	gui_label_t lb_veh_page;
+	gui_label_t lb_amount_desc, lb_amount_veh;
+	gui_label_t lb_desc_page, lb_veh_page;
+	gui_label_t lb_desc_sortby, lb_veh_sortby;
 
 	vehicle_desc_t* desc_for_display = NULL;
 	vehicle_desc_t* old_desc_for_display;
@@ -318,6 +328,7 @@ public:
 
 	static bool compare_desc_amount(char*, char*);
 
+	static int find_desc_issue_level(vehicle_desc_t*);
 	static int find_veh_issue_level(vehicle_t*);
 	
 	/**

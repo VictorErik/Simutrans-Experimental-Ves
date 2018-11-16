@@ -76,10 +76,20 @@ bool vehicle_manager_t::veh_sortreverse = false;
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
 	"name",
+	"notifications",
 	"intro_year",
 	"amount",
 	"cargo_type_and_capacity",
-	"speed"
+	"speed",
+	"upgrades",
+	"catering_level",
+	"comfort",
+	"power",
+	"tractive_effort",
+	"weight",
+	"axle_load",
+	"runway_length"
+
 };
 const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 {
@@ -114,6 +124,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_amount_veh(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_desc_page(NULL, SYSCOL_TEXT, gui_label_t::centered),
 	lb_veh_page(NULL, SYSCOL_TEXT, gui_label_t::centered),
+	lb_desc_sortby(NULL, SYSCOL_TEXT, gui_label_t::left),
+	lb_veh_sortby(NULL, SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade)
@@ -123,6 +135,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	goto_this_desc = NULL;
 
 	int y_pos = 5;
+	int x_pos = 0;
 
 	bt_show_available_vehicles.init(button_t::square_state, translator::translate("show_available_vehicles"), scr_coord(D_MARGIN_LEFT, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_show_available_vehicles.add_listener(this);
@@ -150,13 +163,25 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	add_component(&bt_select_all);
 
 	y_pos += D_BUTTON_HEIGHT + 6;
+	x_pos = D_MARGIN_LEFT;
 
+	lb_desc_sortby.set_pos(scr_coord(x_pos, y_pos));
+	lb_desc_sortby.set_visible(true);
+	add_component(&lb_desc_sortby);
+
+	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
+	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
+
+	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
+
+	x_pos += 5 + label_length;
+	
 	combo_sorter_desc.clear_elements();
 	for (int i = 0; i < SORT_MODES_DESC; i++)
 	{
 		combo_sorter_desc.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(sort_text_desc[i]), SYSCOL_TEXT));
 	}
-	combo_sorter_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	combo_sorter_desc.set_pos(scr_coord(x_pos, y_pos));
 	combo_sorter_desc.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	combo_sorter_desc.set_focusable(true);
 	combo_sorter_desc.set_selection(sortby_desc);
@@ -165,19 +190,30 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	combo_sorter_desc.add_listener(this);
 	add_component(&combo_sorter_desc);
 
-	bt_desc_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(D_MARGIN_LEFT + combo_sorter_desc.get_size().w + 5, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	x_pos += combo_sorter_desc.get_size().w + 5;
+
+	bt_desc_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(x_pos, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_desc_sortreverse.add_listener(this);
-	bt_desc_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_desc_list"));
+	bt_desc_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_list"));
 	bt_desc_sortreverse.pressed = false;
 	desc_sortreverse = bt_desc_sortreverse.pressed;
 	add_component(&bt_desc_sortreverse);
+
+	x_pos = RIGHT_HAND_COLUMN;
+
+	lb_veh_sortby.set_pos(scr_coord(RIGHT_HAND_COLUMN, y_pos));
+	lb_veh_sortby.set_size(D_BUTTON_SIZE);
+	lb_veh_sortby.set_visible(true);
+	add_component(&lb_veh_sortby);
+
+	x_pos += 5 + label_length;
 
 	combo_sorter_veh.clear_elements();
 	for (int i = 0; i < SORT_MODES_VEH; i++)
 	{
 		combo_sorter_veh.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(sort_text_veh[i]), SYSCOL_TEXT));
 	}
-	combo_sorter_veh.set_pos(scr_coord(RIGHT_HAND_COLUMN, y_pos));
+	combo_sorter_veh.set_pos(scr_coord(x_pos, y_pos));
 	combo_sorter_veh.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	combo_sorter_veh.set_focusable(true);
 	combo_sorter_veh.set_selection(sortby_veh);
@@ -186,9 +222,11 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	combo_sorter_veh.add_listener(this);
 	add_component(&combo_sorter_veh);
 
-	bt_veh_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(RIGHT_HAND_COLUMN + combo_sorter_veh.get_size().w + 5, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	x_pos += combo_sorter_desc.get_size().w + 5;
+
+	bt_veh_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(x_pos, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_veh_sortreverse.add_listener(this);
-	bt_veh_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_veh_list"));
+	bt_veh_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_list"));
 	bt_veh_sortreverse.pressed = false;
 	veh_sortreverse = bt_veh_sortreverse.pressed;
 	add_component(&bt_veh_sortreverse);
@@ -1299,6 +1337,17 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 
 void vehicle_manager_t::display(scr_coord pos)
 {
+	static cbuffer_t buf_desc_sortby;
+	buf_desc_sortby.clear();
+	//buf_desc_sortby.printf(translator::translate("sort_vehicles_by:"));
+	buf_desc_sortby.printf(sortby_text);
+	lb_desc_sortby.set_text_pointer(buf_desc_sortby);
+	
+	static cbuffer_t buf_veh_sortby;
+	buf_veh_sortby.clear();
+	buf_veh_sortby.printf(sortby_text);
+	lb_veh_sortby.set_text_pointer(buf_veh_sortby);
+
 	static cbuffer_t buf_vehicle_descs;
 	buf_vehicle_descs.clear();
 	buf_vehicle_descs.printf(translator::translate("amount_of_vehicle_descs: %u"), desc_list.get_count());
@@ -1680,6 +1729,40 @@ void vehicle_manager_t::sort_veh()
 	}
 }
 
+int vehicle_manager_t::find_desc_issue_level(vehicle_desc_t* desc)
+{
+	// This section will rank the different 'issues' or problems that desc's may suffer in order to sort by them.
+	// most critical issues, like very obsolete vehicles, will be given highest rank. Other ranks, like may upgrade will be given lower priority
+
+	int desc_issue_level = 0;
+	int obsolete_state = 100;
+	
+	// Increased running costs
+	uint32 percentage = desc->calc_running_cost(welt, 100) - 100;
+	if (percentage > 0)
+	{
+		desc_issue_level = obsolete_state + percentage;
+	}
+
+	// It has upgrades
+	if (desc->get_upgrades_count() > 0)
+	{
+		const uint16 month_now = welt->get_timeline_year_month();
+		int amount_of_upgrades = 0;
+		int max_display_of_upgrades = 3;
+		for (int i = 0; i < desc->get_upgrades_count(); i++)
+		{
+			vehicle_desc_t* info = (vehicle_desc_t*)desc->get_upgrades(i);
+			if (!info->is_future(month_now) && (!info->is_retired(month_now)))
+			{
+				desc_issue_level = 50;
+				break;
+			}
+		}
+	}
+
+	return desc_issue_level;
+}
 int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 {
 	// This section will rank the different 'issues' or problems that vehicles may suffer in order to sort by them.
@@ -1867,36 +1950,94 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	switch (sortby_desc) {
 	default:
 	case by_desc_name:
-			result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+		result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
 		break;
-	
-	case by_desc_intro_year:		
-			result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
+
+	case by_desc_issues:
+		result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
 		break;
-	
+
+	case by_desc_intro_year:
+		result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
+		break;
+
 	case by_desc_cargo_type_and_capacity:
 		// TODO: Make vehicles with no capacity go to the bottom of the list
+	{
+		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
 		{
-			if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+			if (desc_sortreverse)
 			{
-				result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
-			}
-			else
-			{
-				result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+				result = -result;
 			}
 		}
-
-		break;
+		else
+		{
+			result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+		}
+	}
+	break;
 
 	case by_desc_speed:
 		result = sgn(veh2->get_topspeed() - veh1->get_topspeed());
 		break;
+
+	case by_desc_upgrades_available:
+		// find a way to easily count the current number of available upgrades
+		break;
 		
-	//case by_desc_issues: (not implemented yet)
-		//	result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
-		//	break;
+	case by_desc_catering_level:
+	{
+		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+		{
+			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+			if (desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			result = sgn(veh2->get_catering_level() - veh1->get_catering_level());
+		}
 	}
+	break;
+
+	case by_desc_comfort:
+	{
+		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+		{
+			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+			if (desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			result = sgn(veh2->get_comfort() - veh1->get_comfort());
+		}
+	}
+	break;
+
+	case by_desc_power:
+		result = sgn(veh2->get_power() - veh1->get_power());
+		break;
+	case by_desc_tractive_effort:
+		result = sgn(veh2->get_tractive_effort() - veh1->get_tractive_effort());
+		break;
+	case by_desc_weight:
+		result = sgn(veh2->get_weight() - veh1->get_weight());
+		break;
+	case by_desc_axle_load:
+		result = sgn(veh2->get_axle_load() - veh1->get_axle_load());
+		break;
+	case by_desc_runway_length:
+		result = sgn(veh2->get_minimum_runway_length() - veh1->get_minimum_runway_length());
+		break;
+	}
+
 	if (desc_sortreverse)
 	{
 		result = -result;
