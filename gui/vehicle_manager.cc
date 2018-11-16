@@ -70,6 +70,9 @@ static uint8 max_idx_information = 0;
 static uint8 selected_tab_waytype = 0;
 static uint8 selected_tab_information = 0;
 
+bool vehicle_manager_t::desc_sortreverse = false;
+bool vehicle_manager_t::veh_sortreverse = false;
+
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
 	"name",
@@ -162,6 +165,13 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	combo_sorter_desc.add_listener(this);
 	add_component(&combo_sorter_desc);
 
+	bt_desc_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(D_MARGIN_LEFT + combo_sorter_desc.get_size().w + 5, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	bt_desc_sortreverse.add_listener(this);
+	bt_desc_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_desc_list"));
+	bt_desc_sortreverse.pressed = false;
+	desc_sortreverse = bt_desc_sortreverse.pressed;
+	add_component(&bt_desc_sortreverse);
+
 	combo_sorter_veh.clear_elements();
 	for (int i = 0; i < SORT_MODES_VEH; i++)
 	{
@@ -175,6 +185,13 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	combo_sorter_veh.set_max_size(scr_size(D_BUTTON_WIDTH * 2, LINESPACE * 5 + 2 + 16));
 	combo_sorter_veh.add_listener(this);
 	add_component(&combo_sorter_veh);
+
+	bt_veh_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(RIGHT_HAND_COLUMN + combo_sorter_veh.get_size().w + 5, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	bt_veh_sortreverse.add_listener(this);
+	bt_veh_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_veh_list"));
+	bt_veh_sortreverse.pressed = false;
+	veh_sortreverse = bt_veh_sortreverse.pressed;
+	add_component(&bt_veh_sortreverse);
 
 	y_pos += D_BUTTON_HEIGHT * 2;
 	scrolly_desc_pos = scr_coord(D_MARGIN_LEFT, y_pos);
@@ -378,10 +395,12 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		if (select_all)
 		{
 			old_count_veh_selection = veh_list.get_count();
+			veh_is_selected = true;
 		}
 		else
 		{
 			old_count_veh_selection = 0;
+			veh_is_selected = false;
 		}
 		display(scr_coord(0, 0));
 	}
@@ -408,6 +427,38 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		}
 		sortby_veh = (sort_mode_veh_t)sort_mode;
 
+		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
+		for (int i = 0; i < veh_list.get_count(); i++)
+		{
+			veh_selection[i] = select_all;
+		}
+
+		if (select_all)
+		{
+			old_count_veh_selection = veh_list.get_count();
+		}
+		else
+		{
+			old_count_veh_selection = 0;
+		}
+
+		display_veh_list();
+	}
+
+	if (comp == &bt_desc_sortreverse)
+	{
+		bt_desc_sortreverse.pressed = !bt_desc_sortreverse.pressed;
+		desc_sortreverse = bt_desc_sortreverse.pressed;
+		save_previously_selected_desc();
+		page_turn_desc = false;
+		display_desc_list();
+	}
+
+	if (comp == &bt_veh_sortreverse)
+	{
+		bt_veh_sortreverse.pressed = !bt_veh_sortreverse.pressed;
+		veh_sortreverse = bt_veh_sortreverse.pressed;
+		
 		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
@@ -466,7 +517,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			page_display_veh--;
 		}
-		//page_turn_veh = true;
 		display_veh_list();
 	}
 
@@ -480,7 +530,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 			page_display_veh++;
 		}
-		//page_turn_veh = true;
 		display_veh_list();
 	}
 
@@ -511,6 +560,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	desc_info_text = desc_for_display;
 	int pos_y = 0;
 	int pos_x = 0;
+	const uint16 month_now_absolute = welt->get_current_month();
 	const uint16 month_now = welt->get_timeline_year_month();
 	player_nr = welt->get_active_player_nr();
 	int column_1 = 0;
@@ -529,7 +579,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		pos_y += LINESPACE * 3;
 		// Age
 		int max_age = 0;
-		int min_age = month_now;
+		int min_age = month_now_absolute;
 		if (veh_is_selected)
 		{
 			for (int j = 0; j < veh_list.get_count(); j++)
@@ -539,23 +589,23 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 					vehicle_t* veh = veh_list.get_element(j);
 					if (veh->get_purchase_time() > max_age)
 					{
-						max_age = month_now - veh->get_purchase_time();
+						max_age = month_now_absolute - veh->get_purchase_time();
 					}
 					if (veh->get_purchase_time() <= min_age)
 					{
-						min_age = month_now - veh->get_purchase_time();
+						min_age = month_now_absolute - veh->get_purchase_time();
 					}
 				}
 
 			}
-			//if (max_age < 0)
-			//{
-			//	max_age = 0;
-			//}
-			//if (min_age < 0)
-			//{
-			//	min_age = 0;
-			//}
+			if (max_age < 0)
+			{
+				max_age = 0;
+			}
+			if (min_age < 0)
+			{
+				min_age = 0;
+			}
 
 			min_age /= 12;
 			max_age /= 12;
@@ -564,7 +614,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 
 			if (max_age != min_age)
 			{
-				sprintf(age_entry, "%i - %i", min_age, max_age);
+				sprintf(age_entry, "%i - %i", max_age, min_age);
 			}
 			else
 			{
@@ -1716,7 +1766,8 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 	default:
 	case by_age:
 	{
-		result = sgn(veh1->get_purchase_time() - veh2->get_purchase_time());
+			result = sgn(veh1->get_purchase_time() - veh2->get_purchase_time());
+		
 	}
 	break;
 
@@ -1728,7 +1779,7 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 
 	case by_issue: // This sort mode sorts the vehicles in the most pressing states top
 	{
-		result = find_veh_issue_level(veh2) - find_veh_issue_level(veh1);
+			result = find_veh_issue_level(veh2) - find_veh_issue_level(veh1);		
 	}
 	break;
 
@@ -1772,7 +1823,7 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 					sprintf(city_name2, "%s%i", city2->get_name(), (int)km_to_city); // Add the distance value to the name to sort by distance to city as well
 				}
 			}
-			result = strcmp(city_name1, city_name2);
+				result = strcmp(city_name1, city_name2);			
 		}
 		else
 		{
@@ -1788,6 +1839,10 @@ bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 		break;
 	}
 	}
+	if (veh_sortreverse)
+	{
+		result = -result;
+	}
 	return result < 0;
 }
 
@@ -1798,11 +1853,11 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	switch (sortby_desc) {
 	default:
 	case by_desc_name:
-		result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+			result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
 		break;
 	
-	case by_desc_intro_year:
-		result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
+	case by_desc_intro_year:		
+			result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
 		break;
 	
 	case by_desc_cargo_type_and_capacity:
@@ -1827,6 +1882,10 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	//case by_desc_issues: (not implemented yet)
 		//	result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
 		//	break;
+	}
+	if (desc_sortreverse)
+	{
+		result = -result;
 	}
 	return result < 0;
 }
@@ -1873,6 +1932,10 @@ bool vehicle_manager_t::compare_desc_amount(char* veh1, char* veh2)
 		uint16 veh2_amount = std::atoi(accumulated_char_b);
 
 		result = veh1_amount - veh2_amount;
+		if (desc_sortreverse)
+		{
+			result = -result;
+		}
 		return result > 0;
 		break;
 	}

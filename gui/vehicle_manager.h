@@ -192,40 +192,39 @@ private:
 	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
 	button_t bt_upgrade;
 	button_t bt_upgrade_to_from;
+	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
 
 	bool display_upgrade_into;
 	int amount_of_upgrades;
 
 	bool show_available_vehicles;
 	bool select_all;
-	bool just_selected_all = false;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;
-	static bool sortreverse;
+	static bool desc_sortreverse;
+	static bool veh_sortreverse;
 
 	const int desc_pr_page = 500;
 	const int veh_pr_page = 500;
-
-	// All vehicles
-	//vector_tpl<quickstone_tpl<vehicle_desc_t>> vehicle_descs;
-	//vehicle_t *veh;
-	//vector_tpl<gui_image_list_t::image_data_t*> veh_im;
-
-	
+		
 	waytype_t way_type;
 	
 	// Total list of desc's.
 	vector_tpl<vehicle_desc_t*> desc_list;
+
 	// List of desc's that is actually displayed
 	vector_tpl<gui_desc_info_t *> desc_info;
+
 	// For some sort modes, when "desc_list" is being sorted, this keeps track of old index numbers
 	vector_tpl<vehicle_desc_t*> desc_list_old_index;
 
 	// Total list of veh's.
 	vector_tpl<vehicle_t*> veh_list;
+
 	// List of veh's that is actually displayed
 	vector_tpl<gui_veh_info_t *> veh_info;
+
 	// All vehicles we own for a given waytype
 	vector_tpl<vehicle_t*> vehicle_we_own;
 
