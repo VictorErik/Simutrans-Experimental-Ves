@@ -1297,7 +1297,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	if (old_count_owned_veh != new_count_owned_veh)
 	{
 		old_count_owned_veh = new_count_owned_veh;
-		build_desc_list();
+		update_desc_list;
 	}
 
 	if (update_desc_list)
@@ -2235,6 +2235,7 @@ void vehicle_manager_t::build_desc_list()
 	}
 	amount_desc = desc_list.get_count();
 	amount_veh_owned = vehicle_we_own.get_count();
+	old_count_owned_veh = desc_list.get_count();
 
 	// since we cant have too many entries displayed at once, find out how many pages we need and set the page turn buttons visible if necessary.
 	page_amount_desc = ceil((double)desc_list.get_count() / desc_pr_page);
