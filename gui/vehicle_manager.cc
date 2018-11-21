@@ -1954,17 +1954,42 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		break;
 
 	case by_desc_issues:
-		result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
-		break;
+	{
+		if (find_desc_issue_level(veh2) != find_desc_issue_level(veh1))
+		{
+			result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
+		}
+		else
+		{			
+			result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+			if (desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+	}
+	break;
 
 	case by_desc_intro_year:
-		result = sgn(veh1->get_intro_year_month() / 12 - veh2->get_intro_year_month() / 12);
-		break;
+	{
+		if (veh1->get_intro_year_month() != veh2->get_intro_year_month())
+		{
+			result = sgn(veh1->get_intro_year_month() - veh2->get_intro_year_month());
+		}
+		else
+		{
+			result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+			if (desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+	}
+	break;
 
 	case by_desc_cargo_type_and_capacity:
-		// TODO: Make vehicles with no capacity go to the bottom of the list
 	{
-		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+		if ((veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index()) && (veh2->get_total_capacity() > 0 && veh1->get_total_capacity() > 0))
 		{
 			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
 			if (desc_sortreverse)
@@ -1974,7 +1999,18 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		}
 		else
 		{
-			result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+			if (veh2->get_total_capacity() != veh1->get_total_capacity())
+			{
+				result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+			}
+			else
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
 		}
 	}
 	break;
@@ -1989,7 +2025,7 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		
 	case by_desc_catering_level:
 	{
-		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index())
+		if ((veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index()) && (veh2->get_catering_level() > 0 && veh1->get_catering_level() > 0))
 		{
 			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
 			if (desc_sortreverse)
@@ -1999,7 +2035,18 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		}
 		else
 		{
-			result = sgn(veh2->get_catering_level() - veh1->get_catering_level());
+			if (veh2->get_catering_level() != veh1->get_catering_level())
+			{
+				result = sgn(veh2->get_catering_level() - veh1->get_catering_level());
+			}
+			else
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
 		}
 	}
 	break;
@@ -2016,7 +2063,18 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		}
 		else
 		{
-			result = sgn(veh2->get_comfort() - veh1->get_comfort());
+			if (veh2->get_comfort() != veh1->get_comfort())
+			{
+				result = sgn(veh2->get_comfort() - veh1->get_comfort());
+			}
+			else
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
 		}
 	}
 	break;
@@ -2322,7 +2380,7 @@ void vehicle_manager_t::display_desc_list()
 
 	// Assemble the list of vehicles and preselect the previously selected vehicle if found. If there is no old desc for display, remove the desc for display
 	for (i = 0; i < icnv; i++) {
-		gui_desc_info_t* const dinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index]);
+		gui_desc_info_t* const dinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index], sortby_desc);
 		dinfo->set_pos(scr_coord(0, ypos));
 		dinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(dinfo->get_image_height(), 40)));
 		desc_info.append(dinfo);
@@ -2810,7 +2868,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 // ***************************************** //
 // "Desc" entries:
 // ***************************************** //
-gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount)
+gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount, int sortmode_index)
 {
 	this->veh = veh;
 	amount = vehicleamount;
