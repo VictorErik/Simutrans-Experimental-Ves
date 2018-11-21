@@ -3075,6 +3075,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 gui_veh_info_t::gui_veh_info_t(vehicle_t* veh)
 {
 	this->veh = veh;
+	draw(scr_coord(0, 0));
 }
 
 /**
