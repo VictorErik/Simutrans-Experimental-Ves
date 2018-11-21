@@ -2117,12 +2117,12 @@ void vehicle_manager_t::build_upgrade_list()
 					{
 						if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
 						{
-							gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
-							cinfo->set_pos(scr_coord(0, ypos));
-							cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
-							upgrade_info.append(cinfo);
-							cont_upgrade.add_component(cinfo);
-							ypos += max(cinfo->image_height, 40);
+							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
+							uinfo->set_pos(scr_coord(0, ypos));
+							uinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(uinfo->get_image_height(), 40)));
+							upgrade_info.append(uinfo);
+							cont_upgrade.add_component(uinfo);
+							ypos += max(uinfo->get_image_height(), 40);
 							amount_of_upgrades++;
 						}
 					}
@@ -2155,12 +2155,12 @@ void vehicle_manager_t::build_upgrade_list()
 				}
 				if (upgrades_from_this)
 				{
-					gui_upgrade_info_t* const cinfo = new gui_upgrade_info_t(info, desc_for_display);
-					cinfo->set_pos(scr_coord(0, ypos));
-					cinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
-					upgrade_info.append(cinfo);
-					cont_upgrade.add_component(cinfo);
-					ypos += max(cinfo->image_height, 40);
+					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
+					uinfo->set_pos(scr_coord(0, ypos));
+					uinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(uinfo->get_image_height(), 40)));
+					upgrade_info.append(uinfo);
+					cont_upgrade.add_component(uinfo);
+					ypos += max(uinfo->get_image_height(), 40);
 					amount_of_upgrades++;
 				}
 			}
@@ -2321,16 +2321,16 @@ void vehicle_manager_t::display_desc_list()
 
 	// Assemble the list of vehicles and preselect the previously selected vehicle if found. If there is no old desc for display, remove the desc for display
 	for (i = 0; i < icnv; i++) {
-		gui_desc_info_t* const cinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index]);
-		cinfo->set_pos(scr_coord(0, ypos));
-		cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 40)));
-		desc_info.append(cinfo);
-		cont_desc.add_component(cinfo);
-		ypos += max(cinfo->image_height, 40);
+		gui_desc_info_t* const dinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index]);
+		dinfo->set_pos(scr_coord(0, ypos));
+		dinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(dinfo->get_image_height(), 40)));
+		desc_info.append(dinfo);
+		cont_desc.add_component(dinfo);
+		ypos += max(dinfo->get_image_height(), 40);
 		if (old_desc_for_display == desc_list.get_element(i + offset_index))
 		{
 			selected_desc_index = i + offset_index;
-			cinfo->set_selection(true);
+			dinfo->set_selection(true);
 			set_desc_scroll_position = desc_info[i]->get_pos().y - 60;
 			reposition_desc_scroll = true;
 		}
@@ -2443,17 +2443,17 @@ void vehicle_manager_t::display_veh_list()
 	veh_info.clear();
 	veh_list.resize(icnv);
 
-	// Assemble the list of vehicles and preselect the vehicles directly if "select all" is selected
+	// Assemble the list of vehicles and preselect if needed
 	for (i = 0; i < icnv; i++) {
 		if (veh_list.get_element(i) != NULL)
 		{
-			gui_veh_info_t* const cinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index));
-			cinfo->set_pos(scr_coord(0, ypos));
-			cinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(cinfo->image_height, 50)));
-			cinfo->set_selection(veh_selection[i + offset_index]);
-			veh_info.append(cinfo);
-			cont_veh.add_component(cinfo);
-			ypos += max(cinfo->image_height, 50);
+			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index));
+			vinfo->set_pos(scr_coord(0, ypos));
+			vinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(vinfo->get_image_height(), 50)));
+			vinfo->set_selection(veh_selection[i + offset_index]);
+			veh_info.append(vinfo);
+			cont_veh.add_component(vinfo);
+			ypos += max(vinfo->get_image_height(), 50);
 		}
 	}
 	veh_info.set_count(icnv);
@@ -2504,6 +2504,10 @@ uint32 vehicle_manager_t::get_rdwr_id()
 
 // Here we model up each entries in the lists:
 // We start with the upgrade entries, ie what desc a particular vehicle can upgrade to:
+
+// ***************************************** //
+// Upgrade entries:
+// ***************************************** //
 gui_upgrade_info_t::gui_upgrade_info_t(vehicle_desc_t* upgrade_, vehicle_desc_t* existing_)
 {
 	this->upgrade = upgrade_;
@@ -2801,6 +2805,10 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 // Here we model up each entries in the lists:
 // We start with the vehicle_desc entries, ie vehicle models:
 
+
+// ***************************************** //
+// "Desc" entries:
+// ***************************************** //
 gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount)
 {
 	this->veh = veh;
@@ -3066,12 +3074,9 @@ void gui_desc_info_t::draw(scr_coord offset)
 	}
 }
 
-
-
-
+// ***************************************** //
 // Actual vehicles:
-
-
+// ***************************************** //
 gui_veh_info_t::gui_veh_info_t(vehicle_t* veh)
 {
 	this->veh = veh;

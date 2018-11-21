@@ -41,6 +41,7 @@ private:
 	uint8 player_nr;
 	vehicle_desc_t* upgrade;
 	vehicle_desc_t* existing;
+	int image_height;
 
 public:
 	gui_upgrade_info_t(vehicle_desc_t* upgrade, vehicle_desc_t* existing);
@@ -52,6 +53,7 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 	bool is_open_info() { return open_info; }
+	int get_image_height() { return image_height; }
 
 	vehicle_desc_t* get_upgrade() { return upgrade; }
 	vehicle_desc_t* get_existing() { return existing; }
@@ -62,7 +64,6 @@ public:
 	*/
 	void draw(scr_coord offset);
 
-	int image_height;
 };
 
 #endif
@@ -83,6 +84,7 @@ private:
 	* @author Hj. Malthaner
 	*/
 	vehicle_desc_t* veh;
+	int image_height;
 
 	uint16 amount;
 
@@ -99,6 +101,7 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 	vehicle_desc_t* get_desc() { return veh; }
+	int get_image_height() { return image_height; }
 	
 	/**
 	* Draw the component
@@ -106,9 +109,7 @@ public:
 	*/
 	void draw(scr_coord offset);
 
-	int image_height;
 };
-
 #endif
 #ifndef gui_veh_info_h
 #define gui_veh_info_h
@@ -130,6 +131,7 @@ private:
 	sint32 mean_convoi_speed;
 
 	bool selected = false;
+	int image_height;
 
 public:
 	/**
@@ -149,10 +151,8 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 
-	int image_height;
+	int get_image_height() { return image_height; }
 };
-
-
 #endif
 #ifndef gui_vehicle_manager_h
 #define gui_vehicle_manager_h
