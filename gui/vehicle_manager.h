@@ -79,6 +79,7 @@ class gui_desc_info_t : public gui_world_component_t
 private:
 	player_t *player;
 	uint8 player_nr;
+	int sort_mode;
 	/**
 	* Handle Convois to be displayed.
 	* @author Hj. Malthaner
@@ -216,8 +217,8 @@ private:
 	static bool desc_sortreverse;
 	static bool veh_sortreverse;
 
-	const int desc_pr_page = 500;
-	const int veh_pr_page = 500;
+	const uint16 desc_pr_page = 400;
+	const uint16 veh_pr_page = 400;
 		
 	waytype_t way_type;
 	

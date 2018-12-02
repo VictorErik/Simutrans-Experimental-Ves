@@ -1858,7 +1858,7 @@ int vehicle_manager_t::find_veh_issue_level(vehicle_t* veh)
 
 bool vehicle_manager_t::compare_veh(vehicle_t* veh1, vehicle_t* veh2)
 {
-	sint32 result = 0;
+	sint64 result = 0;
 	switch (sortby_veh) {
 	default:
 	case by_age:
@@ -2001,7 +2001,13 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		{
 			if (veh2->get_total_capacity() != veh1->get_total_capacity())
 			{
+
 				result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
+				if ((veh2->get_total_capacity() == 0 || veh1->get_total_capacity() == 0)&& desc_sortreverse)
+				{
+					result = -result;
+				}
+
 			}
 			else
 			{
@@ -2038,6 +2044,10 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 			if (veh2->get_catering_level() != veh1->get_catering_level())
 			{
 				result = sgn(veh2->get_catering_level() - veh1->get_catering_level());
+				if ((veh2->get_catering_level() == 0 || veh1->get_catering_level() == 0) && desc_sortreverse)
+				{
+					result = -result;
+				}
 			}
 			else
 			{
@@ -2063,9 +2073,36 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		}
 		else
 		{
-			if (veh2->get_comfort() != veh1->get_comfort())
+			uint8 base_comfort_1 = 0;
+			uint8 base_comfort_2 = 0;
+			uint8 class_comfort_1 = 0;
+			uint8 class_comfort_2 = 0;
+			int added_comfort_1 = 0;
+			int added_comfort_2 = 0;
+
+			for (int i = 0; i < veh1->get_number_of_classes(); i++)
 			{
-				result = sgn(veh2->get_comfort() - veh1->get_comfort());
+				if (veh1->get_comfort(i) > base_comfort_1)
+				{
+					base_comfort_1 = veh1->get_comfort(i);
+					class_comfort_1 = i;
+				}
+			}
+			for (int i = 0; i < veh2->get_number_of_classes(); i++)
+			{
+				if (veh2->get_comfort(i) > base_comfort_2)
+				{
+					base_comfort_2 = veh2->get_comfort(i);
+					class_comfort_2 = i;
+				}
+			}
+			// If added comfort due to the vehicle being a catering car is desired, uncomment these two entries:
+			//int added_comfort_1 = veh1->get_catering_level() > 0 ? veh1->get_adjusted_comfort(veh1->get_catering_level(), class_comfort_1) - base_comfort_1 : 0;
+			//int added_comfort_2 = veh2->get_catering_level() > 0 ? veh2->get_adjusted_comfort(veh2->get_catering_level(), class_comfort_2) - base_comfort_2 : 0;
+
+			if (base_comfort_2 + added_comfort_2 != base_comfort_1 + added_comfort_1)
+			{
+				result = sgn((base_comfort_2 + added_comfort_2) - (base_comfort_1 + added_comfort_1));
 			}
 			else
 			{
@@ -2080,19 +2117,110 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	break;
 
 	case by_desc_power:
-		result = sgn(veh2->get_power() - veh1->get_power());
-		break;
+	{
+		if (veh2->get_power() != veh1->get_power())
+		{
+			result = veh2->get_power() - veh1->get_power();
+			if ((veh2->get_power() == 0 || veh1->get_power() == 0) && desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+		}
+	}
+	break;
 	case by_desc_tractive_effort:
-		result = sgn(veh2->get_tractive_effort() - veh1->get_tractive_effort());
+	{
+		if (veh2->get_tractive_effort() != veh1->get_tractive_effort())
+		{
+			result = veh2->get_tractive_effort() - veh1->get_tractive_effort();
+			if ((veh2->get_tractive_effort() == 0 || veh1->get_tractive_effort() == 0) && desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+		}
+	}
 		break;
 	case by_desc_weight:
-		result = sgn(veh2->get_weight() - veh1->get_weight());
+	{
+		if (veh2->get_weight() != veh1->get_weight())
+		{
+			result = veh2->get_weight() - veh1->get_weight();
+			if ((veh2->get_weight() == 0 || veh1->get_weight() == 0) && desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+		}
+	}
 		break;
 	case by_desc_axle_load:
-		result = sgn(veh2->get_axle_load() - veh1->get_axle_load());
+	{
+		if (veh2->get_axle_load() != veh1->get_axle_load())
+		{
+			result = veh2->get_axle_load() - veh1->get_axle_load();
+			if ((veh2->get_axle_load() == 0 || veh1->get_axle_load() == 0) && desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+		}
+	}
 		break;
 	case by_desc_runway_length:
-		result = sgn(veh2->get_minimum_runway_length() - veh1->get_minimum_runway_length());
+	{
+		if (veh2->get_minimum_runway_length() != veh1->get_minimum_runway_length())
+		{
+			result = veh2->get_minimum_runway_length() - veh1->get_minimum_runway_length();
+		}
+		else
+		{
+			{
+				result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+		}
+	}
 		break;
 	}
 
@@ -2873,6 +3001,7 @@ gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount, int 
 	this->veh = veh;
 	amount = vehicleamount;
 	player_nr = welt->get_active_player_nr();
+	sort_mode = sortmode_index;
 
 	draw(scr_coord(0,0));
 }
@@ -2935,7 +3064,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 			for (int i = 0; i < veh->get_upgrades_count(); i++)
 			{
 				if (veh->get_upgrades(i)) {
-					if (!veh->get_upgrades(i)->is_future(month_now) && (!veh->get_upgrades(i)->is_retired(month_now)))					{
+					if (!veh->get_upgrades(i)->is_future(month_now) && (!veh->get_upgrades(i)->is_retired(month_now))) {
 						upgrades = true;
 						fillbox_height += LINESPACE;
 						break;
@@ -2960,7 +3089,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		display_get_base_image_offset(image, &x, &y, &w, &h);
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(max(h,fillbox_height),40) - 2, COL_DARK_BLUE, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(max(h, fillbox_height), 55) - 2, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 
@@ -3018,7 +3147,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 					}
 				}
 				ypos_name += LINESPACE;
-			}		
+			}
 		}
 		else
 		{ // Ok, name is short enough to fit one line
@@ -3062,7 +3191,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 				extra_pass[0] = '\0';
 			}
 
-			sprintf(load,"%i%s%s %s\n",	veh->get_total_capacity(), extra_pass, translator::translate(veh->get_freight_type()->get_mass()),
+			sprintf(load, "%i%s%s %s\n", veh->get_total_capacity(), extra_pass, translator::translate(veh->get_freight_type()->get_mass()),
 				veh->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_freight_type()->get_name()) : translator::translate(veh->get_freight_type()->get_catg_name()));
 
 			int entry = display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, load, ALIGN_RIGHT, text_color, true);
@@ -3118,17 +3247,116 @@ void gui_desc_info_t::draw(scr_coord offset)
 			}
 		}
 
+		// Sort mode dependent text:
+		char sort_mode_text[100];
+		bool display_sort_text = false;
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_axle_load)
+		{
+			sprintf(sort_mode_text, translator::translate("axle_load: %ut"), veh->get_axle_load());
+			display_sort_text = true;
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_catering_level)
+		{
+			if (veh->get_catering_level() > 0)
+			{
+				sprintf(sort_mode_text, translator::translate("catering_level: %u"), veh->get_catering_level());
+			}
+			else
+			{
+				sprintf(sort_mode_text, translator::translate("no_catering"));
+			}
+			display_sort_text = true;
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_comfort)
+		{
+			if (veh->get_freight_type()->get_catg() == 0) // This is a passenger vehicle
+			{
+				uint8 base_comfort = 0;
+				uint8 added_comfort = 0;
+				uint8 class_comfort = 0;
+				char extra_comfort[8];
+
+				for (int i = 0; i < veh->get_number_of_classes(); i++)
+				{
+					if (veh->get_comfort(i) > base_comfort)
+					{
+						base_comfort = veh->get_comfort(i);
+						class_comfort = i;
+					}
+				}
+				// If added comfort due to the vehicle being a catering vehicle is desired, uncomment this line:
+				//added_comfort = veh->get_catering_level() > 0 ? veh->get_adjusted_comfort(veh->get_catering_level(), class_comfort) - base_comfort : 0;
+				if (added_comfort > 0)
+				{
+					sprintf(extra_comfort, "+%i", added_comfort);
+				}
+				else
+				{
+					extra_comfort[0] = '\0';
+				}
+				sprintf(sort_mode_text, "%s %i%s", translator::translate("Comfort:"), base_comfort, extra_comfort);
+				display_sort_text = true;
+			}
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_issues)
+		{
+			sprintf(sort_mode_text, "%s: %ut", translator::translate("issue"), veh->get_axle_load());
+			display_sort_text = true;
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_power)
+		{
+			if (veh->get_power() > 0)
+			{
+				sprintf(sort_mode_text, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[veh->get_engine_type() + 1]), veh->get_power(), veh->get_tractive_effort());
+			}
+			else
+			{
+				sprintf(sort_mode_text, translator::translate("unpowered"));
+			}
+			display_sort_text = true;
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_runway_length)
+		{
+			if (veh->get_waytype() == waytype_t::air_wt)
+			{
+				sprintf(sort_mode_text, translator::translate("minimum_runway_length: %um"), veh->get_minimum_runway_length());
+				display_sort_text = true;
+			}
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_speed)
+		{
+			sprintf(sort_mode_text, translator::translate("max_speed: %ukm/h"), veh->get_topspeed());
+			display_sort_text = true;
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_tractive_effort)
+		{
+			if (veh->get_power() > 0)
+			{
+				sprintf(sort_mode_text, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[veh->get_engine_type() + 1]), veh->get_power(), veh->get_tractive_effort());
+			}
+			else
+			{
+				sprintf(sort_mode_text, translator::translate("unpowered"));
+			}
+			display_sort_text = true;
+		}
+		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_weight)
+		{
+			sprintf(sort_mode_text, translator::translate("weight: %ut"), veh->get_axle_load());
+			display_sort_text = true;
+		}
+		if (display_sort_text)
+		{
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+		}
+		ypos_name += LINESPACE;
+
 		const int xoff = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH;
 		int left = pos.x + offset.x + xoff + 4;
 		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
 
-		//// Antal, displayed on top of the image
-		//sprintf(amount_of_vehicles, "%u", amount);
-		//display_proportional_clip(left, pos.y + offset.y + 13, amount_of_vehicles, ALIGN_RIGHT, SYSCOL_TEXT_HIGHLIGHT, true);
-		//ypos_name += LINESPACE;
-
-		ypos_name += LINESPACE*2;
-		image_height = max(h,ypos_name);
+		ypos_name += LINESPACE * 2;
+		image_height = max(h, ypos_name);
 
 	}
 }
