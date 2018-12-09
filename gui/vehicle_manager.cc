@@ -406,7 +406,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_upgrade_to_from.init(button_t::roundbox, NULL, dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
 		bt_upgrade_to_from.add_listener(this);
 		bt_upgrade_to_from.set_tooltip(translator::translate("press_to_switch_between_upgrade_to_or_upgrade_from"));
-		bt_upgrade_to_from.set_visible(true);
+		bt_upgrade_to_from.set_visible(false);
 		cont_maintenance_info.add_component(&bt_upgrade_to_from);
 
 		display_upgrade_into = true;
@@ -415,7 +415,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
 		scrolly_upgrade.set_show_scroll_y(true);
 		scrolly_upgrade.set_scroll_amount_y(40);
-		scrolly_upgrade.set_visible(true);
+		scrolly_upgrade.set_visible(false);
 		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
 		cont_maintenance_info.add_component(&scrolly_upgrade);
 
@@ -930,6 +930,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	int column_3 = D_BUTTON_WIDTH * 6 + D_MARGIN_LEFT;
 
 	bt_upgrade_to_from.set_visible(false);
+	scrolly_upgrade.set_visible(false);
 
 	buf[0] = '\0';
 	if (desc_info_text) {
@@ -1020,6 +1021,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		// Switch upgrade mode button
 		bt_upgrade_to_from.set_pos(scr_coord(pos_x, pos_y + (LINESPACE / 4)));
 		bt_upgrade_to_from.set_visible(true);
+		scrolly_upgrade.set_visible(true);
 
 		// Upgrade information			
 		if (display_upgrade_into)
@@ -2842,7 +2844,7 @@ void vehicle_manager_t::display_desc_list()
 
 	// Assemble the list of vehicles and preselect the previously selected vehicle if found. If there is no old desc for display, remove the desc for display
 	for (i = 0; i < icnv; i++) {
-		gui_desc_info_t* const dinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index], sortby_desc);
+		gui_desc_info_t* const dinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index], sortby_desc, display_desc);
 		dinfo->set_pos(scr_coord(0, ypos));
 		dinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(dinfo->get_image_height(), 40)));
 		desc_info.append(dinfo);
@@ -3330,12 +3332,13 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 // ***************************************** //
 // "Desc" entries:
 // ***************************************** //
-gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount, int sortmode_index)
+gui_desc_info_t::gui_desc_info_t(vehicle_desc_t* veh, uint16 vehicleamount, int sortmode_index, int displaymode_index)
 {
 	this->veh = veh;
 	amount = vehicleamount;
 	player_nr = welt->get_active_player_nr();
 	sort_mode = sortmode_index;
+	display_mode = displaymode_index;
 
 	draw(scr_coord(0,0));
 }
@@ -3386,21 +3389,21 @@ void gui_desc_info_t::draw(scr_coord offset)
 		bool upgrades = false;
 		bool retired = false;
 		bool only_as_upgrade = false;
-		int fillbox_height = 4 * LINESPACE;
+		int window_height = 6 * LINESPACE; // minimum size of the entry
 
 		sprintf(name, translator::translate(veh->get_name()));
 		sprintf(name_display, name);
 
 		// First, we need to know how much text is going to be, since the "selected" blue field has to be drawn before all the text
-		// Upgrades. We only want to show that a vehicle can upgrade if we own it
-		if (veh->get_upgrades_count() > 0 && amount > 0)
+		// Upgrades: If uncommented, will only show entry if we own it
+		if (veh->get_upgrades_count() > 0/* && amount > 0*/)
 		{
 			for (int i = 0; i < veh->get_upgrades_count(); i++)
 			{
 				if (veh->get_upgrades(i)) {
 					if (!veh->get_upgrades(i)->is_future(month_now) && (!veh->get_upgrades(i)->is_retired(month_now))) {
 						upgrades = true;
-						fillbox_height += LINESPACE;
+						window_height += LINESPACE;
 						break;
 					}
 				}
@@ -3409,21 +3412,25 @@ void gui_desc_info_t::draw(scr_coord offset)
 
 		if (veh->is_retired(month_now)) {
 			retired = true;
-			fillbox_height += LINESPACE;
+			window_height += LINESPACE;
 		}
 
 		if (veh->is_available_only_as_upgrade())
 		{
 			only_as_upgrade = true;
-			fillbox_height += LINESPACE;
+			window_height += LINESPACE;
 		}
 
 		scr_coord_val x, y, w, h;
 		const image_id image = veh->get_base_image();
 		display_get_base_image_offset(image, &x, &y, &w, &h);
+		if (h > window_height)
+		{
+			window_height = h;
+		}
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(max(h, fillbox_height), 55) - 2, COL_DARK_BLUE, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, window_height - 2, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 
@@ -3581,15 +3588,15 @@ void gui_desc_info_t::draw(scr_coord offset)
 			}
 		}
 
-		// Sort mode dependent text:
+		// Sort- and display mode dependent text:
 		char sort_mode_text[100];
-		bool display_sort_text = false;
-		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_axle_load)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_axle_load || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_axle_load)
 		{
 			sprintf(sort_mode_text, translator::translate("axle_load: %ut"), veh->get_axle_load());
-			display_sort_text = true;
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+			ypos_name += LINESPACE;
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_catering_level)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_catering_level || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_catering_level)
 		{
 			if (veh->get_catering_level() > 0)
 			{
@@ -3599,9 +3606,10 @@ void gui_desc_info_t::draw(scr_coord offset)
 			{
 				sprintf(sort_mode_text, translator::translate("no_catering"));
 			}
-			display_sort_text = true;
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+			ypos_name += LINESPACE;
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_comfort)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_comfort || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_comfort)
 		{
 			if (veh->get_freight_type()->get_catg() == 0) // This is a passenger vehicle
 			{
@@ -3629,15 +3637,11 @@ void gui_desc_info_t::draw(scr_coord offset)
 					extra_comfort[0] = '\0';
 				}
 				sprintf(sort_mode_text, "%s %i%s", translator::translate("Comfort:"), base_comfort, extra_comfort);
-				display_sort_text = true;
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+				ypos_name += LINESPACE;
 			}
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_issues)
-		{
-			sprintf(sort_mode_text, "%s: %ut", translator::translate("issue"), veh->get_axle_load());
-			display_sort_text = true;
-		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_power)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_power || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_power)
 		{
 			if (veh->get_power() > 0)
 			{
@@ -3647,22 +3651,25 @@ void gui_desc_info_t::draw(scr_coord offset)
 			{
 				sprintf(sort_mode_text, translator::translate("unpowered"));
 			}
-			display_sort_text = true;
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+			ypos_name += LINESPACE;
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_runway_length)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_runway_length || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_runway_length)
 		{
 			if (veh->get_waytype() == waytype_t::air_wt)
 			{
 				sprintf(sort_mode_text, translator::translate("minimum_runway_length: %um"), veh->get_minimum_runway_length());
-				display_sort_text = true;
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+				ypos_name += LINESPACE;
 			}
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_speed)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_speed || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_speed)
 		{
 			sprintf(sort_mode_text, translator::translate("max_speed: %ukm/h"), veh->get_topspeed());
-			display_sort_text = true;
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+			ypos_name += LINESPACE;
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_tractive_effort)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_tractive_effort || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_tractive_effort)
 		{
 			if (veh->get_power() > 0)
 			{
@@ -3672,25 +3679,27 @@ void gui_desc_info_t::draw(scr_coord offset)
 			{
 				sprintf(sort_mode_text, translator::translate("unpowered"));
 			}
-			display_sort_text = true;
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+			ypos_name += LINESPACE;
 		}
-		else if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_weight)
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_weight || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_weight)
 		{
 			sprintf(sort_mode_text, translator::translate("weight: %ut"), veh->get_axle_load());
-			display_sort_text = true;
-		}
-		if (display_sort_text)
-		{
 			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+			ypos_name += LINESPACE;
 		}
-		ypos_name += LINESPACE;
+		//if (display_sort_text)
+		//{
+		//	display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+		//}
+		//ypos_name += LINESPACE;
 
 		const int xoff = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH;
 		int left = pos.x + offset.x + xoff + 4;
 		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
 
 		ypos_name += LINESPACE * 2;
-		image_height = max(h, ypos_name);
+		image_height = max(window_height, ypos_name);
 
 	}
 }

@@ -80,6 +80,7 @@ private:
 	player_t *player;
 	uint8 player_nr;
 	int sort_mode;
+	int display_mode;
 	/**
 	* Handle Convois to be displayed.
 	* @author Hj. Malthaner
@@ -94,7 +95,7 @@ public:
 	* @param cnv, the handler for the Convoi to be displayed.
 	* @author Hj. Malthaner
 	*/
-	gui_desc_info_t(vehicle_desc_t* veh, uint16 amount, int sortmode_index);
+	gui_desc_info_t(vehicle_desc_t* veh, uint16 amount, int sortmode_index, int displaymode_index);
 
 	bool infowin_event(event_t const*) OVERRIDE;
 	bool selected = false;
