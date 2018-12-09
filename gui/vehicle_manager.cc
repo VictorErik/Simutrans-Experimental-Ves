@@ -98,6 +98,27 @@ const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 	"issues",
 	"location"
 };
+const char *vehicle_manager_t::display_text_desc[DISPLAY_MODES_DESC] =
+{
+	" ",
+	"intro_year",
+	"amount",
+	"speed",
+	"catering_level",
+	"comfort",
+	"power",
+	"tractive_effort",
+	"weight",
+	"axle_load",
+	"runway_length"
+};
+const char *vehicle_manager_t::display_text_veh[DISPLAY_MODES_VEH] =
+{
+	" ",
+	"age",
+	"odometer",
+	"location"
+};
 
 static const char * engine_type_names[11] =
 {
@@ -116,6 +137,8 @@ static const char * engine_type_names[11] =
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
 vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
+vehicle_manager_t::display_mode_desc_t vehicle_manager_t::display_desc = displ_desc_none;
+vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh_none;
 
 vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	gui_frame_t( translator::translate("vehicle_manager"), player_),
@@ -126,6 +149,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_veh_page(NULL, SYSCOL_TEXT, gui_label_t::centered),
 	lb_desc_sortby(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_veh_sortby(NULL, SYSCOL_TEXT, gui_label_t::left),
+	lb_display_desc(NULL, SYSCOL_TEXT, gui_label_t::left),
+	lb_display_veh(NULL, SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade)
@@ -165,74 +190,113 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	y_pos += D_BUTTON_HEIGHT + 6;
 	x_pos = D_MARGIN_LEFT;
 
-	lb_desc_sortby.set_pos(scr_coord(x_pos, y_pos));
-	lb_desc_sortby.set_visible(true);
-	add_component(&lb_desc_sortby);
-
+	// Sorting and display section
 	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
 	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
 
 	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
+	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
 
-	x_pos += 5 + label_length;
+	int column_1 = D_MARGIN_LEFT;
+	int column_2 = column_1 + label_length + 5;
+	int column_3 = column_2 + combobox_width + 5;
+
+	lb_desc_sortby.set_pos(scr_coord(column_1, y_pos));
+	lb_desc_sortby.set_visible(true);
+	add_component(&lb_desc_sortby);
 	
 	combo_sorter_desc.clear_elements();
 	for (int i = 0; i < SORT_MODES_DESC; i++)
 	{
 		combo_sorter_desc.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(sort_text_desc[i]), SYSCOL_TEXT));
 	}
-	combo_sorter_desc.set_pos(scr_coord(x_pos, y_pos));
-	combo_sorter_desc.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	combo_sorter_desc.set_pos(scr_coord(column_2, y_pos));
+	combo_sorter_desc.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_sorter_desc.set_focusable(true);
 	combo_sorter_desc.set_selection(sortby_desc);
 	combo_sorter_desc.set_highlight_color(1);
-	combo_sorter_desc.set_max_size(scr_size(D_BUTTON_WIDTH * 2, LINESPACE * 5 + 2 + 16));
+	combo_sorter_desc.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 	combo_sorter_desc.add_listener(this);
 	add_component(&combo_sorter_desc);
-
-	x_pos += combo_sorter_desc.get_size().w + 5;
-
-	bt_desc_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(x_pos, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	
+	bt_desc_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(column_3, y_pos), scr_size(combobox_width, D_BUTTON_HEIGHT));
 	bt_desc_sortreverse.add_listener(this);
 	bt_desc_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_list"));
 	bt_desc_sortreverse.pressed = false;
 	desc_sortreverse = bt_desc_sortreverse.pressed;
 	add_component(&bt_desc_sortreverse);
 
-	x_pos = RIGHT_HAND_COLUMN;
+	y_pos += D_BUTTON_HEIGHT;
 
-	lb_veh_sortby.set_pos(scr_coord(RIGHT_HAND_COLUMN, y_pos));
+	lb_display_desc.set_pos(scr_coord(column_1, y_pos));
+	lb_display_desc.set_visible(true);
+	add_component(&lb_display_desc);
+
+	// "Display only" selection field
+	combo_display_desc.clear_elements();
+	for (int i = 0; i < DISPLAY_MODES_DESC; i++)
+	{
+		combo_display_desc.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(display_text_desc[i]), SYSCOL_TEXT));
+	}
+	combo_display_desc.set_pos(scr_coord(column_2, y_pos));
+	combo_display_desc.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_display_desc.set_focusable(true);
+	combo_display_desc.set_selection(display_desc);
+	combo_display_desc.set_highlight_color(1);
+	combo_display_desc.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	combo_display_desc.add_listener(this);
+	add_component(&combo_display_desc);
+
+	ti_desc_display.set_pos(scr_coord(column_3,y_pos));
+	ti_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	ti_desc_display.set_visible(false);
+	ti_desc_display.add_listener(this);
+	add_component(&ti_desc_display);
+
+	y_pos -= D_BUTTON_HEIGHT;
+	column_1 += RIGHT_HAND_COLUMN;
+	column_2 += RIGHT_HAND_COLUMN;
+	column_3 += RIGHT_HAND_COLUMN;
+
+	lb_veh_sortby.set_pos(scr_coord(column_1, y_pos));
 	lb_veh_sortby.set_size(D_BUTTON_SIZE);
 	lb_veh_sortby.set_visible(true);
 	add_component(&lb_veh_sortby);
-
-	x_pos += 5 + label_length;
 
 	combo_sorter_veh.clear_elements();
 	for (int i = 0; i < SORT_MODES_VEH; i++)
 	{
 		combo_sorter_veh.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(sort_text_veh[i]), SYSCOL_TEXT));
 	}
-	combo_sorter_veh.set_pos(scr_coord(x_pos, y_pos));
-	combo_sorter_veh.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	combo_sorter_veh.set_pos(scr_coord(column_2, y_pos));
+	combo_sorter_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_sorter_veh.set_focusable(true);
 	combo_sorter_veh.set_selection(sortby_veh);
 	combo_sorter_veh.set_highlight_color(1);
-	combo_sorter_veh.set_max_size(scr_size(D_BUTTON_WIDTH * 2, LINESPACE * 5 + 2 + 16));
+	combo_sorter_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 	combo_sorter_veh.add_listener(this);
 	add_component(&combo_sorter_veh);
-
-	x_pos += combo_sorter_desc.get_size().w + 5;
-
-	bt_veh_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(x_pos, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	
+	bt_veh_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), scr_coord(column_3, y_pos), scr_size(combobox_width, D_BUTTON_HEIGHT));
 	bt_veh_sortreverse.add_listener(this);
 	bt_veh_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_list"));
 	bt_veh_sortreverse.pressed = false;
 	veh_sortreverse = bt_veh_sortreverse.pressed;
 	add_component(&bt_veh_sortreverse);
 
+	y_pos += D_BUTTON_HEIGHT;
+
+	lb_display_veh.set_pos(scr_coord(column_1, y_pos));
+	lb_display_veh.set_visible(true);
+	add_component(&lb_display_veh);
+
+
+
+
+
 	y_pos += D_BUTTON_HEIGHT * 2;
 	scrolly_desc_pos = scr_coord(D_MARGIN_LEFT, y_pos);
+	
 
 	// Vehicle desc list
 	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH, VEHICLE_NAME_COLUMN_HEIGHT));
@@ -356,7 +420,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_maintenance_info.add_component(&scrolly_upgrade);
 
 	}
-
+	reset_desc_text_input_display();
+	set_desc_display_rules();
 	build_desc_list();
 
 	// Sizes:
@@ -458,6 +523,27 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		page_turn_desc = false;
 		display_desc_list();
 	}
+
+	if (comp == &combo_display_desc) {
+		sint32 display_mode = combo_display_desc.get_selection();
+		if (display_mode < 0)
+		{
+			combo_display_desc.set_selection(0);
+			display_mode = 0;
+		}
+		display_desc = (display_mode_desc_t)display_mode;
+		save_previously_selected_desc();
+		page_turn_desc = false; 
+		reset_desc_text_input_display();
+		set_desc_display_rules();
+		build_desc_list();
+	}
+
+	if (comp == &ti_desc_display) {
+		update_desc_text_input_display();
+		build_desc_list();
+	}
+	
 
 	if (comp == &combo_sorter_veh) {
 		sint32 sort_mode = combo_sorter_veh.get_selection();
@@ -585,13 +671,249 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		{
 
 		}
-
 		build_upgrade_list();
 	}
-	
-
 	return true;
 }
+
+void vehicle_manager_t::reset_desc_text_input_display()
+{
+	char default_display[64];
+	ti_desc_display.set_visible(false);
+	if (display_desc != displ_desc_none)
+	{
+		ti_desc_display.set_visible(true);
+	}
+	ti_desc_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
+
+	if (invalid_entry_form)
+	{
+		sprintf(default_display, translator::translate("invalid_entry"));
+		ti_desc_display.set_color(COL_RED);
+		invalid_entry_form = false;
+	}
+	else
+	{
+		switch (display_desc)
+		{
+		case displ_desc_intro_year:
+			if (welt->use_timeline())
+			{
+				sprintf(default_display, "< %u", welt->get_current_month() / 12);
+			}
+			else
+			{
+				sprintf(default_display, "");
+			}
+			break;
+		case displ_desc_amount:
+		case displ_desc_speed:
+		case displ_desc_catering_level:
+		case displ_desc_comfort:
+		case displ_desc_power:
+		case displ_desc_tractive_effort:
+		case displ_desc_weight:
+		case displ_desc_axle_load:
+		case displ_desc_runway_length:
+			sprintf(default_display, "> 0");
+			break;
+		default:
+			sprintf(default_display, "");
+			break;
+		}
+	}
+	tstrncpy(old_desc_display_param, default_display, sizeof(old_desc_display_param));
+	tstrncpy(desc_display_param, default_display, sizeof(desc_display_param));
+	ti_desc_display.set_text(desc_display_param, sizeof(desc_display_param));
+}
+
+void vehicle_manager_t::update_desc_text_input_display()
+{
+	const char *t = ti_desc_display.get_text();
+	ti_desc_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
+	// only change if old name and current name are the same
+	// otherwise some unintended undo if renaming would occur
+	if (t  &&  t[0] && strcmp(t, desc_display_param) && strcmp(old_desc_display_param, desc_display_param) == 0) {
+		// do not trigger this command again
+		tstrncpy(old_desc_display_param, t, sizeof(old_desc_display_param));
+	}
+	set_desc_display_rules();
+}
+
+void vehicle_manager_t::set_desc_display_rules()
+{
+	char entry[50] = { 0 };
+	sprintf(entry, ti_desc_display.get_text());
+	char c[1] = { 'a' }; // need to give c some value, since the forloop depends on it. The strings returned from the sorter will always have a number as its first value, so we should be safe
+
+	// For any type of number input, this is the syntax:
+	// First logic: ">" or "<" (if specified)
+	// First value: "number"
+	// Second logic: "-" (if specified)
+	// Second value: "number" (if specified)
+
+	ch_first_logic[0] = 0;
+	ch_second_logic[0] = 0;
+	for (int i = 0; i < 10; i++)
+	{
+		ch_first_value[i] = 0;
+		ch_second_value[i] = 0;
+	}
+
+	first_logic_exists = false;
+	second_logic_exists = false;
+	first_value_exists = false;
+	second_value_exists = false;
+	no_logics = false;
+	invalid_entry_form = false;
+
+	desc_display_first_value = 0;
+	desc_display_second_value = 0;
+
+	int first_value_offset = 0;
+	int secon_value_offset = 0;
+
+	for (int j = 0; *c != '\0'; j++)
+	{
+		*c = entry[j];
+		if ((*c == '>' || *c == '<') && !first_logic_exists && !no_logics)
+		{
+			ch_first_logic[0] = *c;
+			first_logic_exists = true;
+		}
+		else if (!second_logic_exists && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
+		{
+			ch_first_value[first_value_offset] = *c;
+			first_value_exists = true; 
+			no_logics = true;
+			first_value_offset++;
+		}
+		else if ((*c == '-') && first_value_exists && !second_logic_exists)
+		{
+			ch_second_logic[0] = *c;
+			second_logic_exists = true;
+		}
+		else if (second_logic_exists && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
+		{
+			ch_second_value[secon_value_offset] = *c;
+			second_value_exists = true;
+			secon_value_offset++;
+		}
+		else if (*c == ' ' || *c == '\0')
+		{
+			//ignore spaces
+		}
+		else
+		{
+			invalid_entry_form = true;
+			break;
+		}
+		
+	}
+	if (invalid_entry_form)
+	{
+		reset_desc_text_input_display();
+	}
+	else
+	{
+		if (first_value_exists)
+		{
+			desc_display_first_value = std::atoi(ch_first_value);
+		}
+		if (second_value_exists)
+		{
+			desc_display_second_value = std::atoi(ch_second_value);
+		}
+	}
+}
+
+bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
+{
+	bool display = false;
+	if (display_desc == displ_desc_none)
+	{
+		display = true;
+	}
+	else
+	{
+		sint64 value_to_compare = 0;
+		switch (display_desc)
+		{
+		case displ_desc_intro_year:
+			value_to_compare = desc->get_intro_year_month() / 12;
+			break;
+		case displ_desc_amount:
+		{
+			uint16 desc_amounts = 0;
+			FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+				if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+					for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
+						vehicle_t* v = cnv->get_vehicle(veh);
+						if (desc == (vehicle_desc_t*)v->get_desc())
+						{
+							desc_amounts++;
+						}
+					}
+				}
+			}
+			value_to_compare = desc_amounts;
+		}
+		break;
+		case displ_desc_speed:
+			value_to_compare = desc->get_topspeed();
+			break;
+		case displ_desc_catering_level:
+			value_to_compare = desc->get_catering_level();
+			break;
+		case displ_desc_comfort:
+			value_to_compare = desc->get_comfort();
+			break;
+		case displ_desc_power:
+			value_to_compare = desc->get_power();
+			break;
+		case displ_desc_tractive_effort:
+			value_to_compare = desc->get_tractive_effort();
+			break;
+		case displ_desc_weight:
+			value_to_compare = desc->get_weight();
+			break;
+		case displ_desc_axle_load:
+			value_to_compare = desc->get_axle_load();
+			break;
+		case displ_desc_runway_length:
+			value_to_compare = desc->get_minimum_runway_length();
+			break;
+		default:
+			break;
+		}
+
+		if ((first_value_exists) && !first_logic_exists && !second_logic_exists && !second_value_exists) // only a value is specified
+		{
+			display = value_to_compare == desc_display_first_value;
+		}
+		else if ((first_logic_exists && first_value_exists) && !second_logic_exists && !second_value_exists) // greater than, or smaller than specified value
+		{
+			if (ch_first_logic[0] == '>')
+			{
+				display = value_to_compare >= desc_display_first_value;
+			}
+			else
+			{
+				display = value_to_compare <= desc_display_first_value;
+			}
+		}
+		else if ((first_value_exists && second_logic_exists && second_value_exists) && !first_logic_exists) // greater than lowest the lowest and smaller than highest value specified
+		{
+			display = (value_to_compare >= desc_display_first_value) && (value_to_compare <= desc_display_second_value);
+		}
+		else
+		{
+			display = true;
+		}
+	}
+	return display;
+}
+
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 {
 	char buf[1024];
@@ -1339,7 +1661,6 @@ void vehicle_manager_t::display(scr_coord pos)
 {
 	static cbuffer_t buf_desc_sortby;
 	buf_desc_sortby.clear();
-	//buf_desc_sortby.printf(translator::translate("sort_vehicles_by:"));
 	buf_desc_sortby.printf(sortby_text);
 	lb_desc_sortby.set_text_pointer(buf_desc_sortby);
 	
@@ -1347,6 +1668,16 @@ void vehicle_manager_t::display(scr_coord pos)
 	buf_veh_sortby.clear();
 	buf_veh_sortby.printf(sortby_text);
 	lb_veh_sortby.set_text_pointer(buf_veh_sortby);
+
+	static cbuffer_t buf_desc_display;
+	buf_desc_display.clear();
+	buf_desc_display.printf(displayby_text);
+	lb_display_desc.set_text_pointer(buf_desc_display);
+
+	static cbuffer_t buf_veh_display;
+	buf_veh_display.clear();
+	buf_veh_display.printf(displayby_text);
+	lb_display_veh.set_text_pointer(buf_veh_display);
 
 	static cbuffer_t buf_vehicle_descs;
 	buf_vehicle_descs.clear();
@@ -2379,7 +2710,7 @@ void vehicle_manager_t::build_desc_list()
 	// If true, populate the list with all available desc's
 	if (show_available_vehicles) {
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
-			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+			if ((!info->is_future(month_now) && !info->is_retired(month_now)) && is_desc_displayable(info)) {
 				desc_list.append(info);
 			}
 		}
@@ -2409,11 +2740,14 @@ void vehicle_manager_t::build_desc_list()
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
 				vehicle_t* v = cnv->get_vehicle(veh);
 				vehicle_we_own.append(v);
-				desc_list.append((vehicle_desc_t*)v->get_desc());
-				for (int i = 0; i < desc_list.get_count() - 1; i++)	{
-					if (desc_list.get_element(i) == v->get_desc()) {
-						desc_list.remove_at(i);
-						break;
+				if  (is_desc_displayable((vehicle_desc_t*)v->get_desc()))
+				{
+					desc_list.append((vehicle_desc_t*)v->get_desc());
+					for (int i = 0; i < desc_list.get_count() - 1; i++) {
+						if (desc_list.get_element(i) == v->get_desc()) {
+							desc_list.remove_at(i);
+							break;
+						}
 					}
 				}
 			}
