@@ -374,6 +374,7 @@ public:
 	void reset_desc_text_input_display();
 	void set_desc_display_rules();
 	bool is_desc_displayable(vehicle_desc_t *desc);
+	uint8 return_desc_category(vehicle_desc_t *desc);
 
 	void update_tabs();
 	void update_vehicle_type_tabs();

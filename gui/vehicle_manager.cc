@@ -869,120 +869,147 @@ void vehicle_manager_t::set_desc_display_rules()
 	}
 }
 
-bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
+uint8 vehicle_manager_t::return_desc_category(vehicle_desc_t*desc)
 {
-	bool display = false;
-	if (display_desc == displ_desc_none)
+	uint8 desc_category = 0;
+	if (desc->get_engine_type() == vehicle_desc_t::electric && (desc->get_freight_type() == goods_manager_t::passengers || desc->get_freight_type() == goods_manager_t::mail))
 	{
-		display = true;
+		desc_category = 2;
 	}
-	else if (display_desc == displ_desc_name)
+	else if ((desc->get_freight_type() == goods_manager_t::passengers || desc->get_freight_type() == goods_manager_t::mail) || desc->get_catering_level()>0)
 	{
-		if (desc_display_name[0] == '\0')
-		{
-			display = true;
-		}
-		else
-		{
-			char desc_name[256] = { 0 };
-			sprintf(desc_name, translator::translate(desc->get_name()));
-			int counter = 0;
-			char c[1] = { 0 };
-
-			for (int i = 0; i < sizeof(desc_name); i++)
-			{
-				*c = toupper(desc_name[i]);
-				if (*c == toupper(desc_display_name[counter]))
-				{
-					counter++;
-					if (counter == letters_to_compare)
-					{
-						display = true;
-						break;
-					}
-				}
-				else
-				{
-					counter = 0;
-				}
-			}
-		}
+		desc_category = 1;
+	}
+	else if (desc->get_power() > 0 || desc->get_total_capacity() == 0)
+	{
+		desc_category = 3;
 	}
 	else
 	{
-		sint64 value_to_compare = 0;
-		switch (display_desc)
-		{
-		case displ_desc_intro_year:
-			value_to_compare = desc->get_intro_year_month() / 12;
-			break;
-		case displ_desc_amount:
-		{
-			uint16 desc_amounts = 0;
-			FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-				if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-					for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
-						vehicle_t* v = cnv->get_vehicle(veh);
-						if (desc == (vehicle_desc_t*)v->get_desc())
-						{
-							desc_amounts++;
-						}
-					}
-				}
-			}
-			value_to_compare = desc_amounts;
-		}
-		break;
-		case displ_desc_speed:
-			value_to_compare = desc->get_topspeed();
-			break;
-		case displ_desc_catering_level:
-			value_to_compare = desc->get_catering_level();
-			break;
-		case displ_desc_comfort:
-			value_to_compare = desc->get_comfort();
-			break;
-		case displ_desc_power:
-			value_to_compare = desc->get_power();
-			break;
-		case displ_desc_tractive_effort:
-			value_to_compare = desc->get_tractive_effort();
-			break;
-		case displ_desc_weight:
-			value_to_compare = desc->get_weight();
-			break;
-		case displ_desc_axle_load:
-			value_to_compare = desc->get_axle_load();
-			break;
-		case displ_desc_runway_length:
-			value_to_compare = desc->get_minimum_runway_length();
-			break;
-		default:
-			break;
-		}
+		desc_category = 4;
+	}
+	return desc_category;
+}
 
-		if ((first_value_exists) && !first_logic_exists && !second_logic_exists && !second_value_exists) // only a value is specified
+bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
+{
+	bool display = false;
+
+	
+	if ((return_desc_category(desc) == selected_tab_vehicletype) || selected_tab_vehicletype == 0)
+	{
+		if (display_desc == displ_desc_none)
 		{
-			display = value_to_compare == desc_display_first_value;
+			display = true;
 		}
-		else if ((first_logic_exists && first_value_exists) && !second_logic_exists && !second_value_exists) // greater than, or smaller than specified value
+		else if (display_desc == displ_desc_name)
 		{
-			if (ch_first_logic[0] == '>')
+			if (desc_display_name[0] == '\0')
 			{
-				display = value_to_compare >= desc_display_first_value;
+				display = true;
 			}
 			else
 			{
-				display = value_to_compare <= desc_display_first_value;
+				char desc_name[256] = { 0 };
+				sprintf(desc_name, translator::translate(desc->get_name()));
+				int counter = 0;
+				char c[1] = { 0 };
+
+				for (int i = 0; i < sizeof(desc_name); i++)
+				{
+					*c = toupper(desc_name[i]);
+					if (*c == toupper(desc_display_name[counter]))
+					{
+						counter++;
+						if (counter == letters_to_compare)
+						{
+							display = true;
+							break;
+						}
+					}
+					else
+					{
+						counter = 0;
+					}
+				}
 			}
-		}
-		else if ((first_value_exists && second_logic_exists && second_value_exists) && !first_logic_exists) // greater than lowest the lowest and smaller than highest value specified
-		{
-			display = (value_to_compare >= desc_display_first_value) && (value_to_compare <= desc_display_second_value);
 		}
 		else
 		{
-			display = true;
+			sint64 value_to_compare = 0;
+			switch (display_desc)
+			{
+			case displ_desc_intro_year:
+				value_to_compare = desc->get_intro_year_month() / 12;
+				break;
+			case displ_desc_amount:
+			{
+				uint16 desc_amounts = 0;
+				FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+					if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+						for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
+							vehicle_t* v = cnv->get_vehicle(veh);
+							if (desc == (vehicle_desc_t*)v->get_desc())
+							{
+								desc_amounts++;
+							}
+						}
+					}
+				}
+				value_to_compare = desc_amounts;
+			}
+			break;
+			case displ_desc_speed:
+				value_to_compare = desc->get_topspeed();
+				break;
+			case displ_desc_catering_level:
+				value_to_compare = desc->get_catering_level();
+				break;
+			case displ_desc_comfort:
+				value_to_compare = desc->get_comfort();
+				break;
+			case displ_desc_power:
+				value_to_compare = desc->get_power();
+				break;
+			case displ_desc_tractive_effort:
+				value_to_compare = desc->get_tractive_effort();
+				break;
+			case displ_desc_weight:
+				value_to_compare = desc->get_weight();
+				break;
+			case displ_desc_axle_load:
+				value_to_compare = desc->get_axle_load();
+				break;
+			case displ_desc_runway_length:
+				value_to_compare = desc->get_minimum_runway_length();
+				break;
+			default:
+				break;
+			}
+
+			if ((first_value_exists) && !first_logic_exists && !second_logic_exists && !second_value_exists) // only a value is specified
+			{
+				display = value_to_compare == desc_display_first_value;
+			}
+			else if ((first_logic_exists && first_value_exists) && !second_logic_exists && !second_value_exists) // greater than, or smaller than specified value
+			{
+				if (ch_first_logic[0] == '>')
+				{
+					display = value_to_compare >= desc_display_first_value;
+				}
+				else
+				{
+					display = value_to_compare <= desc_display_first_value;
+				}
+			}
+			else if ((first_value_exists && second_logic_exists && second_value_exists) && !first_logic_exists) // greater than lowest the lowest and smaller than highest value specified
+			{
+				display = (value_to_compare >= desc_display_first_value) && (value_to_compare <= desc_display_second_value);
+			}
+			else
+			{
+				display = true;
+			}
 		}
 	}
 	return display;
@@ -2013,12 +2040,10 @@ void vehicle_manager_t::update_vehicle_type_tabs()
 	max_idx_vehicletype = 0;
 	
 	// Tab organization and naming taken from "gui_convoy_assembler.cc, ie the depot window"
-	char show_all_tab[65] = { 0 };
 	char passenger_tab[65] = { 0 };	// passenger and mail vehicles
 	char electrics_tab[65] = { 0 };	// Electric passenger and mail vehicles
 	char powered_tab[65] = { 0 };	// Powered vehicles (with, or without good)
 	char unpowered_tab[65] = { 0 };	// Unpowered vehicles (with good)
-	sprintf(show_all_tab, "show_all");
 	if (way_type == waytype_t::road_wt)
 	{
 		sprintf(passenger_tab, "Bus_tab");
@@ -2054,19 +2079,19 @@ void vehicle_manager_t::update_vehicle_type_tabs()
 	{
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
 			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
-				if (info->get_engine_type() == vehicle_desc_t::electric && (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail))
-				{
-					display_electrics_tab = true;
-				}
-				else if (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail)
+				if (return_desc_category(info) == 1)
 				{
 					display_passenger_tab = true;
 				}
-				else if (info->get_power() > 0 || info->get_total_capacity() == 0)
+				else if(return_desc_category(info) == 2)
+				{
+					display_electrics_tab = true;
+				}
+				else if (return_desc_category(info) == 3)
 				{
 					display_powered_tab = true;
 				}
-				else
+				else if (return_desc_category(info) == 4)
 				{
 					display_unpowered_tab = true;
 				}
@@ -2084,19 +2109,19 @@ void vehicle_manager_t::update_vehicle_type_tabs()
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
 				vehicle_t* v = cnv->get_vehicle(veh);
 				vehicle_desc_t* info = (vehicle_desc_t*)v->get_desc();
-				if (info->get_engine_type() == vehicle_desc_t::electric && (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail))
-				{
-					display_electrics_tab = true;
-				}
-				else if (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail)
+				if (return_desc_category(info) == 1)
 				{
 					display_passenger_tab = true;
 				}
-				else if (info->get_power() > 0 || info->get_total_capacity() == 0)
+				else if (return_desc_category(info) == 2)
+				{
+					display_electrics_tab = true;
+				}
+				else if (return_desc_category(info) == 3)
 				{
 					display_powered_tab = true;
 				}
-				else
+				else if (return_desc_category(info) == 4)
 				{
 					display_unpowered_tab = true;
 				}
@@ -2137,7 +2162,7 @@ void vehicle_manager_t::update_vehicle_type_tabs()
 
 	tabs_vehicletype.set_active_tab_index(0);
 	
-
+	selected_tab_vehicletype = tabs_to_index_vehicletype[tabs_vehicletype.get_active_tab_index()];
 
 }
 
