@@ -217,6 +217,7 @@ private:
 	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_maintenance_info, dummy;
 	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade;
 	gui_tab_panel_t tabs_waytype;
+	gui_tab_panel_t tabs_vehicletype;
 	gui_tab_panel_t tabs_info;
 	gui_combobox_t combo_sorter_desc;
 	gui_combobox_t combo_sorter_veh;
@@ -375,6 +376,7 @@ public:
 	bool is_desc_displayable(vehicle_desc_t *desc);
 
 	void update_tabs();
+	void update_vehicle_type_tabs();
 	void update_veh_selection();
 
 	void save_previously_selected_desc();

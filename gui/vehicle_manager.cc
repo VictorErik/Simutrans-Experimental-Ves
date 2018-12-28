@@ -64,10 +64,13 @@
 #define SCL_HEIGHT (15*LINESPACE)
 
 static uint16 tabs_to_index_waytype[8];
+static uint16 tabs_to_index_vehicletype[5];
 static uint16 tabs_to_index_information[8];
 static uint8 max_idx_waytype = 0;
+static uint8 max_idx_vehicletype = 0;
 static uint8 max_idx_information = 0;
 static uint8 selected_tab_waytype = 0;
+static uint8 selected_tab_vehicletype = 0;
 static uint8 selected_tab_information = 0;
 
 bool vehicle_manager_t::desc_sortreverse = false;
@@ -174,9 +177,16 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	// waytype tab panel
 	tabs_waytype.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
-	update_tabs();
 	tabs_waytype.add_listener(this);
 	add_component(&tabs_waytype);
+
+	y_pos += D_BUTTON_HEIGHT*2;
+
+	// vehicle type tab panel
+	tabs_vehicletype.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	tabs_vehicletype.add_listener(this);
+	add_component(&tabs_vehicletype);
+	update_tabs();
 
 	y_pos += D_BUTTON_HEIGHT;
 
@@ -463,9 +473,19 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		int const tab = tabs_waytype.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab_waytype;
 		selected_tab_waytype = tabs_to_index_waytype[tab];
+		update_vehicle_type_tabs();
 		build_desc_list();
 		page_turn_desc = false;
 	}
+
+	if (comp == &tabs_vehicletype) {
+		int const tab = tabs_vehicletype.get_active_tab_index();
+		uint8 old_selected_tab = selected_tab_vehicletype;
+		selected_tab_vehicletype = tabs_to_index_vehicletype[tab];
+		build_desc_list();
+		page_turn_desc = false;
+	}
+	
 
 	if (comp == &tabs_info) {
 		int const tab = tabs_info.get_active_tab_index();
@@ -1982,9 +2002,144 @@ void vehicle_manager_t::update_tabs()
 		}
 	}
 	selected_tab_waytype = tabs_to_index_waytype[tabs_waytype.get_active_tab_index()];
+	update_vehicle_type_tabs();
 }
 
+void vehicle_manager_t::update_vehicle_type_tabs()
+{
+	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4, SCL_HEIGHT));
+	way_type = (waytype_t)selected_tab_waytype;
+	const uint16 month_now = welt->get_timeline_year_month();
+	max_idx_vehicletype = 0;
+	
+	// Tab organization and naming taken from "gui_convoy_assembler.cc, ie the depot window"
+	char show_all_tab[65] = { 0 };
+	char passenger_tab[65] = { 0 };	// passenger and mail vehicles
+	char electrics_tab[65] = { 0 };	// Electric passenger and mail vehicles
+	char powered_tab[65] = { 0 };	// Powered vehicles (with, or without good)
+	char unpowered_tab[65] = { 0 };	// Unpowered vehicles (with good)
+	sprintf(show_all_tab, "show_all");
+	if (way_type == waytype_t::road_wt)
+	{
+		sprintf(passenger_tab, "Bus_tab");
+		sprintf(electrics_tab, "TrolleyBus_tab");
+		sprintf(powered_tab, "LKW_tab");
+		sprintf(unpowered_tab, "Anhaenger_tab");
+	}
+	else if (way_type == waytype_t::water_wt)
+		{
+			sprintf(passenger_tab, "Ferry_tab");
+			sprintf(powered_tab, "Schiff_tab");
+			sprintf(unpowered_tab, "Schleppkahn_tab");
+		}
+	else if (way_type == waytype_t::air_wt)
+	{
+		sprintf(passenger_tab, "Flug_tab");
+		sprintf(powered_tab, "aircraft_tab");
+	}
+	else // Some rail based waytype..
+	{
+		sprintf(passenger_tab, "Pas_tab");
+		sprintf(electrics_tab, "Electrics_tab");
+		sprintf(powered_tab, "Lokomotive_tab");
+		sprintf(unpowered_tab, "Waggon_tab");
+	}
 
+	bool display_passenger_tab = false;
+	bool display_electrics_tab = false;
+	bool display_powered_tab = false;
+	bool display_unpowered_tab = false;
+
+	if (show_available_vehicles)
+	{
+		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
+			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if (info->get_engine_type() == vehicle_desc_t::electric && (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail))
+				{
+					display_electrics_tab = true;
+				}
+				else if (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail)
+				{
+					display_passenger_tab = true;
+				}
+				else if (info->get_power() > 0 || info->get_total_capacity() == 0)
+				{
+					display_powered_tab = true;
+				}
+				else
+				{
+					display_unpowered_tab = true;
+				}
+			}
+			if (display_electrics_tab && display_passenger_tab && display_powered_tab && display_unpowered_tab)
+			{
+				break;
+			}
+		}
+	}
+
+	// Always show a tab for the vehicle if we own it
+	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++) {
+				vehicle_t* v = cnv->get_vehicle(veh);
+				vehicle_desc_t* info = (vehicle_desc_t*)v->get_desc();
+				if (info->get_engine_type() == vehicle_desc_t::electric && (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail))
+				{
+					display_electrics_tab = true;
+				}
+				else if (info->get_freight_type() == goods_manager_t::passengers || info->get_freight_type() == goods_manager_t::mail)
+				{
+					display_passenger_tab = true;
+				}
+				else if (info->get_power() > 0 || info->get_total_capacity() == 0)
+				{
+					display_powered_tab = true;
+				}
+				else
+				{
+					display_unpowered_tab = true;
+				}
+			}
+		}
+		if (display_electrics_tab && display_passenger_tab && display_powered_tab && display_unpowered_tab)
+		{
+			break;
+		}
+	}
+
+	// Now build the tabs:
+	tabs_vehicletype.clear();
+
+	tabs_vehicletype.add_tab(&dummy, translator::translate("show_all"));
+	tabs_to_index_vehicletype[max_idx_vehicletype++] = 0;
+
+	if (display_passenger_tab)
+	{
+		tabs_vehicletype.add_tab(&dummy, translator::translate(passenger_tab));
+		tabs_to_index_vehicletype[max_idx_vehicletype++] = 1;
+	}
+	if (display_electrics_tab)
+	{
+		tabs_vehicletype.add_tab(&dummy, translator::translate(electrics_tab));
+		tabs_to_index_vehicletype[max_idx_vehicletype++] = 2;
+	}
+	if (display_powered_tab)
+	{
+		tabs_vehicletype.add_tab(&dummy, translator::translate(powered_tab));
+		tabs_to_index_vehicletype[max_idx_vehicletype++] = 3;
+	}
+	if (display_unpowered_tab)
+	{
+		tabs_vehicletype.add_tab(&dummy, translator::translate(unpowered_tab));
+		tabs_to_index_vehicletype[max_idx_vehicletype++] = 4;
+	}
+
+	tabs_vehicletype.set_active_tab_index(0);
+	
+
+
+}
 
 void vehicle_manager_t::sort_desc()
 {
