@@ -101,6 +101,7 @@ const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 const char *vehicle_manager_t::display_text_desc[DISPLAY_MODES_DESC] =
 {
 	" ",
+	"name",
 	"intro_year",
 	"amount",
 	"speed",
@@ -742,87 +743,108 @@ void vehicle_manager_t::update_desc_text_input_display()
 
 void vehicle_manager_t::set_desc_display_rules()
 {
-	char entry[50] = { 0 };
+	char entry[64] = { 0 };
 	sprintf(entry, ti_desc_display.get_text());
-	char c[1] = { 'a' }; // need to give c some value, since the forloop depends on it. The strings returned from the sorter will always have a number as its first value, so we should be safe
 
 	// For any type of number input, this is the syntax:
 	// First logic: ">" or "<" (if specified)
 	// First value: "number"
 	// Second logic: "-" (if specified)
 	// Second value: "number" (if specified)
+	//
+	// For any type of name input, the algorithm will search for the string in any part of the name
 
-	ch_first_logic[0] = 0;
-	ch_second_logic[0] = 0;
-	for (int i = 0; i < 10; i++)
-	{
-		ch_first_value[i] = 0;
-		ch_second_value[i] = 0;
-	}
-
-	first_logic_exists = false;
-	second_logic_exists = false;
-	first_value_exists = false;
-	second_value_exists = false;
-	no_logics = false;
-	invalid_entry_form = false;
-
-	desc_display_first_value = 0;
-	desc_display_second_value = 0;
-
-	int first_value_offset = 0;
-	int secon_value_offset = 0;
-
-	for (int j = 0; *c != '\0'; j++)
-	{
-		*c = entry[j];
-		if ((*c == '>' || *c == '<') && !first_logic_exists && !no_logics)
+	if (display_desc == displ_desc_name)
+	{		
+		sprintf(desc_display_name, entry);
+		letters_to_compare = 0;
+		for (int i = 0; i < sizeof(desc_display_name); i++)
 		{
-			ch_first_logic[0] = *c;
-			first_logic_exists = true;
+			if (desc_display_name[i] == '\0')
+			{
+				break;
+			}
+			else
+			{
+				letters_to_compare++;
+			}
 		}
-		else if (!second_logic_exists && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
-		{
-			ch_first_value[first_value_offset] = *c;
-			first_value_exists = true; 
-			no_logics = true;
-			first_value_offset++;
-		}
-		else if ((*c == '-') && first_value_exists && !second_logic_exists)
-		{
-			ch_second_logic[0] = *c;
-			second_logic_exists = true;
-		}
-		else if (second_logic_exists && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
-		{
-			ch_second_value[secon_value_offset] = *c;
-			second_value_exists = true;
-			secon_value_offset++;
-		}
-		else if (*c == ' ' || *c == '\0')
-		{
-			//ignore spaces
-		}
-		else
-		{
-			invalid_entry_form = true;
-			break;
-		}
-		
-	}
-	if (invalid_entry_form)
-	{
-		reset_desc_text_input_display();
 	}
 	else
 	{
-		if (first_value_exists)
+		ch_first_logic[0] = 0;
+		ch_second_logic[0] = 0;
+		for (int i = 0; i < 10; i++)
 		{
-			desc_display_first_value = std::atoi(ch_first_value);
+			ch_first_value[i] = 0;
+			ch_second_value[i] = 0;
 		}
-		if (second_value_exists)
+
+		first_logic_exists = false;
+		second_logic_exists = false;
+		first_value_exists = false;
+		second_value_exists = false;
+		no_logics = false;
+		invalid_entry_form = false;
+
+		desc_display_first_value = 0;
+		desc_display_second_value = 0;
+
+		int first_value_offset = 0;
+		int secon_value_offset = 0;
+		char c[1] = { 'a' }; // need to give c some value, since the forloop depends on it. The strings returned from the sorter will always have a number as its first value, so we should be safe
+	
+		for (int j = 0; *c != '\0'; j++)
 		{
-			desc_display_second_value = std::atoi(ch_second_value);
+			*c = entry[j];
+			if ((*c == '>' || *c == '<') && !first_logic_exists && !no_logics)
+			{
+				ch_first_logic[0] = *c;
+				first_logic_exists = true;
+			}
+			else if (!second_logic_exists && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
+			{
+				ch_first_value[first_value_offset] = *c;
+				first_value_exists = true;
+				no_logics = true;
+				first_value_offset++;
+			}
+			else if ((*c == '-') && first_value_exists && !second_logic_exists)
+			{
+				ch_second_logic[0] = *c;
+				second_logic_exists = true;
+			}
+			else if (second_logic_exists && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
+			{
+				ch_second_value[secon_value_offset] = *c;
+				second_value_exists = true;
+				secon_value_offset++;
+			}
+			else if (*c == ' ' || *c == '\0')
+			{
+				//ignore spaces
+			}
+			else
+			{
+				invalid_entry_form = true;
+				break;
+			}
+
+		}
+		if (invalid_entry_form)
+		{
+			reset_desc_text_input_display();
+		}
+		else
+		{
+			if (first_value_exists)
+			{
+				desc_display_first_value = std::atoi(ch_first_value);
+			}
+			if (second_value_exists)
+			{
+				desc_display_second_value = std::atoi(ch_second_value);
+			}
 		}
 	}
 }
@@ -833,6 +855,38 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 	if (display_desc == displ_desc_none)
 	{
 		display = true;
+	}
+	else if (display_desc == displ_desc_name)
+	{
+		if (desc_display_name[0] == '\0')
+		{
+			display = true;
+		}
+		else
+		{
+			char desc_name[256] = { 0 };
+			sprintf(desc_name, translator::translate(desc->get_name()));
+			int counter = 0;
+			char c[1] = { 0 };
+
+			for (int i = 0; i < sizeof(desc_name); i++)
+			{
+				*c = toupper(desc_name[i]);
+				if (*c == toupper(desc_display_name[counter]))
+				{
+					counter++;
+					if (counter == letters_to_compare)
+					{
+						display = true;
+						break;
+					}
+				}
+				else
+				{
+					counter = 0;
+				}
+			}
+		}
 	}
 	else
 	{

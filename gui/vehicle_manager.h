@@ -189,17 +189,18 @@ public:
 
 	enum display_mode_desc_t {
 		displ_desc_none = 0,
-		displ_desc_intro_year = 1,
-		displ_desc_amount = 2,
-		displ_desc_speed = 3,
-		displ_desc_catering_level = 4,
-		displ_desc_comfort = 5,
-		displ_desc_power = 6,
-		displ_desc_tractive_effort = 7,
-		displ_desc_weight = 8,
-		displ_desc_axle_load = 9,
-		displ_desc_runway_length = 10,
-		DISPLAY_MODES_DESC = 11
+		displ_desc_name = 1,
+		displ_desc_intro_year = 2,
+		displ_desc_amount = 3,
+		displ_desc_speed = 4,
+		displ_desc_catering_level = 5,
+		displ_desc_comfort = 6,
+		displ_desc_power = 7,
+		displ_desc_tractive_effort = 8,
+		displ_desc_weight = 9,
+		displ_desc_axle_load = 10,
+		displ_desc_runway_length = 11,
+		DISPLAY_MODES_DESC = 12
 	};
 
 	enum display_mode_veh_t {
@@ -350,6 +351,8 @@ private:
 
 	uint16 desc_display_first_value;
 	uint16 desc_display_second_value;
+	char desc_display_name[64];
+	int letters_to_compare;
 
 public:
 	vehicle_manager_t(player_t* player);
