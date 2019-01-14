@@ -2714,10 +2714,6 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 			}
 			else
 			{
-				char name_1[100];
-				char name_2[100];
-				sprintf(name_1, veh1->get_name());
-				sprintf(name_2, veh2->get_name());
 				uint8 veh1_classes_amount = veh1->get_number_of_classes() < 1 ? 1 : veh1->get_number_of_classes();
 				uint8 veh2_classes_amount = veh2->get_number_of_classes() < 1 ? 1 : veh2->get_number_of_classes();
 				sint16 veh1_current_class = 0;
@@ -2730,7 +2726,6 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 
 				uint8 classes_checked = 0;
 				uint8 number_of_classes = veh1->get_freight_type()->get_number_of_classes(); // Should be safe to assume that only vehicles carrying the same cargo is being compared here
-
 
 				for (uint8 j = 1; j < number_of_classes; j++)				
 				{
@@ -3926,6 +3921,47 @@ void gui_desc_info_t::draw(scr_coord offset)
 
 		// Sort- and display mode dependent text:
 		char sort_mode_text[100];
+
+		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_classes || sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_cargo_type_and_capacity /*|| display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_power*/)
+		{
+			bool pass_veh = veh->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS;
+			bool mail_veh = veh->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL;
+
+			if ((pass_veh || mail_veh) && veh->get_total_capacity()>0)
+			{
+				uint8 classes_amount = veh->get_number_of_classes() < 1 ? 1 : veh->get_number_of_classes();
+				bool entry_made = false;
+				int n = 0;
+				char buf[100];
+				for (uint8 j = 0; j < classes_amount; j++)
+				{
+					int i = classes_amount - 1 - j;
+					if (veh->get_capacity(i) > 0)
+					{
+						char class_name_untranslated[32];
+						if (mail_veh)
+						{
+							sprintf(class_name_untranslated, "m_class[%u]", i);
+						}
+						else
+						{
+							sprintf(class_name_untranslated, "p_class[%u]", i);
+						}
+						const char* class_name = translator::translate(class_name_untranslated);
+
+						if (entry_made)
+						{
+							n += sprintf(buf + n, ", ");
+						}
+						n += sprintf(buf + n, "%s: %3d", class_name, veh->get_capacity(i));
+						entry_made = true;
+					}
+				}				
+				sprintf(sort_mode_text, buf);
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
+				ypos_name += LINESPACE;
+			}
+		}
 		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_axle_load || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_axle_load)
 		{
 			sprintf(sort_mode_text, translator::translate("axle_load: %ut"), veh->get_axle_load());
@@ -3977,6 +4013,8 @@ void gui_desc_info_t::draw(scr_coord offset)
 				ypos_name += LINESPACE;
 			}
 		}
+
+
 		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_power || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_power)
 		{
 			if (veh->get_power() > 0)
