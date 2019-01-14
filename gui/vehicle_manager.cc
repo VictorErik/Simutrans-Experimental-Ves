@@ -699,7 +699,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 
 void vehicle_manager_t::reset_desc_text_input_display()
 {
-	char default_display[64];
+	char default_display[64];	
+	static cbuffer_t tooltip_syntax_display;
+	tooltip_syntax_display.clear();
+
 	ti_desc_display.set_visible(false);
 	{
 		ti_desc_display.set_visible(true);
@@ -720,10 +723,12 @@ void vehicle_manager_t::reset_desc_text_input_display()
 			if (welt->use_timeline())
 			{
 				sprintf(default_display, "< %u", welt->get_current_month() / 12);
+				tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\" or \"1234-5678\"");
 			}
 			else
 			{
 				sprintf(default_display, "");
+				tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\" or \"1234-5678\"");
 			}
 			break;
 		case displ_desc_amount:
@@ -736,12 +741,19 @@ void vehicle_manager_t::reset_desc_text_input_display()
 		case displ_desc_axle_load:
 		case displ_desc_runway_length:
 			sprintf(default_display, "> 0");
+			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\" or \"1234-5678\"");
+			break;
+		case displ_desc_name:
+			sprintf(default_display, "");
+			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), translator::translate("syntax_name_of_vehicle"));
 			break;
 		default:
 			sprintf(default_display, "");
+			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "");
 			break;
 		}
 	}
+	lb_display_desc.set_tooltip(tooltip_syntax_display);
 	tstrncpy(old_desc_display_param, default_display, sizeof(old_desc_display_param));
 	tstrncpy(desc_display_param, default_display, sizeof(desc_display_param));
 	ti_desc_display.set_text(desc_display_param, sizeof(desc_display_param));
