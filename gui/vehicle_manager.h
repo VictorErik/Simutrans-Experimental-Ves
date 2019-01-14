@@ -162,21 +162,23 @@ class vehicle_manager_t : public gui_frame_t, public action_listener_t
 {
 public:
 	enum sort_mode_desc_t {
-		by_desc_name = 0,
-		by_desc_issues = 1,
-		by_desc_intro_year = 2,
-		by_desc_amount = 3,
-		by_desc_cargo_type_and_capacity = 4,
-		by_desc_speed = 5,
-		by_desc_upgrades_available = 6,
-		by_desc_catering_level = 7,
-		by_desc_comfort = 8,
-		by_desc_power = 9,
-		by_desc_tractive_effort = 10,
-		by_desc_weight = 11,
-		by_desc_axle_load = 12,
-		by_desc_runway_length = 13,
-		SORT_MODES_DESC = 14
+
+		by_desc_name,
+		by_desc_issues,
+		by_desc_intro_year,
+		by_desc_amount,
+		by_desc_cargo_type_and_capacity,
+		by_desc_speed,
+		by_desc_upgrades_available,
+		by_desc_catering_level,
+		by_desc_comfort,
+		by_desc_classes,
+		by_desc_power,
+		by_desc_tractive_effort,
+		by_desc_weight,
+		by_desc_axle_load,
+		by_desc_runway_length,
+		SORT_MODES_DESC
 	};
 
 	enum sort_mode_veh_t {

@@ -87,6 +87,7 @@ const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 	"upgrades",
 	"catering_level",
 	"comfort",
+	"class",
 	"power",
 	"tractive_effort",
 	"weight",
@@ -2683,6 +2684,107 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	}
 	break;
 
+	case by_desc_classes:
+	{
+		if (veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index() && (veh2->get_total_capacity() > 0 && veh1->get_total_capacity() > 0))
+		{
+			result = sgn(veh1->get_freight_type()->get_catg_index() - veh2->get_freight_type()->get_catg_index());
+			if (desc_sortreverse)
+			{
+				result = -result;
+			}
+		}
+		else
+		{
+			if (veh1->get_total_capacity() <= 0)
+			{
+				result = 1;			
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+			else if (veh2->get_total_capacity() <= 0)
+			{
+				result = -1;
+				if (desc_sortreverse)
+				{
+					result = -result;
+				}
+			}
+			else
+			{
+				char name_1[100];
+				char name_2[100];
+				sprintf(name_1, veh1->get_name());
+				sprintf(name_2, veh2->get_name());
+				uint8 veh1_classes_amount = veh1->get_number_of_classes() < 1 ? 1 : veh1->get_number_of_classes();
+				uint8 veh2_classes_amount = veh2->get_number_of_classes() < 1 ? 1 : veh2->get_number_of_classes();
+				sint16 veh1_current_class = 0;
+				sint16 veh2_current_class = 0;
+				uint8 veh1_highest_class = 0;
+				uint8 veh2_highest_class = 0;
+				uint16 veh1_highest_class_capacity = 0;
+				uint16 veh2_highest_class_capacity = 0;
+				bool any_class_found = false;
+
+				uint8 classes_checked = 0;
+				uint8 number_of_classes = veh1->get_freight_type()->get_number_of_classes(); // Should be safe to assume that only vehicles carrying the same cargo is being compared here
+
+
+				for (uint8 j = 1; j < number_of_classes; j++)				
+				{
+					int i = number_of_classes - j;
+					veh1_current_class = -1;
+					veh2_current_class = -1;
+					any_class_found = false;
+					if (i <= veh1_classes_amount)
+					{
+						if (veh1->get_capacity(i) > 0)
+						{
+							veh1_current_class = i;
+							any_class_found = true;
+							if (veh1_highest_class_capacity == 0)
+							{
+								veh1_highest_class = i;
+								veh1_highest_class_capacity = veh1->get_capacity(i);
+							}
+						}
+					}
+
+					if (i <= veh2_classes_amount)
+					{
+						if (veh2->get_capacity(i) > 0)
+						{
+							veh2_current_class = i;
+							any_class_found = true;
+							if (veh2_highest_class_capacity == 0)
+							{
+								veh2_highest_class = i;
+								veh2_highest_class_capacity = veh2->get_capacity(i);
+							}
+						}
+					}
+
+					// Is it ready to produce a result? If not, run the for loop again...
+					if ((veh1_current_class != veh2_current_class) && any_class_found)
+					{
+						result = sgn(veh2_highest_class - veh1_highest_class);
+						classes_checked = 0;
+						break;
+					}
+					classes_checked++;
+				}
+
+				if (classes_checked >= number_of_classes)
+				{
+					result = sgn(veh2_highest_class_capacity - veh1_highest_class_capacity);
+				}
+			}
+		}
+	}
+		break;
+
 	case by_desc_power:
 	{
 		if (veh2->get_power() != veh1->get_power())
@@ -3918,7 +4020,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		}
 		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_weight || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_weight)
 		{
-			sprintf(sort_mode_text, translator::translate("weight: %ut"), veh->get_axle_load());
+			sprintf(sort_mode_text, translator::translate("weight: %ut"), veh->get_weight()/1000);
 			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, sort_mode_text, ALIGN_RIGHT, text_color, true);
 			ypos_name += LINESPACE;
 		}
