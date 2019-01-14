@@ -190,19 +190,18 @@ public:
 	};
 
 	enum display_mode_desc_t {
-		displ_desc_none = 0,
-		displ_desc_name = 1,
-		displ_desc_intro_year = 2,
-		displ_desc_amount = 3,
-		displ_desc_speed = 4,
-		displ_desc_catering_level = 5,
-		displ_desc_comfort = 6,
-		displ_desc_power = 7,
-		displ_desc_tractive_effort = 8,
-		displ_desc_weight = 9,
-		displ_desc_axle_load = 10,
-		displ_desc_runway_length = 11,
-		DISPLAY_MODES_DESC = 12
+		displ_desc_name,
+		displ_desc_intro_year,
+		displ_desc_amount,
+		displ_desc_speed,
+		displ_desc_catering_level,
+		displ_desc_comfort,
+		displ_desc_power,
+		displ_desc_tractive_effort,
+		displ_desc_weight,
+		displ_desc_axle_load,
+		displ_desc_runway_length,
+		DISPLAY_MODES_DESC
 	};
 
 	enum display_mode_veh_t {

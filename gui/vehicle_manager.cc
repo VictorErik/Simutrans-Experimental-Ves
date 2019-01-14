@@ -104,7 +104,6 @@ const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 };
 const char *vehicle_manager_t::display_text_desc[DISPLAY_MODES_DESC] =
 {
-	" ",
 	"name",
 	"intro_year",
 	"amount",
@@ -142,7 +141,7 @@ static const char * engine_type_names[11] =
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
 vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
-vehicle_manager_t::display_mode_desc_t vehicle_manager_t::display_desc = displ_desc_none;
+vehicle_manager_t::display_mode_desc_t vehicle_manager_t::display_desc = displ_desc_name;
 vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh_none;
 
 vehicle_manager_t::vehicle_manager_t(player_t *player_) :
@@ -702,7 +701,6 @@ void vehicle_manager_t::reset_desc_text_input_display()
 {
 	char default_display[64];
 	ti_desc_display.set_visible(false);
-	if (display_desc != displ_desc_none)
 	{
 		ti_desc_display.set_visible(true);
 	}
@@ -899,11 +897,7 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 	
 	if ((return_desc_category(desc) == selected_tab_vehicletype) || selected_tab_vehicletype == 0)
 	{
-		if (display_desc == displ_desc_none)
-		{
-			display = true;
-		}
-		else if (display_desc == displ_desc_name)
+		if (display_desc == displ_desc_name)
 		{
 			if (desc_display_name[0] == '\0')
 			{
