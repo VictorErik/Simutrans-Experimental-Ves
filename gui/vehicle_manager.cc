@@ -2528,7 +2528,7 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 			result = find_desc_issue_level(veh2) - find_desc_issue_level(veh1);
 		}
 		else
-		{			
+		{
 			result = strcmp(translator::translate(veh1->get_name()), translator::translate(veh2->get_name()));
 			if (desc_sortreverse)
 			{
@@ -2571,7 +2571,7 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 			{
 
 				result = sgn(veh2->get_total_capacity() - veh1->get_total_capacity());
-				if ((veh2->get_total_capacity() == 0 || veh1->get_total_capacity() == 0)&& desc_sortreverse)
+				if ((veh2->get_total_capacity() == 0 || veh1->get_total_capacity() == 0) && desc_sortreverse)
 				{
 					result = -result;
 				}
@@ -2596,7 +2596,7 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 	case by_desc_upgrades_available:
 		// find a way to easily count the current number of available upgrades
 		break;
-		
+
 	case by_desc_catering_level:
 	{
 		if ((veh1->get_freight_type()->get_catg_index() != veh2->get_freight_type()->get_catg_index()) && (veh2->get_catering_level() > 0 && veh1->get_catering_level() > 0))
@@ -2698,7 +2698,7 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 		{
 			if (veh1->get_total_capacity() <= 0)
 			{
-				result = 1;			
+				result = 1;
 				if (desc_sortreverse)
 				{
 					result = -result;
@@ -2716,29 +2716,33 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 			{
 				uint8 veh1_classes_amount = veh1->get_number_of_classes() < 1 ? 1 : veh1->get_number_of_classes();
 				uint8 veh2_classes_amount = veh2->get_number_of_classes() < 1 ? 1 : veh2->get_number_of_classes();
-				sint16 veh1_current_class = 0;
-				sint16 veh2_current_class = 0;
+				sint16 veh1_current_class = -1;
+				sint16 veh2_current_class = -1;
+				uint16 veh1_current_class_capacity = 0;
+				uint16 veh2_current_class_capacity = 0;
 				uint8 veh1_highest_class = 0;
 				uint8 veh2_highest_class = 0;
+				uint8 veh1_accommodations = 0;
+				uint8 veh2_accommodations = 0;
 				uint16 veh1_highest_class_capacity = 0;
 				uint16 veh2_highest_class_capacity = 0;
-				bool any_class_found = false;
+				int favor_veh = 0; // 1 = veh1, 2 = veh2, 0 = equal
+				bool resolved = false;
 
 				uint8 classes_checked = 0;
 				uint8 number_of_classes = veh1->get_freight_type()->get_number_of_classes(); // Should be safe to assume that only vehicles carrying the same cargo is being compared here
 
-				for (uint8 j = 1; j < number_of_classes; j++)				
+				for (uint8 j = 1; j < number_of_classes; j++)
 				{
 					int i = number_of_classes - j;
-					veh1_current_class = -1;
-					veh2_current_class = -1;
-					any_class_found = false;
+					classes_checked++;
 					if (i <= veh1_classes_amount)
 					{
 						if (veh1->get_capacity(i) > 0)
 						{
 							veh1_current_class = i;
-							any_class_found = true;
+							veh1_current_class_capacity = veh1->get_capacity(i);
+							veh1_accommodations++;
 							if (veh1_highest_class_capacity == 0)
 							{
 								veh1_highest_class = i;
@@ -2752,7 +2756,8 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 						if (veh2->get_capacity(i) > 0)
 						{
 							veh2_current_class = i;
-							any_class_found = true;
+							veh2_current_class_capacity = veh2->get_capacity(i);
+							veh2_accommodations++;
 							if (veh2_highest_class_capacity == 0)
 							{
 								veh2_highest_class = i;
@@ -2762,22 +2767,49 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 					}
 
 					// Is it ready to produce a result? If not, run the for loop again...
-					if ((veh1_current_class != veh2_current_class) && any_class_found)
+					if (veh2_highest_class != veh1_highest_class)
 					{
 						result = sgn(veh2_highest_class - veh1_highest_class);
-						classes_checked = 0;
+						resolved = true;
 						break;
 					}
-					classes_checked++;
+					else
+					{
+						if (veh1_accommodations == veh2_accommodations && veh1_current_class != veh2_current_class)
+						{
+							result = sgn(veh2_current_class - veh1_current_class);
+							resolved = true;
+							break;
+						}
+					}
 				}
 
-				if (classes_checked >= number_of_classes)
+				if (!resolved)
 				{
-					result = sgn(veh2_highest_class_capacity - veh1_highest_class_capacity);
+					if (veh1_accommodations != veh2_accommodations)
+					{
+						result = sgn(veh1_accommodations - veh2_accommodations);
+					}
+					else
+					{
+						result = sgn(veh2_highest_class_capacity - veh1_highest_class_capacity);
+					}
 				}
 			}
 		}
 	}
+	
+
+
+
+
+				/*	
+				
+				favor_veh = veh1_highest_class_capacity > veh2_highest_class_capacity ? 1 : 2;
+
+			}
+		}
+	}*/
 		break;
 
 	case by_desc_power:
