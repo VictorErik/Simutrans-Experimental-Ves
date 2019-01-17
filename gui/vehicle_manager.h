@@ -191,11 +191,13 @@ public:
 
 	enum display_mode_desc_t {
 		displ_desc_name,
-		displ_desc_intro_year,
 		displ_desc_amount,
+		displ_desc_intro_year,
 		displ_desc_speed,
-		displ_desc_catering_level,
+		displ_desc_type_and_capacity,
 		displ_desc_comfort,
+		displ_desc_classes,
+		displ_desc_catering_level,
 		displ_desc_power,
 		displ_desc_tractive_effort,
 		displ_desc_weight,
@@ -230,6 +232,13 @@ private:
 	button_t bt_upgrade;
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
+
+	gui_label_t lb_amount_desc, lb_amount_veh;
+	gui_label_t lb_desc_page, lb_veh_page;
+	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
+
+	gui_textinput_t ti_desc_display;
+	gui_combobox_t combo_desc_display;
 
 	char sortby_text[50];
 	char displayby_text[50];
@@ -296,11 +305,6 @@ private:
 	uint32 amount_veh;
 	uint32 amount_veh_owned;
 
-	gui_label_t lb_amount_desc, lb_amount_veh;
-	gui_label_t lb_desc_page, lb_veh_page;
-	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
-
-	gui_textinput_t ti_desc_display;
 
 	vehicle_desc_t* desc_for_display = NULL;
 	vehicle_desc_t* old_desc_for_display;

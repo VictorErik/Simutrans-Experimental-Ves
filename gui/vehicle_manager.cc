@@ -105,11 +105,13 @@ const char *vehicle_manager_t::sort_text_veh[SORT_MODES_VEH] =
 const char *vehicle_manager_t::display_text_desc[DISPLAY_MODES_DESC] =
 {
 	"name",
-	"intro_year",
 	"amount",
+	"intro_year",
 	"speed",
-	"catering_level",
+	"type_and_capacity",
 	"comfort",
+	"classes",
+	"catering_level",
 	"power",
 	"tractive_effort",
 	"weight",
@@ -263,6 +265,16 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	ti_desc_display.set_visible(false);
 	ti_desc_display.add_listener(this);
 	add_component(&ti_desc_display);
+
+	combo_desc_display.clear_elements();
+	combo_desc_display.set_pos(scr_coord(column_3, y_pos));
+	combo_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_desc_display.set_focusable(true);
+	combo_desc_display.set_visible(false);
+	combo_desc_display.set_highlight_color(1);
+	combo_desc_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	combo_desc_display.add_listener(this);
+	add_component(&combo_desc_display);
 
 	y_pos -= D_BUTTON_HEIGHT;
 	column_1 += RIGHT_HAND_COLUMN;
@@ -564,6 +576,17 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		update_desc_text_input_display();
 		build_desc_list();
 	}
+
+	if (comp == &combo_desc_display) {
+		sint32 display_mode = combo_desc_display.get_selection();
+		if (display_mode < 0)
+		{
+			combo_desc_display.set_selection(0);
+			display_mode = 0;
+		}
+		build_desc_list();
+	}
+	
 	
 
 	if (comp == &combo_sorter_veh) {
@@ -704,9 +727,7 @@ void vehicle_manager_t::reset_desc_text_input_display()
 	tooltip_syntax_display.clear();
 
 	ti_desc_display.set_visible(false);
-	{
-		ti_desc_display.set_visible(true);
-	}
+	combo_desc_display.set_visible(false);
 	ti_desc_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
 
 	if (invalid_entry_form)
@@ -720,15 +741,15 @@ void vehicle_manager_t::reset_desc_text_input_display()
 		switch (display_desc)
 		{
 		case displ_desc_intro_year:
+			ti_desc_display.set_visible(true);
+			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\", \"1234\" or \"1234-5678\"");
 			if (welt->use_timeline())
 			{
 				sprintf(default_display, "< %u", welt->get_current_month() / 12);
-				tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\" or \"1234-5678\"");
 			}
 			else
 			{
 				sprintf(default_display, "");
-				tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\" or \"1234-5678\"");
 			}
 			break;
 		case displ_desc_amount:
@@ -740,14 +761,33 @@ void vehicle_manager_t::reset_desc_text_input_display()
 		case displ_desc_weight:
 		case displ_desc_axle_load:
 		case displ_desc_runway_length:
+			ti_desc_display.set_visible(true);
 			sprintf(default_display, "> 0");
-			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\" or \"1234-5678\"");
+			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\", \"1234\" or \"1234-5678\"");
 			break;
 		case displ_desc_name:
+			ti_desc_display.set_visible(true);
 			sprintf(default_display, "");
 			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), translator::translate("syntax_name_of_vehicle"));
 			break;
+		case displ_desc_classes:
+			break;
+		case displ_desc_type_and_capacity:
+			combo_desc_display.set_visible(true);
+
+			for (int i = 0; i < goods_manager_t::get_max_catg_index(); i++)
+			{
+				char *good_name = new char[32]();
+				if (good_name != nullptr)
+				{
+					sprintf(good_name, translator::translate(goods_manager_t::get_info_catg(i)->get_catg_name()));
+				}
+				combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(good_name, SYSCOL_TEXT));
+			}
+
+			break;
 		default:
+			ti_desc_display.set_visible(true);
 			sprintf(default_display, "");
 			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "");
 			break;
