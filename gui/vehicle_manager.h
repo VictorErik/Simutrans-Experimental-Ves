@@ -194,7 +194,7 @@ public:
 		displ_desc_amount,
 		displ_desc_intro_year,
 		displ_desc_speed,
-		displ_desc_type_and_capacity,
+		displ_desc_cargo_cat,
 		displ_desc_comfort,
 		displ_desc_classes,
 		displ_desc_catering_level,
@@ -365,6 +365,9 @@ public:
 	~vehicle_manager_t();
 
 	vehicle_manager_t();
+
+	static int display_by_good;
+	static int display_by_class;
 
 	void build_desc_list();
 	void build_veh_list();

@@ -87,7 +87,7 @@ const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 	"upgrades",
 	"catering_level",
 	"comfort",
-	"class",
+	"classes",
 	"power",
 	"tractive_effort",
 	"weight",
@@ -108,7 +108,7 @@ const char *vehicle_manager_t::display_text_desc[DISPLAY_MODES_DESC] =
 	"amount",
 	"intro_year",
 	"speed",
-	"type_and_capacity",
+	"cargo_cat",
 	"comfort",
 	"classes",
 	"catering_level",
@@ -145,6 +145,9 @@ vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_nam
 vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
 vehicle_manager_t::display_mode_desc_t vehicle_manager_t::display_desc = displ_desc_name;
 vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh_none;
+
+int vehicle_manager_t::display_by_good = 0;
+int vehicle_manager_t::display_by_class = 0;
 
 vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	gui_frame_t( translator::translate("vehicle_manager"), player_),
@@ -260,21 +263,25 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	combo_display_desc.add_listener(this);
 	add_component(&combo_display_desc);
 
-	ti_desc_display.set_pos(scr_coord(column_3,y_pos));
+	ti_desc_display.set_pos(scr_coord(column_3, y_pos));
 	ti_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	ti_desc_display.set_visible(false);
 	ti_desc_display.add_listener(this);
 	add_component(&ti_desc_display);
 
 	combo_desc_display.clear_elements();
-	combo_desc_display.set_pos(scr_coord(column_3, y_pos));
+	combo_desc_display.set_pos(scr_coord(column_3,y_pos));
 	combo_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_desc_display.set_focusable(true);
-	combo_desc_display.set_visible(false);
+	combo_desc_display.set_visible(true);
+	combo_desc_display.set_selection(0);
 	combo_desc_display.set_highlight_color(1);
 	combo_desc_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 	combo_desc_display.add_listener(this);
 	add_component(&combo_desc_display);
+
+	display_by_good = 0;
+	display_by_class = 0;
 
 	y_pos -= D_BUTTON_HEIGHT;
 	column_1 += RIGHT_HAND_COLUMN;
@@ -584,6 +591,14 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			combo_desc_display.set_selection(0);
 			display_mode = 0;
 		}
+		if (display_desc == displ_desc_cargo_cat)
+		{
+			display_by_good = display_mode;
+		}
+		else if (display_desc == displ_desc_classes)
+		{
+			display_by_class = display_mode;
+		}
 		build_desc_list();
 	}
 	
@@ -727,7 +742,7 @@ void vehicle_manager_t::reset_desc_text_input_display()
 	tooltip_syntax_display.clear();
 
 	ti_desc_display.set_visible(false);
-	combo_desc_display.set_visible(false);
+	//combo_desc_display.set_visible(false); // If this line is uncommented, the combobox wont show up at all
 	ti_desc_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
 
 	if (invalid_entry_form)
@@ -765,27 +780,67 @@ void vehicle_manager_t::reset_desc_text_input_display()
 			sprintf(default_display, "> 0");
 			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), "\">1234\", \"<1234\", \"1234\" or \"1234-5678\"");
 			break;
+
 		case displ_desc_name:
 			ti_desc_display.set_visible(true);
 			sprintf(default_display, "");
 			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), translator::translate("syntax_name_of_vehicle"));
 			break;
-		case displ_desc_classes:
-			break;
-		case displ_desc_type_and_capacity:
+
+		case displ_desc_cargo_cat:
+			combo_desc_display.clear_elements();
 			combo_desc_display.set_visible(true);
+			combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("all_good"), SYSCOL_TEXT));
+			//combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("no_good"), SYSCOL_TEXT));
 
 			for (int i = 0; i < goods_manager_t::get_max_catg_index(); i++)
 			{
-				char *good_name = new char[32]();
-				if (good_name != nullptr)
+				if (goods_manager_t::get_info_catg_index(i)->get_catg() == 0) // Special freight -> spell out with its own name
 				{
-					sprintf(good_name, translator::translate(goods_manager_t::get_info_catg(i)->get_catg_name()));
+					combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(goods_manager_t::get_info_catg_index(i)->get_name()), SYSCOL_TEXT));
 				}
-				combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(good_name, SYSCOL_TEXT));
+				else
+				{
+					combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(goods_manager_t::get_info_catg_index(i)->get_catg_name()), SYSCOL_TEXT));
+				}
 			}
-
+			combo_desc_display.set_selection(display_by_good);
+			tooltip_syntax_display.printf(translator::translate("select_a_good_category_from_the_right_drop_down_list"));
 			break;
+
+		case displ_desc_classes:
+			combo_desc_display.clear_elements();
+			combo_desc_display.set_visible(true);
+
+			combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("all_pass_classes"), SYSCOL_TEXT));
+			for (int j = 0; j < goods_manager_t::passengers->get_number_of_classes(); j++)
+			{
+				int i = goods_manager_t::passengers->get_number_of_classes() - 1 - j;
+				char *class_name = new char[32]();
+				if (class_name != nullptr)
+				{
+					sprintf(class_name, "p_class[%u]", i);
+				}
+				combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(class_name), SYSCOL_TEXT));
+				delete[] class_name;
+			}	
+
+			combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("all_mail_classes"), SYSCOL_TEXT));
+			for (int j = 0; j < goods_manager_t::mail->get_number_of_classes(); j++)
+			{
+				int i = goods_manager_t::mail->get_number_of_classes() - 1 - j;
+				char *class_name = new char[32]();
+				if (class_name != nullptr)
+				{
+					sprintf(class_name, "m_class[%u]", i);
+				}
+				combo_desc_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(class_name), SYSCOL_TEXT));
+				delete[] class_name;
+			}
+			combo_desc_display.set_selection(display_by_good);
+			tooltip_syntax_display.printf(translator::translate("select_a_class_to_be_displayed_from_the_right_drop_down_list"));
+			break;
+
 		default:
 			ti_desc_display.set_visible(true);
 			sprintf(default_display, "");
@@ -945,7 +1000,6 @@ uint8 vehicle_manager_t::return_desc_category(vehicle_desc_t*desc)
 bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 {
 	bool display = false;
-
 	
 	if ((return_desc_category(desc) == selected_tab_vehicletype) || selected_tab_vehicletype == 0)
 	{
@@ -981,6 +1035,53 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 				}
 			}
 		}
+		else if (display_desc == displ_desc_cargo_cat)
+		{
+				if (display_by_good == 0) // Display all
+				{
+					display = true;
+				}
+				else if (display_by_good == desc->get_freight_type()->get_catg_index() + 1)
+				{
+					display = true;
+				}
+		}
+		else if (display_desc == displ_desc_classes)
+		{
+			bool pass_veh = desc->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS;
+			bool mail_veh = desc->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL;
+			bool correct_type = false;
+			int offset = 0;
+
+			if (pass_veh && display_by_class <= goods_manager_t::passengers->get_number_of_classes() + 1 || mail_veh && display_by_class >= goods_manager_t::mail->get_number_of_classes() + 2)
+			{
+				correct_type = true;
+			}
+
+			if (correct_type)
+			{
+				if (mail_veh)
+				{
+					offset = goods_manager_t::passengers->get_number_of_classes() + 1;
+				}
+				if (display_by_class == offset) // Display all passengers or mail
+				{
+					display = true;
+				}
+				else  // Display a passenger or mail class
+				{
+					for (uint8 i = 0; i < desc->get_number_of_classes(); i++)
+					{
+						int actual_class = desc->get_number_of_classes() - (display_by_class - offset);
+						if (actual_class == i && desc->get_capacity(i) > 0)
+						{
+							display = true;
+							break;
+						}
+					}
+				}
+			}
+		}
 		else
 		{
 			sint64 value_to_compare = 0;
@@ -1006,6 +1107,7 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 				value_to_compare = desc_amounts;
 			}
 			break;
+		
 			case displ_desc_speed:
 				value_to_compare = desc->get_topspeed();
 				break;
