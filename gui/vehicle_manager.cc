@@ -2946,18 +2946,6 @@ bool vehicle_manager_t::compare_desc(vehicle_desc_t* veh1, vehicle_desc_t* veh2)
 			}
 		}
 	}
-	
-
-
-
-
-				/*	
-				
-				favor_veh = veh1_highest_class_capacity > veh2_highest_class_capacity ? 1 : 2;
-
-			}
-		}
-	}*/
 		break;
 
 	case by_desc_power:
