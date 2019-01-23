@@ -193,6 +193,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	y_pos += D_BUTTON_HEIGHT;
 
+	// "Veh" select all button
 	bt_select_all.init(button_t::square_state, translator::translate("preselect_all"), scr_coord(RIGHT_HAND_COLUMN, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_select_all.add_listener(this);
 	bt_select_all.set_tooltip(translator::translate("preselects_all_vehicles_in_the_list_automatically"));
@@ -205,20 +206,22 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	x_pos = D_MARGIN_LEFT;
 
 	// Sorting and display section
+	// Start by determining which translation is the longest, since the GUI depends upon it:
 	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
 	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
-
 	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
 	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
 
+	// Define the columns:
 	int column_1 = D_MARGIN_LEFT;
 	int column_2 = column_1 + label_length + 5;
 	int column_3 = column_2 + combobox_width + 5;
 
+	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_pos(scr_coord(column_1, y_pos));
 	lb_desc_sortby.set_visible(true);
-	add_component(&lb_desc_sortby);
-	
+	add_component(&lb_desc_sortby);	
+
 	combo_sorter_desc.clear_elements();
 	for (int i = 0; i < SORT_MODES_DESC; i++)
 	{
@@ -242,7 +245,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	y_pos += D_BUTTON_HEIGHT;
 
-	// "Display only" selection field
+	// "Desc" display label, combobox and textfield/combobox
 	lb_display_desc.set_pos(scr_coord(column_1, y_pos));
 	lb_display_desc.set_visible(true);
 	add_component(&lb_display_desc);
@@ -281,11 +284,13 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	display_desc_by_good = 0;
 	display_desc_by_class = 0;
 
+	// Define the columns for use in the "Veh" section
 	y_pos -= D_BUTTON_HEIGHT;
 	column_1 += RIGHT_HAND_COLUMN;
 	column_2 += RIGHT_HAND_COLUMN;
 	column_3 += RIGHT_HAND_COLUMN;
 
+	// "Veh" sorting label, combobox and reverse sort button
 	lb_veh_sortby.set_pos(scr_coord(column_1, y_pos));
 	lb_veh_sortby.set_size(D_BUTTON_SIZE);
 	lb_veh_sortby.set_visible(true);
@@ -314,7 +319,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	y_pos += D_BUTTON_HEIGHT;
 
-	// "Display only" selection field
+	// "Veh" display label, combobox and textfield/combobox
 	lb_display_veh.set_pos(scr_coord(column_1, y_pos));
 	lb_display_veh.set_visible(true);
 	add_component(&lb_display_veh);
@@ -354,7 +359,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	scrolly_desc_pos = scr_coord(D_MARGIN_LEFT, y_pos);
 	
 
-	// Vehicle desc list
+	// "Desc" list
 	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH, VEHICLE_NAME_COLUMN_HEIGHT));
 	scrolly_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	scrolly_desc.set_show_scroll_y(true);
@@ -364,7 +369,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	add_component(&scrolly_desc);
 
 
-	// Vehicle list
+	// "Veh" list
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH, VEHICLE_NAME_COLUMN_HEIGHT));
 	scrolly_veh.set_pos(scr_coord(RIGHT_HAND_COLUMN, y_pos));
 	scrolly_veh.set_show_scroll_y(true);
@@ -375,14 +380,14 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	y_pos += VEHICLE_NAME_COLUMN_HEIGHT;
 
-	// Label telling the amount of vehicles
+	// "Desc" and "Veh" -amount of entries labels
 	lb_amount_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	add_component(&lb_amount_desc);
 
 	lb_amount_veh.set_pos(scr_coord(RIGHT_HAND_COLUMN, y_pos));
 	add_component(&lb_amount_veh);
 	
-	// Arrow buttons to shift pages when too many vehicle/desc entries in the list
+	// "Desc" and "Veh" -list arrow buttons and labels
 	bt_desc_prev_page.init(button_t::arrowleft, NULL, scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - 110, y_pos));
 	bt_desc_prev_page.add_listener(this);
 	bt_desc_prev_page.set_tooltip(translator::translate("previous_page"));
@@ -415,22 +420,16 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_veh_next_page.set_visible(false);
 	add_component(&bt_veh_next_page);
 		
-
 	y_pos += D_BUTTON_HEIGHT;
 
-	// information tab panel
+	// Lower section tab panels
 	tabs_info.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	tabs_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH*2, SCL_HEIGHT));
-	
-	// general information
+
 	tabs_info.add_tab(&dummy, translator::translate("general_information"));
 	tabs_to_index_information[max_idx_information++] = 0;
-
-	// maintenance information
 	tabs_info.add_tab(&cont_maintenance_info, translator::translate("maintenance_information"));
 	tabs_to_index_information[max_idx_information++] = 1;
-	
-	// details
 	tabs_info.add_tab(&dummy, translator::translate("details"));
 	tabs_to_index_information[max_idx_information++] = 2;
 
@@ -443,9 +442,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	desc_info_text_pos = scr_coord(D_MARGIN_LEFT, y_pos);
 	selected_desc_index = -1;
 	selected_upgrade_index = -1;
-/*
-	cont_desc_info.set_pos(scr_coord(desc_info_text_ypos));
-	cont_desc_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH * 2, INFORMATION_COLUMN_HEIGHT));*/
 
 	scr_coord dummy(D_MARGIN_LEFT, D_MARGIN_TOP);
 
