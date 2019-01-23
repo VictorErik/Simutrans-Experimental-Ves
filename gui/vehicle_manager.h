@@ -169,7 +169,6 @@ public:
 		by_desc_amount,
 		by_desc_cargo_type_and_capacity,
 		by_desc_speed,
-		by_desc_upgrades_available,
 		by_desc_catering_level,
 		by_desc_comfort,
 		by_desc_classes,
@@ -207,11 +206,10 @@ public:
 	};
 
 	enum display_mode_veh_t {
-		displ_veh_none = 0,
-		displ_veh_age = 1,
-		displ_veh_odometer = 2,
-		by_veh_location = 3,
-		DISPLAY_MODES_VEH = 4
+		displ_veh_age,
+		displ_veh_odometer,
+		displ_veh_location,
+		DISPLAY_MODES_VEH
 	};
 private:
 	player_t *player;
@@ -224,7 +222,7 @@ private:
 	gui_tab_panel_t tabs_info;
 	gui_combobox_t combo_sorter_desc;
 	gui_combobox_t combo_sorter_veh;
-	gui_combobox_t combo_display_desc;
+	gui_combobox_t combo_display_desc, combo_display_veh;
 
 	button_t bt_show_available_vehicles;
 	button_t bt_select_all;
@@ -237,8 +235,8 @@ private:
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
 
-	gui_textinput_t ti_desc_display;
-	gui_combobox_t combo_desc_display;
+	gui_textinput_t ti_desc_display, ti_veh_display;
+	gui_combobox_t combo_desc_display, combo_veh_display;
 
 	char sortby_text[50];
 	char displayby_text[50];
@@ -342,22 +340,43 @@ private:
 	bool reposition_desc_scroll = false;
 
 	char desc_display_param[64], old_desc_display_param[64];
+	char veh_display_param[64], old_veh_display_param[64];
 
-	char ch_first_logic[1] = { 0 };
-	char ch_second_logic[1] = { 0 };
-	char ch_first_value[10] = { 0 };
-	char ch_second_value[10] = { 0 };
+	char ch_desc_first_logic[1] = { 0 };
+	char ch_desc_second_logic[1] = { 0 };
+	char ch_desc_first_value[10] = { 0 };
+	char ch_desc_second_value[10] = { 0 };
 
-	bool first_logic_exists = false;
-	bool second_logic_exists = false;
-	bool first_value_exists = false;
-	bool second_value_exists = false;
-	bool no_logics = false;
-	bool invalid_entry_form = false;
+	bool ti_desc_first_logic_exists = false;
+	bool ti_desc_second_logic_exists = false;
+	bool ti_desc_first_value_exists = false;
+	bool ti_desc_second_value_exists = false;
+	bool ti_desc_no_logics = false;
+
+	char ch_veh_first_logic[1] = { 0 };
+	char ch_veh_second_logic[1] = { 0 };
+	char ch_veh_first_value[10] = { 0 };
+	char ch_veh_second_value[10] = { 0 };
+
+	bool ti_veh_first_logic_exists = false;
+	bool ti_veh_second_logic_exists = false;
+	bool ti_veh_first_value_exists = false;
+	bool ti_veh_second_value_exists = false;
+	bool ti_veh_no_logics = false;
+
+	bool ti_veh_distance_to_city_exists = false;
+	bool ti_desc_invalid_entry_form = false;
+	bool ti_veh_invalid_entry_form = false;
 
 	uint16 desc_display_first_value;
 	uint16 desc_display_second_value;
+
+	uint16 veh_display_first_value;
+	uint16 veh_display_second_value;
+
+
 	char desc_display_name[64];
+	char veh_display_name[64];
 	int letters_to_compare;
 
 public:
@@ -366,8 +385,8 @@ public:
 
 	vehicle_manager_t();
 
-	static int display_by_good;
-	static int display_by_class;
+	static int display_desc_by_good;
+	static int display_desc_by_class;
 
 	void build_desc_list();
 	void build_veh_list();
@@ -378,9 +397,16 @@ public:
 
 	void draw_general_information(const scr_coord& pos);
 	void draw_maintenance_information(const scr_coord& pos);
+
 	void update_desc_text_input_display();
+	void update_veh_text_input_display();
+
 	void reset_desc_text_input_display();
+	void reset_veh_text_input_display();
+
 	void set_desc_display_rules();
+	void set_veh_display_rules();
+
 	bool is_desc_displayable(vehicle_desc_t *desc);
 	uint8 return_desc_category(vehicle_desc_t *desc);
 
