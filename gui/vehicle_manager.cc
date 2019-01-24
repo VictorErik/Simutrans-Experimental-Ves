@@ -1347,7 +1347,7 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 				value_to_compare = desc_amounts;
 			}
 			break;
-		
+
 			case displ_desc_speed:
 				value_to_compare = desc->get_topspeed();
 				break;
@@ -1355,7 +1355,17 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 				value_to_compare = desc->get_catering_level();
 				break;
 			case displ_desc_comfort:
-				value_to_compare = desc->get_comfort();
+			{
+			uint8 base_comfort = 0;
+			for (int i = 0; i < desc->get_number_of_classes(); i++)
+			{
+				if (desc->get_comfort(i) > base_comfort)
+				{
+					base_comfort = desc->get_comfort(i);
+				}
+			}
+			value_to_compare = base_comfort;
+			}
 				break;
 			case displ_desc_power:
 				value_to_compare = desc->get_power();
