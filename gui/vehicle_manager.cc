@@ -58,8 +58,8 @@
 #define VEHICLE_NAME_COLUMN_WIDTH ((D_BUTTON_WIDTH*5)+15)
 #define VEHICLE_NAME_COLUMN_HEIGHT (250)
 #define INFORMATION_COLUMN_HEIGHT (20*LINESPACE)
-#define UPGRADE_LIST_COLUMN_WIDTH (D_BUTTON_WIDTH*4 + 19)
-#define UPGRADE_LIST_COLUMN_HEIGHT (INFORMATION_COLUMN_HEIGHT - LINESPACE*2)
+#define UPGRADE_LIST_COLUMN_WIDTH ((D_BUTTON_WIDTH*4) + 15)
+#define UPGRADE_LIST_COLUMN_HEIGHT (INFORMATION_COLUMN_HEIGHT - LINESPACE*3)
 #define RIGHT_HAND_COLUMN (D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH + 10)
 #define SCL_HEIGHT (15*LINESPACE)
 
@@ -445,7 +445,20 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	scr_coord dummy(D_MARGIN_LEFT, D_MARGIN_TOP);
 
-	// The information tabs have objects attached to some containers.
+	// The information tabs have objects attached to some containers. Rearrange the columns into even spaces we can put buttons, lists and labels into
+
+	//y_pos -= tabs_info.get_pos().y + D_BUTTON_HEIGHT * 2;
+	y_pos = 0;
+	column_1 = D_MARGIN_LEFT;
+	column_2 = column_1 + D_BUTTON_WIDTH + 10;
+	column_3 = column_2 + D_BUTTON_WIDTH + 10;
+	int column_4 = column_3 + D_BUTTON_WIDTH + 10;
+	int column_5 = column_4 + D_BUTTON_WIDTH + 10;
+	int column_6 = column_5 + D_BUTTON_WIDTH + 10;
+	int column_7 = column_6 + D_BUTTON_WIDTH + 10;
+	int column_8 = column_7 + D_BUTTON_WIDTH + 10;
+	int column_9 = column_8 + D_BUTTON_WIDTH + 10;
+	int column_10 = column_9 + D_BUTTON_WIDTH + 10;
 
 	// Maintenance tab:
 	{
