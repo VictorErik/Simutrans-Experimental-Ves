@@ -3457,18 +3457,18 @@ void vehicle_manager_t::build_upgrade_list()
 		// Display "no_vehicles_available" when list is empty
 		if (amount_of_upgrades <= 0)
 		{
-			cbuffer_t no_vehicles_text;
-			no_vehicles_text.clear();
+			cbuffer_t buf;
+			buf.clear();
 			if (display_upgrade_into)
 			{
-				no_vehicles_text.append(translator::translate("no_upgrades_available"));
+				buf.append(translator::translate("no_upgrades_available"));
 			}
 			else
 			{
-				no_vehicles_text.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
+				buf.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
 			}
 			int box_height = LINESPACE * 3;
-			gui_special_info_t* const sinfo = new gui_special_info_t(UPGRADE_LIST_COLUMN_WIDTH, no_vehicles_text, MN_GREY1);
+			gui_special_info_t* const sinfo = new gui_special_info_t(UPGRADE_LIST_COLUMN_WIDTH, buf, MN_GREY1);
 			sinfo->set_pos(scr_coord(0, ypos));
 			sinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(sinfo->get_image_height(), box_height)));
 			cont_upgrade.add_component(sinfo);
