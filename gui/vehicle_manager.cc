@@ -148,7 +148,7 @@ int vehicle_manager_t::display_desc_by_good = 0;
 int vehicle_manager_t::display_desc_by_class = 0;
 
 vehicle_manager_t::vehicle_manager_t(player_t *player_) :
-	gui_frame_t( translator::translate("vehicle_manager"), player_),
+	gui_frame_t(translator::translate("vehicle_manager"), player_),
 	player(player_),
 	lb_amount_desc(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_amount_veh(NULL, SYSCOL_TEXT, gui_label_t::left),
@@ -1398,15 +1398,15 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 				break;
 			case displ_desc_comfort:
 			{
-			uint8 base_comfort = 0;
-			for (int i = 0; i < desc->get_number_of_classes(); i++)
-			{
-				if (desc->get_comfort(i) > base_comfort)
+				uint8 base_comfort = 0;
+				for (int i = 0; i < desc->get_number_of_classes(); i++)
 				{
-					base_comfort = desc->get_comfort(i);
+					if (desc->get_comfort(i) > base_comfort)
+					{
+						base_comfort = desc->get_comfort(i);
+					}
 				}
-			}
-			value_to_compare = base_comfort;
+				value_to_compare = base_comfort;
 			}
 				break;
 			case displ_desc_power:
@@ -3465,7 +3465,6 @@ void vehicle_manager_t::build_upgrade_list()
 		}
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
 	}
-
 }
 
 void vehicle_manager_t::build_desc_list()
