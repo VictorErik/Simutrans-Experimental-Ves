@@ -741,7 +741,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		}
 		if (sort_mode == vehicle_manager_t::sort_mode_desc_t::by_desc_comfort || display_mode == vehicle_manager_t::display_mode_desc_t::displ_desc_comfort)
 		{
-			if (veh->get_freight_type()->get_catg() == 0) // This is a passenger vehicle
+			if (veh->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS) // This is a passenger vehicle
 			{
 				uint8 base_comfort = 0;
 				uint8 added_comfort = 0;
