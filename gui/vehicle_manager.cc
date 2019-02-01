@@ -3646,6 +3646,20 @@ void vehicle_manager_t::display_desc_list()
 			reposition_desc_scroll = true;
 		}
 	}
+
+	// Display "no_vehicles_available" when list is empty
+	if (amount_desc <= 0)
+	{
+		cbuffer_t buf;
+		buf.clear();
+		buf.append(translator::translate("no_vehicles_to_display"));
+		int box_height = LINESPACE * 3;
+		gui_special_info_t* const sinfo = new gui_special_info_t(VEHICLE_NAME_COLUMN_WIDTH, buf, MN_GREY1);
+		sinfo->set_pos(scr_coord(0, ypos));
+		sinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(sinfo->get_image_height(), box_height)));
+		cont_desc.add_component(sinfo);
+		ypos += max(sinfo->get_image_height(), box_height);
+	}
 	desc_info.set_count(icnv);
 	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	if (!page_turn_desc)
@@ -3766,6 +3780,20 @@ void vehicle_manager_t::display_veh_list()
 			cont_veh.add_component(vinfo);
 			ypos += max(vinfo->get_image_height(), 50);
 		}
+	}
+
+	// Display "no_vehicles_available" when list is empty
+	if (amount_veh <= 0)
+	{
+		cbuffer_t buf;
+		buf.clear();
+		buf.append(translator::translate("no_vehicles_to_display"));
+		int box_height = LINESPACE * 3;
+		gui_special_info_t* const sinfo = new gui_special_info_t(VEHICLE_NAME_COLUMN_WIDTH, buf, MN_GREY1);
+		sinfo->set_pos(scr_coord(0, ypos));
+		sinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(sinfo->get_image_height(), box_height)));
+		cont_veh.add_component(sinfo);
+		ypos += max(sinfo->get_image_height(), box_height);
 	}
 	veh_info.set_count(icnv);
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
