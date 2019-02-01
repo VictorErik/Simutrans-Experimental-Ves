@@ -449,7 +449,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// The information tabs have objects attached to some containers. Rearrange the columns into even spaces we can put buttons, lists and labels into
 
 	//y_pos -= tabs_info.get_pos().y + D_BUTTON_HEIGHT * 2;
-	y_pos = 0;
+	y_pos = D_MARGIN_TOP;
 	column_1 = D_MARGIN_LEFT;
 	column_2 = column_1 + D_BUTTON_WIDTH + 10;
 	column_3 = column_2 + D_BUTTON_WIDTH + 10;
@@ -463,14 +463,13 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	// Maintenance tab:
 	{
-		bt_upgrade.init(button_t::roundbox, translator::translate("upgrade"), dummy, D_BUTTON_SIZE);
+		bt_upgrade.init(button_t::roundbox, translator::translate("upgrade"), scr_coord(column_6, y_pos), D_BUTTON_SIZE);
 		bt_upgrade.add_listener(this);
 		bt_upgrade.set_tooltip(translator::translate("upgrade"));
 		bt_upgrade.set_visible(false);
 		cont_maintenance_info.add_component(&bt_upgrade);
 
-		bt_upgrade_to_from.init(button_t::roundbox, NULL, dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
-		bt_upgrade_to_from.set_pos(scr_coord(column_6, y_pos));
+		bt_upgrade_to_from.init(button_t::roundbox, NULL, scr_coord(column_6, y_pos), scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
 		bt_upgrade_to_from.add_listener(this);
 		bt_upgrade_to_from.set_tooltip(translator::translate("press_to_switch_between_upgrade_to_or_upgrade_from"));
 		bt_upgrade_to_from.set_visible(false);
