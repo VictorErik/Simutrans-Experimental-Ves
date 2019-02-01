@@ -5,9 +5,40 @@
 
 #include "components/gui_image_list.h"
 #include "../simconvoi.h"
+#include "../utils/cbuffer_t.h"
 
 class player_t;
 
+
+#ifndef gui_special_info_h
+#define gui_special_info_h
+class gui_special_info_t : public gui_world_component_t
+{
+private:
+	player_t *player;
+	uint8 player_nr;
+	int image_height;
+	cbuffer_t translated_text_string;
+	int width;
+	COLOR_VAL background_color;
+
+public:
+	gui_special_info_t(int entry_width, cbuffer_t message, COLOR_VAL color);
+	
+	bool infowin_event(event_t const*) OVERRIDE;
+	bool selected = false;
+	bool open_info = false;
+
+	bool is_selected() { return selected; }
+	bool set_selection(bool sel) { return selected = sel; }
+	bool is_open_info() { return open_info; }
+	int get_image_height() { return image_height; }
+
+	void draw(scr_coord offset);
+
+};
+
+#endif
 
 // "Upgrade" entries: Will list the difference between old and new vehicle
 #ifndef gui_upgrade_info_h

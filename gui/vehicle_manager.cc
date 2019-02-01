@@ -508,7 +508,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	set_windowsize(scr_size(min_width, min_height));
 	set_resizemode(diagonal_resize);
 	resize(scr_coord(0, 0));
-
 }
 
 
@@ -1557,13 +1556,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		pos_y = 0;
 
 
-		if (amount_of_upgrades <= 0)
-		{
-			pos_y += LINESPACE;
-			sprintf(buf, "%s", translator::translate("keine"));
-			display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
-			pos_y += LINESPACE;
-		}
 
 	}
 
@@ -3462,6 +3454,25 @@ void vehicle_manager_t::build_upgrade_list()
 		}
 		upgrade_info.resize(amount_of_upgrades);
 
+		// Display "no_vehicles_available" when list is empty
+		if (amount_of_upgrades <= 0)
+		{
+			cbuffer_t no_vehicles_text;
+			no_vehicles_text.clear();
+			if (display_upgrade_into)
+			{
+				no_vehicles_text.append(translator::translate("no_upgrades_available"));
+			}
+			else
+			{
+				no_vehicles_text.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
+			}
+			int box_height = LINESPACE * 3;
+			gui_special_info_t* const sinfo = new gui_special_info_t(UPGRADE_LIST_COLUMN_WIDTH, no_vehicles_text, MN_GREY1);
+			sinfo->set_pos(scr_coord(0, ypos));
+			sinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(sinfo->get_image_height(), box_height)));
+			cont_upgrade.add_component(sinfo);
+			ypos += max(sinfo->get_image_height(), box_height);
 		}
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
 	}

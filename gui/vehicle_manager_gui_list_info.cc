@@ -44,7 +44,56 @@ static const char * engine_type_names[11] =
 	"turbine"
 };
 
-// We start with the upgrade entries, ie what desc a particular vehicle can upgrade to:
+
+
+// We start with the "special" entries. This is used to display a message in the scrolled lists, such as class change, "no vehicles" etc
+gui_special_info_t::gui_special_info_t(int entry_width, cbuffer_t message, COLOR_VAL color)
+{
+	translated_text_string.clear();
+	translated_text_string = message;
+	width = entry_width;
+	background_color = color;
+	draw(scr_coord(0, 0));
+}
+
+/**
+* Events werden hiermit an die GUI-components
+* gemeldet
+* @author Hj. Malthaner
+*/
+bool gui_special_info_t::infowin_event(const event_t *ev)
+{
+
+	if (IS_LEFTRELEASE(ev)) {
+		//selected = !selected;
+		return true;
+	}
+	else if (IS_RIGHTRELEASE(ev)) {
+		return true;
+	}
+	return false;
+}
+
+
+/**
+* Draw the component
+* @author Hj. Malthaner
+*/
+void gui_special_info_t::draw(scr_coord offset)
+{
+	clip_dimension clip = display_get_clip_wh();
+	if (!((pos.y + offset.y) > clip.yy || (pos.y + offset.y) < clip.y - 32)) {
+
+		COLOR_VAL text_color = MN_GREY3;
+		COLOR_VAL box_color = MN_GREY1;
+		int box_height = LINESPACE * 3;
+
+		display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y, width, box_height, background_color, true);
+		display_proportional_clip(pos.x + offset.x + (width/2), pos.y + offset.y + LINESPACE, translated_text_string, ALIGN_CENTER_H, text_color, true);
+	}
+}
+
+
 
 // ***************************************** //
 // Upgrade entries:
