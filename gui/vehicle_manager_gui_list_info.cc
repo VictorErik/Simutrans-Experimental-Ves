@@ -228,7 +228,9 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 
 		COLOR_VAL difference_color = COL_DARK_GREEN;
 		char tmp[50];
+
 		// Load
+		// TODO: Add class stuff and possibly comfort levels here // classes // comfort		
 		if (upgrade->get_total_capacity() != existing->get_total_capacity())
 		{
 			char extra_pass[8];
@@ -282,24 +284,93 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			int difference = upgrade->get_topspeed() - existing->get_topspeed();
 			if (difference > 0)
 			{
-				sprintf(tmp, "+%i", difference);
+				sprintf(tmp, "+%i%s", difference, translator::translate("km/h"));
 				difference_color = COL_DARK_GREEN;
 			}
 			else
 			{
-				sprintf(tmp, "%i", difference);
+				sprintf(tmp, "%i%s", difference, translator::translate("km/h"));
 				difference_color = COL_RED;
 			}
 			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-			sprintf(tmp, translator::translate("top_speed: %i km/h "), upgrade->get_topspeed());
+			sprintf(tmp, translator::translate("top_speed: %ikm/h "), upgrade->get_topspeed());
 			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+			y_pos += LINESPACE;
 		}
 		// weight
+		if (upgrade->get_weight() != existing->get_weight())
+		{
+			int difference = (upgrade->get_weight()/1000) - (existing->get_weight()/1000);
+			if (difference > 0)
+			{
+				sprintf(tmp, "+%i%s", difference, translator::translate("tonnen"));
+				difference_color = COL_DARK_GREEN;
+			}
+			else
+			{
+				sprintf(tmp, "%i%s", difference, translator::translate("tonnen"));
+				difference_color = COL_RED;
+			}
+			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+			sprintf(tmp, translator::translate("weight: %it "), upgrade->get_weight()/1000);
+			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+			y_pos += LINESPACE;
+		}
 		// loading time
-		// brake force
-		// power
-		// tractive effort
 
+		// brake force
+		if (upgrade->get_brake_force() != existing->get_brake_force())
+		{
+			int difference = upgrade->get_brake_force() - existing->get_brake_force();
+			if (difference > 0)
+			{
+				sprintf(tmp, "+%i%s", difference, translator::translate("kn"));
+				difference_color = COL_DARK_GREEN;
+			}
+			else
+			{
+				sprintf(tmp, "%i%s", difference, translator::translate("kn"));
+				difference_color = COL_RED;
+			}
+			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+			sprintf(tmp, translator::translate("brake_force: %ikn "), upgrade->get_brake_force());
+			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+			y_pos += LINESPACE;
+		}
+
+		// power
+		if (upgrade->get_power() != existing->get_power())
+		{
+			int difference = upgrade->get_power() - existing->get_power();
+			if (difference > 0)
+			{
+				sprintf(tmp, "+%i%s", difference, translator::translate("kw"));
+				difference_color = COL_DARK_GREEN;
+			}
+			else
+			{
+				sprintf(tmp, "%i%s", difference, translator::translate("kw"));
+				difference_color = COL_RED;
+			}
+			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+			sprintf(tmp, translator::translate("power: %ikw "), upgrade->get_power());
+			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+			y_pos += LINESPACE;
+		}
+		// tractive effort
+		
+		// running_cost
+		// fixed_cost
+		// 	engine_type
+		// is_tilting
+		// catering_level
+		// air_resistance
+		// rolling_resistance
+		// minimum_runway_length
+		// range
+		// way_wear_factor
+
+		
 
 
 		// Issues
