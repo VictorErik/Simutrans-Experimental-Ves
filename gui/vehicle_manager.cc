@@ -158,6 +158,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_veh_sortby(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_display_desc(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_display_veh(NULL, SYSCOL_TEXT, gui_label_t::left),
+	lb_upgrade_to_from(NULL, SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade)
@@ -469,19 +470,27 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_maintenance_info.add_component(&bt_upgrade);
 
 		bt_upgrade_to_from.init(button_t::roundbox, NULL, dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
+		bt_upgrade_to_from.set_pos(scr_coord(column_6, y_pos));
 		bt_upgrade_to_from.add_listener(this);
 		bt_upgrade_to_from.set_tooltip(translator::translate("press_to_switch_between_upgrade_to_or_upgrade_from"));
 		bt_upgrade_to_from.set_visible(false);
 		cont_maintenance_info.add_component(&bt_upgrade_to_from);
 
+		lb_upgrade_to_from.set_pos(scr_coord(column_6 + bt_upgrade_to_from.get_size().w + 5, y_pos));
+		cont_maintenance_info.add_component(&lb_upgrade_to_from);
+
 		display_upgrade_into = true;
+		
+		y_pos += LINESPACE *2;
 
 		// Upgrade list
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
 		scrolly_upgrade.set_show_scroll_y(true);
 		scrolly_upgrade.set_scroll_amount_y(40);
 		scrolly_upgrade.set_visible(false);
+		scrolly_upgrade.set_focusable(true);
 		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_upgrade.set_pos(scr_coord(column_6, y_pos));
 		cont_maintenance_info.add_component(&scrolly_upgrade);
 
 	}
@@ -489,6 +498,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	reset_veh_text_input_display();
 	set_desc_display_rules();
 	build_desc_list();
+	display_tab_objects();
 
 	// Sizes:
 	const int min_width = (VEHICLE_NAME_COLUMN_WIDTH * 2) + (D_MARGIN_LEFT*3);
@@ -546,6 +556,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		int const tab = tabs_info.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab_information;
 		selected_tab_information = tabs_to_index_information[tab];
+		display_tab_objects();
 	}
 	
 	if (comp == &bt_show_available_vehicles)
@@ -805,6 +816,24 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		build_upgrade_list();
 	}
 	return true;
+}
+
+void vehicle_manager_t::display_tab_objects()
+{/*
+	bt_upgrade_to_from.set_visible(false);
+	scrolly_upgrade.set_visible(false);*/
+	int info_display = (uint16)selected_tab_information;
+	if (info_display == 0)
+	{
+	}
+	else if (info_display == 1)
+	{
+		bt_upgrade_to_from.set_visible(true);
+		scrolly_upgrade.set_visible(true);
+	}
+	else if (info_display == 2)
+	{
+	}
 }
 
 void vehicle_manager_t::reset_desc_text_input_display()
@@ -1442,9 +1471,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	int column_2 = D_BUTTON_WIDTH * 4 + D_MARGIN_LEFT;
 	int column_3 = D_BUTTON_WIDTH * 6 + D_MARGIN_LEFT;
 
-	bt_upgrade_to_from.set_visible(false);
-	scrolly_upgrade.set_visible(false);
-
 	buf[0] = '\0';
 	if (desc_info_text) {
 
@@ -1531,24 +1557,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		pos_y = 0;
 
 
-		// Switch upgrade mode button
-		bt_upgrade_to_from.set_pos(scr_coord(pos_x, pos_y + (LINESPACE / 4)));
-		bt_upgrade_to_from.set_visible(true);
-		scrolly_upgrade.set_visible(true);
-
-		// Upgrade information			
-		if (display_upgrade_into)
-		{
-			sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_to"));
-		}
-		else
-		{
-			sprintf(buf, "%s:", translator::translate("this_vehicle_can_upgrade_from"));
-		}
-		display_proportional_clip(pos.x + pos_x + bt_upgrade_to_from.get_size().w + 5, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
-		pos_y += LINESPACE * 2;
-
-		scrolly_upgrade.set_pos(scr_coord(D_MARGIN_LEFT + pos_x, pos_y));
 		if (amount_of_upgrades <= 0)
 		{
 			pos_y += LINESPACE;
@@ -3379,6 +3387,16 @@ void vehicle_manager_t::build_upgrade_list()
 	upgrade_info.clear();
 	int ypos = 10;
 	amount_of_upgrades = 0;
+
+	if (display_upgrade_into)
+	{
+		lb_upgrade_to_from.set_text(translator::translate("this_vehicle_can_upgrade_to"));
+	}
+	else
+	{
+		lb_upgrade_to_from.set_text(translator::translate("this_vehicle_can_upgrade_from"));
+	}
+
 	if (desc_for_display)
 	{
 		if (display_upgrade_into) // Build the list of upgrades to this vehicle		
@@ -3441,7 +3459,9 @@ void vehicle_manager_t::build_upgrade_list()
 					amount_of_upgrades++;
 				}
 			}
-			upgrade_info.resize(amount_of_upgrades);
+		}
+		upgrade_info.resize(amount_of_upgrades);
+
 		}
 		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
 	}

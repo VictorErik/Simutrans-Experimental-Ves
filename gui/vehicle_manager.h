@@ -104,6 +104,7 @@ private:
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
+	gui_label_t lb_upgrade_to_from;
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
@@ -267,6 +268,8 @@ public:
 
 	void draw_general_information(const scr_coord& pos);
 	void draw_maintenance_information(const scr_coord& pos);
+
+	void vehicle_manager_t::display_tab_objects();
 
 	void update_desc_text_input_display();
 	void update_veh_text_input_display();
