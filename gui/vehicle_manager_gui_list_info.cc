@@ -143,7 +143,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 		int look_for_spaces_or_separators = 5;
 		char name[256] = "\0"; // Translated name of the vehicle. Will not be modified
 		char name_display[256] = "\0"; // The string that will be sent to the screen
-		int y_pos = 0;
+		int y_pos = 5;
 		int x_pos = 0;
 		int suitable_break;
 		int used_caracters = 0;
@@ -155,302 +155,359 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 		bool only_as_upgrade = false;
 		int fillbox_height = 4 * LINESPACE;
 		bool display_bakground = false;
+		scr_coord_val x, y, w, h;
+		bool counting = true;
+		int lines_of_text = 0;
 
 		sprintf(name, translator::translate(upgrade->get_name()));
 		sprintf(name_display, name);
 
-		// First, we need to know how much text is going to be, since the "selected" blue field has to be drawn before all the text
-		// Upgrades. We only want to show that a vehicle can upgrade if we own it
+		// Since we need to draw the fillbox before any text is drawn, we need to figure out how much text is needed.
+		// Therefore this forloop will travel two times, first time it will count the number of lines, and second time, it will draw everything and write all the texts
 
-
-		if (upgrade->is_retired(month_now)) {
-			retired = true;
-			fillbox_height += LINESPACE;
-		}
-
-
-		scr_coord_val x, y, w, h;
-		const image_id image = upgrade->get_base_image();
-		display_get_base_image_offset(image, &x, &y, &w, &h);
-		const int xoff = 0;
-		int left = pos.x + offset.x + xoff + 4;
-
-
-		if (selected)
+		for (int i = 0; i < 2; i++)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, UPGRADE_LIST_COLUMN_WIDTH, max(max(h, fillbox_height), 40) - 2, COL_DARK_BLUE, true);
-			text_color = COL_WHITE;
-		}
-
-
-		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
-
-		int image_offset = min(w + 10, D_BUTTON_WIDTH);
-		if (w > image_offset)
-		{
-			display_bakground = true;
-		}
-		if (display_bakground)
-		{
-			if (selected)
+			const image_id image = upgrade->get_base_image();
+			display_get_base_image_offset(image, &x, &y, &w, &h);
+			const int xoff = 0;
+			int left = pos.x + offset.x + xoff + 4;
+			
+			if (!counting)
 			{
-				display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + 6 + y_pos, UPGRADE_LIST_COLUMN_WIDTH - image_offset, LINESPACE * 3, COL_DARK_BLUE, 50);
+				if (selected)
+				{
+					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, UPGRADE_LIST_COLUMN_WIDTH, max(max(h, fillbox_height), 40) - 2, COL_DARK_BLUE, true);
+					text_color = COL_WHITE;
+				}
+
+
+				display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
+
+				int image_offset = min(w + 10, D_BUTTON_WIDTH);
+				if (w > image_offset)
+				{
+					display_bakground = true;
+				}
+				if (display_bakground)
+				{
+					if (selected)
+					{
+						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, UPGRADE_LIST_COLUMN_WIDTH - image_offset, LINESPACE * 3, COL_DARK_BLUE, 50);
+					}
+					else
+					{
+						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, UPGRADE_LIST_COLUMN_WIDTH - image_offset, LINESPACE * 3, MN_GREY4, 50);
+					}
+				}
+
+				// In order to show the name, but to prevent suuuuper long translations to ruin the layout, this will divide the name into several lines if necesary
+				if (name[max_caracters] != '\0')
+				{
+					// Ok, our name is too long to be displayed in one line. Time to chup it up
+					for (int i = 1; i <= 3; i++)
+					{
+						suitable_break = max_caracters;
+						if (name_display[max_caracters] == '\0')
+						{// Finally last line of name
+							display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + y_pos, name_display, ALIGN_LEFT, text_color, true);
+							y_pos += LINESPACE;
+							break;
+						}
+						else
+						{
+							bool natural_separator = false;
+							for (int j = 0; j < look_for_spaces_or_separators; j++)
+							{	// Move down to second line
+								if (name_display[max_caracters - j] == '(' || name_display[max_caracters - j] == '{' || name_display[max_caracters - j] == '[')
+								{
+									suitable_break = max_caracters - j;
+									used_caracters += suitable_break;
+									name_display[suitable_break] = '\0';
+									natural_separator = true;
+									break;
+								}
+								// Stay on upper line
+								else if (name_display[max_caracters - j] == ' ' || name_display[max_caracters - j] == '-' || name_display[max_caracters - j] == '/' ||/*name_display[max_caracters - j] == '.' || */ name_display[max_caracters - j] == ',' || name_display[max_caracters - j] == ';' || name_display[max_caracters - j] == ')' || name_display[max_caracters - j] == '}' || name_display[max_caracters - j] == ']')
+								{
+									suitable_break = max_caracters - j + 1;
+									used_caracters += suitable_break;
+									name_display[suitable_break] = '\0';
+									natural_separator = true;
+									break;
+								}
+							}
+							// No suitable breakpoint, divide line with "-"
+							if (!natural_separator)
+							{
+								suitable_break = max_caracters;
+								used_caracters += suitable_break;
+								name_display[suitable_break] = '-';
+								name_display[suitable_break + 1] = '\0';
+							}
+
+							display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + y_pos, name_display, ALIGN_LEFT, text_color, true);
+
+							// Reset the string
+							name_display[0] = '\0';
+							for (int j = 0; j < 256; j++)
+							{
+								name_display[j] = name[used_caracters + j];
+							}
+						}
+						y_pos += LINESPACE;
+					}
+				}
+				else
+				{ // Ok, name is short enough to fit one line
+					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + y_pos, name, ALIGN_LEFT, text_color, true);
+				}
+			}
+
+			y_pos = 0;
+			x_pos = UPGRADE_LIST_COLUMN_WIDTH - 14;
+
+			// Byggår
+			if (counting)
+			{
+				lines_of_text++;
 			}
 			else
 			{
-				display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + 6 + y_pos, UPGRADE_LIST_COLUMN_WIDTH - image_offset, LINESPACE * 3, MN_GREY4, 50);
+				char year[20];
+				sprintf(year, "%s: %u", translator::translate("available_until"), upgrade->get_retire_year_month() / 12);
+				display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, year, ALIGN_RIGHT, text_color, true);
+				y_pos += LINESPACE;
 			}
-		}
 
-		// In order to show the name, but to prevent suuuuper long translations to ruin the layout, this will divide the name into several lines if necesary
-		if (name[max_caracters] != '\0')
-		{
-			// Ok, our name is too long to be displayed in one line. Time to chup it up
-			for (int i = 1; i <= 3; i++)
+			// Following section compares different values between the old and the new vehicle, to see what is upgraded
+
+			COLOR_VAL difference_color = COL_DARK_GREEN;
+			char tmp[50];
+
+			// Load
+			// TODO: Add class stuff and possibly comfort levels here // classes // comfort		
+			if (upgrade->get_total_capacity() != existing->get_total_capacity())
 			{
-				suitable_break = max_caracters;
-				if (name_display[max_caracters] == '\0')
-				{// Finally last line of name
-					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + 6 + y_pos, name_display, ALIGN_LEFT, text_color, true);
-					y_pos += LINESPACE;
-					break;
+				if (counting)
+				{
+					lines_of_text++;
 				}
 				else
 				{
-					bool natural_separator = false;
-					for (int j = 0; j < look_for_spaces_or_separators; j++)
-					{	// Move down to second line
-						if (name_display[max_caracters - j] == '(' || name_display[max_caracters - j] == '{' || name_display[max_caracters - j] == '[')
-						{
-							suitable_break = max_caracters - j;
-							used_caracters += suitable_break;
-							name_display[suitable_break] = '\0';
-							natural_separator = true;
-							break;
-						}
-						// Stay on upper line
-						else if (name_display[max_caracters - j] == ' ' || name_display[max_caracters - j] == '-' || name_display[max_caracters - j] == '/' ||/*name_display[max_caracters - j] == '.' || */ name_display[max_caracters - j] == ',' || name_display[max_caracters - j] == ';' || name_display[max_caracters - j] == ')' || name_display[max_caracters - j] == '}' || name_display[max_caracters - j] == ']')
-						{
-							suitable_break = max_caracters - j + 1;
-							used_caracters += suitable_break;
-							name_display[suitable_break] = '\0';
-							natural_separator = true;
-							break;
-						}
-					}
-					// No suitable breakpoint, divide line with "-"
-					if (!natural_separator)
+					char extra_pass[8];
+
+					int difference = upgrade->get_total_capacity() - existing->get_total_capacity();
+					if (difference > 0)
 					{
-						suitable_break = max_caracters;
-						used_caracters += suitable_break;
-						name_display[suitable_break] = '-';
-						name_display[suitable_break + 1] = '\0';
+						sprintf(tmp, "+%i", difference);
+						difference_color = COL_DARK_GREEN;
+					}
+					else
+					{
+						sprintf(tmp, "%i", difference);
+						difference_color = COL_RED;
 					}
 
-					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + 6 + y_pos, name_display, ALIGN_LEFT, text_color, true);
-
-					// Reset the string
-					name_display[0] = '\0';
-					for (int j = 0; j < 256; j++)
+					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+					if (upgrade->get_overcrowded_capacity() > 0)
 					{
-						name_display[j] = name[used_caracters + j];
+						sprintf(extra_pass, " (%i)", upgrade->get_overcrowded_capacity());
 					}
+					else
+					{
+						extra_pass[0] = '\0';
+					}
+
+					sprintf(tmp, "%i%s%s %s ", upgrade->get_total_capacity(), extra_pass, translator::translate(upgrade->get_freight_type()->get_mass()),
+						upgrade->get_freight_type()->get_catg() == 0 ? translator::translate(upgrade->get_freight_type()->get_name()) : translator::translate(upgrade->get_freight_type()->get_catg_name()));
+
+					entry += display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+
+					if (upgrade->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+					{
+						display_color_img(skinverwaltung_t::passengers->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + y_pos, 0, false, false);
+					}
+					else if (upgrade->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+					{
+						display_color_img(skinverwaltung_t::mail->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + y_pos, 0, false, false);
+					}
+					else
+					{
+						display_color_img(skinverwaltung_t::goods->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + y_pos, 0, false, false);
+					}
+
+					y_pos += LINESPACE;
 				}
-				y_pos += LINESPACE;
 			}
+
+			// top speed
+			if (upgrade->get_topspeed() != existing->get_topspeed())
+			{
+				if (counting)
+				{
+					lines_of_text++;
+				}
+				else
+				{
+					int difference = upgrade->get_topspeed() - existing->get_topspeed();
+					if (difference > 0)
+					{
+						sprintf(tmp, "+%i%s", difference, translator::translate("km/h"));
+						difference_color = COL_DARK_GREEN;
+					}
+					else
+					{
+						sprintf(tmp, "%i%s", difference, translator::translate("km/h"));
+						difference_color = COL_RED;
+					}
+					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+					sprintf(tmp, translator::translate("top_speed: %ikm/h "), upgrade->get_topspeed());
+					display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+					y_pos += LINESPACE;
+				}
+			}
+			// weight
+			if (upgrade->get_weight() != existing->get_weight())
+			{
+				if (counting)
+				{
+					lines_of_text++;
+				}
+				else
+				{
+					int difference = (upgrade->get_weight() / 1000) - (existing->get_weight() / 1000);
+					if (difference > 0)
+					{
+						sprintf(tmp, "+%i%s", difference, translator::translate("tonnen"));
+						difference_color = COL_DARK_GREEN;
+					}
+					else
+					{
+						sprintf(tmp, "%i%s", difference, translator::translate("tonnen"));
+						difference_color = COL_RED;
+					}
+					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+					sprintf(tmp, translator::translate("weight: %it "), upgrade->get_weight() / 1000);
+					display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+					y_pos += LINESPACE;
+				}
+			}
+			// loading time
+
+			// brake force
+			if (upgrade->get_brake_force() != existing->get_brake_force())
+			{
+				if (counting)
+				{
+					lines_of_text++;
+				}
+				else
+				{
+					int difference = upgrade->get_brake_force() - existing->get_brake_force();
+					if (difference > 0)
+					{
+						sprintf(tmp, "+%i%s", difference, translator::translate("kn"));
+						difference_color = COL_DARK_GREEN;
+					}
+					else
+					{
+						sprintf(tmp, "%i%s", difference, translator::translate("kn"));
+						difference_color = COL_RED;
+					}
+					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+					sprintf(tmp, translator::translate("brake_force: %ikn "), upgrade->get_brake_force());
+					display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+					y_pos += LINESPACE;
+				}
+			}
+
+			// power
+			if (upgrade->get_power() != existing->get_power())
+			{
+				if (counting)
+				{
+					lines_of_text++;
+				}
+				else
+				{
+					int difference = upgrade->get_power() - existing->get_power();
+					if (difference > 0)
+					{
+						sprintf(tmp, "+%i%s", difference, translator::translate("kw"));
+						difference_color = COL_DARK_GREEN;
+					}
+					else
+					{
+						sprintf(tmp, "%i%s", difference, translator::translate("kw"));
+						difference_color = COL_RED;
+					}
+					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
+					sprintf(tmp, translator::translate("power: %ikw "), upgrade->get_power());
+					display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, text_color, true);
+					y_pos += LINESPACE;
+				}
+			}
+			// tractive effort
+
+			// running_cost
+			// fixed_cost
+			// 	engine_type
+			// is_tilting
+			// catering_level
+			// air_resistance
+			// rolling_resistance
+			// minimum_runway_length
+			// range
+			// way_wear_factor
+
+
+
+
+			// Issues
+
+			COLOR_VAL issue_color = COL_BLACK;
+			char issues[100] = "\0";
+
+			if (upgrade->is_retired(month_now))
+			{
+				if (counting)
+				{
+					lines_of_text++;
+				}
+				else
+				{
+					if (upgrade->get_running_cost(welt) > upgrade->get_running_cost())
+					{
+						sprintf(issues, "%s", translator::translate("obsolete"));
+						issue_color = selected ? text_color : COL_DARK_BLUE;
+					}
+					else
+					{
+						sprintf(issues, "%s", translator::translate("out_of_production"));
+						issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
+					}
+					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, issues, ALIGN_LEFT, issue_color, true);
+					y_pos += LINESPACE;
+				}
+			}
+
+			if (upgrade->is_available_only_as_upgrade())
+			{
+				if (counting)
+				{
+					lines_of_text++;
+				}
+				else
+				{
+					sprintf(issues, "%s", translator::translate("only_as_upgrade"));
+					issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
+					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, issues, ALIGN_LEFT, issue_color, true);
+					y_pos += LINESPACE;
+				}
+			}
+			counting = false;
+			fillbox_height = lines_of_text*LINESPACE;
 		}
-		else
-		{ // Ok, name is short enough to fit one line
-			display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + 6 + y_pos, name, ALIGN_LEFT, text_color, true);
-		}
-
-		y_pos = 0;
-		x_pos = UPGRADE_LIST_COLUMN_WIDTH - 14;
-
-		// Byggår
-		char year[20];
-		sprintf(year, "%s: %u", translator::translate("available_until"), upgrade->get_retire_year_month() / 12);
-		display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, year, ALIGN_RIGHT, text_color, true);
-		y_pos += LINESPACE;
-
-		// Following section compares different values between the old and the new vehicle, to see what is upgraded
-
-		COLOR_VAL difference_color = COL_DARK_GREEN;
-		char tmp[50];
-
-		// Load
-		// TODO: Add class stuff and possibly comfort levels here // classes // comfort		
-		if (upgrade->get_total_capacity() != existing->get_total_capacity())
-		{
-			char extra_pass[8];
-
-			int difference = upgrade->get_total_capacity() - existing->get_total_capacity();
-			if (difference > 0)
-			{
-				sprintf(tmp, "+%i", difference);
-				difference_color = COL_DARK_GREEN;
-			}
-			else
-			{
-				sprintf(tmp, "%i", difference);
-				difference_color = COL_RED;
-			}
-
-			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-			if (upgrade->get_overcrowded_capacity() > 0)
-			{
-				sprintf(extra_pass, " (%i)", upgrade->get_overcrowded_capacity());
-			}
-			else
-			{
-				extra_pass[0] = '\0';
-			}
-
-			sprintf(tmp, "%i%s%s %s ", upgrade->get_total_capacity(), extra_pass, translator::translate(upgrade->get_freight_type()->get_mass()),
-				upgrade->get_freight_type()->get_catg() == 0 ? translator::translate(upgrade->get_freight_type()->get_name()) : translator::translate(upgrade->get_freight_type()->get_catg_name()));
-
-			entry += display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
-
-			if (upgrade->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
-			{
-				display_color_img(skinverwaltung_t::passengers->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + 7 + y_pos, 0, false, false);
-			}
-			else if (upgrade->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
-			{
-				display_color_img(skinverwaltung_t::mail->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + 7 + y_pos, 0, false, false);
-			}
-			else
-			{
-				display_color_img(skinverwaltung_t::goods->get_image_id(0), pos.x + offset.x + 2 + x_pos - entry - 16, pos.y + offset.y + 7 + y_pos, 0, false, false);
-			}
-
-			y_pos += LINESPACE;
-		}
-
-		// top speed
-		if (upgrade->get_topspeed() != existing->get_topspeed())
-		{
-			int difference = upgrade->get_topspeed() - existing->get_topspeed();
-			if (difference > 0)
-			{
-				sprintf(tmp, "+%i%s", difference, translator::translate("km/h"));
-				difference_color = COL_DARK_GREEN;
-			}
-			else
-			{
-				sprintf(tmp, "%i%s", difference, translator::translate("km/h"));
-				difference_color = COL_RED;
-			}
-			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-			sprintf(tmp, translator::translate("top_speed: %ikm/h "), upgrade->get_topspeed());
-			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
-			y_pos += LINESPACE;
-		}
-		// weight
-		if (upgrade->get_weight() != existing->get_weight())
-		{
-			int difference = (upgrade->get_weight()/1000) - (existing->get_weight()/1000);
-			if (difference > 0)
-			{
-				sprintf(tmp, "+%i%s", difference, translator::translate("tonnen"));
-				difference_color = COL_DARK_GREEN;
-			}
-			else
-			{
-				sprintf(tmp, "%i%s", difference, translator::translate("tonnen"));
-				difference_color = COL_RED;
-			}
-			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-			sprintf(tmp, translator::translate("weight: %it "), upgrade->get_weight()/1000);
-			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
-			y_pos += LINESPACE;
-		}
-		// loading time
-
-		// brake force
-		if (upgrade->get_brake_force() != existing->get_brake_force())
-		{
-			int difference = upgrade->get_brake_force() - existing->get_brake_force();
-			if (difference > 0)
-			{
-				sprintf(tmp, "+%i%s", difference, translator::translate("kn"));
-				difference_color = COL_DARK_GREEN;
-			}
-			else
-			{
-				sprintf(tmp, "%i%s", difference, translator::translate("kn"));
-				difference_color = COL_RED;
-			}
-			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-			sprintf(tmp, translator::translate("brake_force: %ikn "), upgrade->get_brake_force());
-			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
-			y_pos += LINESPACE;
-		}
-
-		// power
-		if (upgrade->get_power() != existing->get_power())
-		{
-			int difference = upgrade->get_power() - existing->get_power();
-			if (difference > 0)
-			{
-				sprintf(tmp, "+%i%s", difference, translator::translate("kw"));
-				difference_color = COL_DARK_GREEN;
-			}
-			else
-			{
-				sprintf(tmp, "%i%s", difference, translator::translate("kw"));
-				difference_color = COL_RED;
-			}
-			int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-			sprintf(tmp, translator::translate("power: %ikw "), upgrade->get_power());
-			display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + 6 + y_pos, tmp, ALIGN_RIGHT, text_color, true);
-			y_pos += LINESPACE;
-		}
-		// tractive effort
-		
-		// running_cost
-		// fixed_cost
-		// 	engine_type
-		// is_tilting
-		// catering_level
-		// air_resistance
-		// rolling_resistance
-		// minimum_runway_length
-		// range
-		// way_wear_factor
-
-		
-
-
-		// Issues
-
-		COLOR_VAL issue_color = COL_BLACK;
-		char issues[100] = "\0";
-
-		if (retired)
-		{
-			if (upgrade->get_running_cost(welt) > upgrade->get_running_cost())
-			{
-				sprintf(issues, "%s", translator::translate("obsolete"));
-				issue_color = selected ? text_color : COL_DARK_BLUE;
-			}
-			else
-			{
-				sprintf(issues, "%s", translator::translate("out_of_production"));
-				issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
-			}
-			display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, issues, ALIGN_LEFT, issue_color, true);
-			y_pos += LINESPACE;
-		}
-
-		if (only_as_upgrade)
-		{
-			sprintf(issues, "%s", translator::translate("only_as_upgrade"));
-			issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
-			display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + 6 + y_pos, issues, ALIGN_LEFT, issue_color, true);
-			y_pos += LINESPACE;
-		}
-
 
 
 
