@@ -3773,11 +3773,11 @@ void vehicle_manager_t::display_veh_list()
 		{
 			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index));
 			vinfo->set_pos(scr_coord(0, ypos));
-			vinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(vinfo->get_image_height(), 50)));
+			vinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, vinfo->get_image_height()));
 			vinfo->set_selection(veh_selection[i + offset_index]);
 			veh_info.append(vinfo);
 			cont_veh.add_component(vinfo);
-			ypos += max(vinfo->get_image_height(), 50);
+			ypos += vinfo->get_image_height();
 		}
 	}
 
@@ -3790,9 +3790,9 @@ void vehicle_manager_t::display_veh_list()
 		int box_height = LINESPACE * 3;
 		gui_special_info_t* const sinfo = new gui_special_info_t(VEHICLE_NAME_COLUMN_WIDTH, buf, MN_GREY1);
 		sinfo->set_pos(scr_coord(0, ypos));
-		sinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(sinfo->get_image_height(), box_height)));
+		sinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, sinfo->get_image_height()));
 		cont_veh.add_component(sinfo);
-		ypos += max(sinfo->get_image_height(), box_height);
+		ypos += sinfo->get_image_height();
 	}
 	veh_info.set_count(icnv);
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));

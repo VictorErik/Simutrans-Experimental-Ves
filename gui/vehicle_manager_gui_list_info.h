@@ -114,7 +114,7 @@ private:
 	sint32 mean_convoi_speed;
 
 	bool selected = false;
-	int image_height;
+	int entry_height;
 
 public:
 	gui_veh_info_t(vehicle_t* veh);
@@ -125,6 +125,6 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 
-	int get_image_height() { return image_height; }
+	int get_image_height() { return entry_height; } // rename to "get_entry_height()"
 };
 #endif

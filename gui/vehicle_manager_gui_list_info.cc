@@ -981,8 +981,9 @@ void gui_veh_info_t::draw(scr_coord offset)
 	clip_dimension clip = display_get_clip_wh();
 	if (!((pos.y + offset.y) > clip.yy || (pos.y + offset.y) < clip.y - 32) /*&& veh.is_bound()*/) {
 
-		image_height = 0;
-		int ypos_name = 0;
+		int ypos_name = LINESPACE / 2;
+		int min_size = LINESPACE * 4;
+		entry_height = min_size;
 
 		COLOR_VAL text_color = COL_BLACK;
 		scr_coord_val x, y, w, h;
@@ -990,20 +991,20 @@ void gui_veh_info_t::draw(scr_coord offset)
 		display_get_base_image_offset(image, &x, &y, &w, &h);
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, max(h, 50) - 2, COL_DARK_BLUE, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, entry_height, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 		// name wont be necessary, since we get the name from the left hand column and also elsewhere.
 		// However, some method to ID the vehicle is desirable
 		// TODO: ID-tag or similar.
-
-		int max_x = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, translator::translate(veh->get_name()), ALIGN_LEFT, text_color, true) + 2;
+		int max_x = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, translator::translate(veh->get_name()), ALIGN_LEFT, text_color, true) + 2;
 		ypos_name += LINESPACE;
+
 		// current speed/What is it doing (loading, waiting for time etcetc...)
 		if (veh->get_convoi()->in_depot())
 		{
 			const char *txt = translator::translate("(in depot)");
-			w = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, txt, ALIGN_LEFT, text_color, true) + 2;
+			w = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, txt, ALIGN_LEFT, text_color, true) + 2;
 			max_x = max(max_x, w);
 			ypos_name += LINESPACE;
 		}
@@ -1132,7 +1133,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 					speed_color = text_color;
 				}
 			}
-			display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, speed_text, ALIGN_LEFT, speed_color, true) + 2;
+			display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, speed_text, ALIGN_LEFT, speed_color, true) + 2;
 			ypos_name += LINESPACE;
 		}
 
@@ -1160,7 +1161,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 				}
 			}
 		}
-		display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, city_text, ALIGN_LEFT, text_color, true) + 2;
+		display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, city_text, ALIGN_LEFT, text_color, true) + 2;
 		ypos_name += LINESPACE;
 
 		// only show assigned line, if there is one!
@@ -1168,13 +1169,13 @@ void gui_veh_info_t::draw(scr_coord offset)
 
 		}
 		else if (veh->get_convoi()->get_line().is_bound()) {
-			w = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + 6 + ypos_name, translator::translate("Line"), ALIGN_LEFT, text_color, true) + 2;
-			w += display_proportional_clip(pos.x + offset.x + 2 + w + 5, pos.y + offset.y + 6 + ypos_name, veh->get_convoi()->get_line()->get_name(), ALIGN_LEFT, veh->get_convoi()->get_line()->get_state_color(), true);
+			w = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, translator::translate("Line"), ALIGN_LEFT, text_color, true) + 2;
+			w += display_proportional_clip(pos.x + offset.x + 2 + w + 5, pos.y + offset.y + ypos_name, veh->get_convoi()->get_line()->get_name(), ALIGN_LEFT, veh->get_convoi()->get_line()->get_state_color(), true);
 			max_x = max(max_x, w + 5);
 		}
 		ypos_name += LINESPACE;
 
-		ypos_name = 0;
+		ypos_name = LINESPACE / 2;
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;
 
 		// Carried amount
@@ -1183,28 +1184,26 @@ void gui_veh_info_t::draw(scr_coord offset)
 			char amount[256];
 			sprintf(amount, "%i%s %s\n", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
 				veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
-			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
 		}
 		ypos_name += LINESPACE;
 
 		// age		
 		char year[20];
 		sprintf(year, "%s: %i", translator::translate("bought"), veh->get_purchase_time() / 12);
-		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
+		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
 		ypos_name += LINESPACE;
 
 		// TODO: odometer	
 		//char odometer[20];
 		//sprintf(odometer, "%s: %i", translator::translate("odometer"), /*vehicle odometer should be displayed here*/);
-		//display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, odometer, ALIGN_RIGHT, text_color, true) + 2;
-
-
+		//display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, odometer, ALIGN_RIGHT, text_color, true) + 2;
 
 		const int xoff = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH;
 		int left = pos.x + offset.x + xoff + 4;
 		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, veh->get_owner()->get_player_nr(), false, true);
 
-		image_height = h;
+		entry_height += 2;
 
 	}
 }
