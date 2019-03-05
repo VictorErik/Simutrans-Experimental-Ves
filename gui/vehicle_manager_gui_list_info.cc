@@ -949,6 +949,14 @@ gui_veh_info_t::gui_veh_info_t(vehicle_t* veh)
 {
 	this->veh = veh;
 	draw(scr_coord(0, 0));
+
+	if (veh->get_cargo_max() > 0)
+	{
+		load_percentage = veh->get_cargo_carried() / veh->get_cargo_max() * 100;
+		filled_bar.set_pos(scr_coord(0, 0));
+		filled_bar.set_size(scr_size(100, 4));
+		filled_bar.add_color_value(&load_percentage, COL_GREEN);
+	}
 }
 
 /**
@@ -989,6 +997,13 @@ void gui_veh_info_t::draw(scr_coord offset)
 		scr_coord_val x, y, w, h;
 		const image_id image = veh->get_loaded_image();
 		display_get_base_image_offset(image, &x, &y, &w, &h);
+		if (h > entry_height)
+		{
+			for (int i = 0; entry_height < h; i++)
+			{
+				entry_height += LINESPACE;
+			}
+		}
 		if (selected)
 		{
 			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, entry_height, COL_DARK_BLUE, true);
@@ -1202,6 +1217,13 @@ void gui_veh_info_t::draw(scr_coord offset)
 		const int xoff = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH;
 		int left = pos.x + offset.x + xoff + 4;
 		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, veh->get_owner()->get_player_nr(), false, true);
+		
+		if (veh->get_cargo_max() > 0)
+		{
+			load_percentage = veh->get_cargo_carried() / veh->get_cargo_max() * 100;
+			//filled_bar.draw(pos + offset + scr_coord(xoff, 0));
+			filled_bar.draw(scr_coord(left - x, pos.y + offset.y + entry_height - (LINESPACE/2)));
+		}
 
 		entry_height += 2;
 

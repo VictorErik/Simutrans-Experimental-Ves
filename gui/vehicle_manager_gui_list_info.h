@@ -6,6 +6,7 @@
 #include "components/gui_image_list.h"
 #include "../simconvoi.h"
 #include "../utils/cbuffer_t.h"
+#include "components/gui_speedbar.h"
 
 class player_t;
 
@@ -115,6 +116,8 @@ private:
 
 	bool selected = false;
 	int entry_height;
+	gui_speedbar_t filled_bar;
+	sint32 load_percentage;
 
 public:
 	gui_veh_info_t(vehicle_t* veh);
