@@ -1152,8 +1152,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 			ypos_name += LINESPACE;
 		}
 
-		// WHERE is it (coordinate?, closest city?, show which line it is traversing?)
-		// Near a city?
+		// WHERE is it?
 		grund_t *gr = welt->lookup(veh->get_pos());
 		char city_text[256];
 		sprintf(city_text, "<%i, %i>", veh->get_pos().x, veh->get_pos().y);
