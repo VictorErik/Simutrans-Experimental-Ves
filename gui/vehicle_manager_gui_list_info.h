@@ -18,7 +18,7 @@ class gui_special_info_t : public gui_world_component_t
 private:
 	player_t *player;
 	uint8 player_nr;
-	int image_height;
+	int entry_height;
 	cbuffer_t translated_text_string;
 	int width;
 	COLOR_VAL background_color;
@@ -33,7 +33,7 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 	bool is_open_info() { return open_info; }
-	int get_image_height() { return image_height; }
+	int get_entry_height() { return entry_height; }
 
 	void draw(scr_coord offset);
 
@@ -51,7 +51,7 @@ private:
 	uint8 player_nr;
 	vehicle_desc_t* upgrade;
 	vehicle_desc_t* existing;
-	int image_height;
+	int entry_height;
 
 public:
 	gui_upgrade_info_t(vehicle_desc_t* upgrade, vehicle_desc_t* existing);
@@ -63,7 +63,7 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 	bool is_open_info() { return open_info; }
-	int get_image_height() { return image_height; }
+	int get_entry_height() { return entry_height; }
 
 	vehicle_desc_t* get_upgrade() { return upgrade; }
 	vehicle_desc_t* get_existing() { return existing; }
@@ -84,7 +84,7 @@ private:
 	int sort_mode;
 	int display_mode;
 	vehicle_desc_t* veh;
-	int image_height;
+	int entry_height;
 
 	uint16 amount;
 
@@ -97,7 +97,7 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 	vehicle_desc_t* get_desc() { return veh; }
-	int get_image_height() { return image_height; }
+	int get_entry_height() { return entry_height; }
 	void draw(scr_coord offset);
 
 };
@@ -128,6 +128,6 @@ public:
 	bool is_selected() { return selected; }
 	bool set_selection(bool sel) { return selected = sel; }
 
-	int get_image_height() { return entry_height; } // rename to "get_entry_height()"
+	int get_entry_height() { return entry_height; } // rename to "get_entry_height()"
 };
 #endif

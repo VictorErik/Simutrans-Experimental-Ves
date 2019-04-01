@@ -147,7 +147,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 		int x_pos = 0;
 		int suitable_break;
 		int used_caracters = 0;
-		image_height = 0;
+		entry_height = 0;
 		COLOR_VAL text_color = COL_BLACK;
 		const uint16 month_now = welt->get_timeline_year_month();
 		bool upgrades = false;
@@ -512,7 +512,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 
 
 		y_pos += LINESPACE * 2;
-		image_height = max(h, y_pos);
+		entry_height = max(h, y_pos);
 
 	}
 }
@@ -578,7 +578,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		int ypos_name = 0;
 		int suitable_break;
 		int used_caracters = 0;
-		image_height = 0;
+		entry_height = 0;
 		COLOR_VAL text_color = COL_BLACK;
 		const uint16 month_now = welt->get_timeline_year_month();
 		bool upgrades = false;
@@ -937,7 +937,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
 
 		ypos_name += LINESPACE * 2;
-		image_height = max(window_height, ypos_name);
+		entry_height = max(window_height, ypos_name);
 
 	}
 }
