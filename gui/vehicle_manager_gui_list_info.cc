@@ -995,7 +995,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 
 		COLOR_VAL text_color = COL_BLACK;
 		scr_coord_val x, y, w, h;
-		const image_id image = veh->get_loaded_image();
+		const image_id image = veh->get_base_image();
 		display_get_base_image_offset(image, &x, &y, &w, &h);
 		if (h > entry_height)
 		{
