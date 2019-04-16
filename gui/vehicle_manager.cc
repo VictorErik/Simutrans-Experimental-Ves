@@ -121,7 +121,8 @@ const char *vehicle_manager_t::display_text_veh[DISPLAY_MODES_VEH] =
 {
 	"age",
 	"odometer",
-	"location"
+	"location",
+	"cargo"
 };
 
 static const char * engine_type_names[11] =
@@ -1083,7 +1084,7 @@ void vehicle_manager_t::reset_veh_text_input_display()
 	tooltip_syntax_display.clear();
 
 	ti_veh_display.set_visible(false);
-	combo_veh_display.set_visible(false); // If this line is uncommented, the combobox wont show up at all
+	//combo_veh_display.set_visible(false); // If this line is uncommented, the combobox wont show up at all
 	ti_veh_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
 
 	if (ti_veh_invalid_entry_form)
@@ -1108,7 +1109,54 @@ void vehicle_manager_t::reset_veh_text_input_display()
 			sprintf(default_display, "");
 			tooltip_syntax_display.printf(translator::translate("text_field_syntax: %s"), translator::translate("syntax_name_of_location"));
 			break;
+		case displ_veh_cargo:
+		{
+			combo_veh_display.clear_elements();
+			combo_veh_display.set_visible(true);		
+			if (veh_list[0]->get_desc()->get_total_capacity() > 0)
+			{
+				combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("show_all"), SYSCOL_TEXT));
+				
+				// Passenger and mail vehicles display by class here perhaps?
+				if (veh_list[0]->get_desc()->get_freight_type() == goods_manager_t::passengers)
+				{
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(veh_list[0]->get_desc()->get_freight_type()->get_name()), SYSCOL_TEXT));
+				}
+				else if (veh_list[0]->get_desc()->get_freight_type() == goods_manager_t::mail)
+				{
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(veh_list[0]->get_desc()->get_freight_type()->get_name()), SYSCOL_TEXT));
+				}
+				else if (veh_list[0]->get_desc()->get_freight_type()->get_catg() == 0)
+				{
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(veh_list[0]->get_desc()->get_freight_type()->get_name()), SYSCOL_TEXT));
+				}
+				else // Normal good car
+				{
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("any_load"), SYSCOL_TEXT));
+					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
+					FOR(vector_tpl<goods_desc_t const*>, const i, welt->get_goods_list()) {
+						if (i->get_catg_index() == veh_list[0]->get_desc()->get_freight_type()->get_catg_index())
+						{
+							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(i->get_name()), SYSCOL_TEXT));
+						}
+					}
+				}
+			}
+			else // Carries no good
+			{
+				combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
+			}
 
+			combo_veh_display.set_selection(0);
+			tooltip_syntax_display.printf(translator::translate("select_a_cargo_from_the_right_drop_down_list"));
+			break;
+
+
+
+		}
 		default:
 			ti_veh_display.set_visible(true);
 			sprintf(default_display, "");
@@ -3743,6 +3791,11 @@ void vehicle_manager_t::build_veh_list()
 		bt_veh_next_page.set_visible(false);
 		bt_veh_prev_page.set_visible(false);
 		lb_veh_page.set_visible(false);
+	}
+	// Some sort- or display modes requires a reset of the text input display
+	if (display_veh == displ_veh_cargo)
+	{
+		reset_veh_text_input_display();
 	}
 
 	display_veh_list();

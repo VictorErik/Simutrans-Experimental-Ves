@@ -79,6 +79,7 @@ public:
 		displ_veh_age,
 		displ_veh_odometer,
 		displ_veh_location,
+		displ_veh_cargo,
 		DISPLAY_MODES_VEH
 	};
 private:
