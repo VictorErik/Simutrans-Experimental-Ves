@@ -251,6 +251,9 @@ private:
 	char veh_display_name[64];
 	int letters_to_compare;
 
+	bool display_show_any;
+	vector_tpl<uint8> veh_display_combobox_indexes;
+
 public:
 	vehicle_manager_t(player_t* player);
 	~vehicle_manager_t();
@@ -259,6 +262,8 @@ public:
 
 	static int display_desc_by_good;
 	static int display_desc_by_class;
+
+	static int display_veh_by_cargo;
 
 	void build_desc_list();
 	void build_veh_list();
@@ -282,6 +287,8 @@ public:
 	void set_veh_display_rules();
 
 	bool is_desc_displayable(vehicle_desc_t *desc);
+	bool is_veh_displayable(vehicle_t *veh);
+	
 	uint8 return_desc_category(vehicle_desc_t *desc);
 
 	void update_tabs();
