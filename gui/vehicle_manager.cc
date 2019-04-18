@@ -1174,11 +1174,13 @@ void vehicle_manager_t::reset_veh_text_input_display()
 					else // Carries no good
 					{
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
+						display_veh_by_cargo = 0;
 					}
 				}
 				else // No vehicles selected
 				{
 					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
+					display_veh_by_cargo = 0;
 				}
 
 				combo_veh_display.set_selection(display_veh_by_cargo);
@@ -1560,11 +1562,6 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 		}
 		else
 		{
-			int extra_select = 2;
-			if (display_show_any)
-			{
-				extra_select = 3;
-			}
 			uint8 number_of_classes = veh->get_desc()->get_number_of_classes();
 			vector_tpl<ware_t> fracht_array(number_of_classes);
 			fracht_array.clear();
@@ -1586,11 +1583,14 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 			}
 			for (int i = 0; i < fracht_array.get_count(); i++)
 			{
-				int freight_category = fracht_array.get_element(i).get_index();
-				int freight_category_vehicle = veh_display_combobox_indexes[display_veh_by_cargo];
-				if (freight_category == freight_category_vehicle)
+				if (veh_display_combobox_indexes.get_count() > 0)
 				{
-					display = true;
+					int freight_index = fracht_array.get_element(i).get_index();
+					int freight_index_vehicle = veh_display_combobox_indexes[display_veh_by_cargo];
+					if (freight_index == freight_index_vehicle)
+					{
+						display = true;
+					}
 				}
 			}
 
