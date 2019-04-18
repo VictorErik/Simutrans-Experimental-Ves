@@ -246,9 +246,8 @@ private:
 	uint16 veh_display_first_value;
 	uint16 veh_display_second_value;
 
-
 	char desc_display_name[64];
-	char veh_display_name[64];
+	char veh_display_location[64];
 	int letters_to_compare;
 
 	bool display_show_any;

@@ -1092,6 +1092,7 @@ void vehicle_manager_t::reset_veh_text_input_display()
 
 		if (ti_veh_invalid_entry_form)
 		{
+			ti_veh_display.set_visible(true);
 			sprintf(default_display, translator::translate("invalid_entry"));
 			ti_veh_display.set_color(COL_RED);
 			ti_veh_invalid_entry_form = false;
@@ -1228,33 +1229,20 @@ void vehicle_manager_t::set_veh_display_rules()
 	// Second logic: "-" (if specified)
 	// Second value: "number" (if specified)
 	//
-	// For city name input, first write the name (or part of) then a distance to the city
+	// For any type of name input, the algorithm will search for the string in any part of the name
 
 	if (display_veh == displ_veh_location)
 	{
-		sprintf(veh_display_name, entry);
+		sprintf(veh_display_location, entry);
 		letters_to_compare = 0;
-		bool space_before_number = false; 
-		ti_veh_distance_to_city_exists = false;
-		char c[1] = { 'a' };
-		for (int i = 0; i < sizeof(veh_display_name); i++)
+		for (int i = 0; i < sizeof(veh_display_location); i++)
 		{
-			*c = entry[i];
-			if (*c == ' ')
-			{
-				space_before_number = true;
-			}
-			else if (space_before_number && (*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
-			{
-				ti_veh_distance_to_city_exists = true;
-			}
-			else if (veh_display_name[i] == '\0')
+			if (veh_display_location[i] == '\0')
 			{
 				break;
 			}
-			else if (!ti_veh_distance_to_city_exists)
+			else
 			{
-				space_before_number = false;
 				letters_to_compare++;
 			}
 		}
@@ -1596,9 +1584,96 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 
 		}
 	}
-	else
+
+	else if (display_veh == displ_veh_location) // free text input
 	{
-		display = true;
+		if (veh_display_location[0] == '\0')
+		{
+			display = true;
+		}
+		else
+		{
+			if (veh->get_pos().x >= 0 && veh->get_pos().y >= 0)
+			{
+				char location_name[256] = { 0 };
+				grund_t *gr = welt->lookup(veh->get_pos());
+				stadt_t *city = welt->get_city(gr->get_pos().get_2d());
+				sprintf(location_name, city ? city->get_name() : welt->find_nearest_city(gr->get_pos().get_2d())->get_name());
+
+				int counter = 0;
+				char c[1] = { 0 };
+
+				for (int i = 0; i < sizeof(location_name); i++)
+				{
+					*c = toupper(location_name[i]);
+					if (*c == toupper(veh_display_location[counter]))
+					{
+						counter++;
+						if (counter == letters_to_compare)
+						{
+							display = true;
+							break;
+						}
+					}
+					else
+					{
+						counter = 0;
+					}
+				}
+			}
+		}
+	}
+
+	else // numberinput
+	{
+		sint64 value_to_compare = 0;
+		switch (display_veh)
+		{
+		case displ_veh_age:
+			value_to_compare = (welt->get_current_month() / 12) - (veh->get_purchase_time() / 12);
+			break;
+		case displ_veh_odometer:
+			//value_to_compare = ODOMETER VALUE
+			break;
+		default:
+			break;
+		}
+
+		if ((ti_veh_first_value_exists) && !ti_veh_first_logic_exists && !ti_veh_second_logic_exists && !ti_veh_second_value_exists) // only a value is specified
+		{
+			display = value_to_compare == veh_display_first_value;
+		}
+		else if ((ti_veh_first_logic_exists && ti_veh_first_value_exists) && !ti_veh_second_logic_exists && !ti_veh_second_value_exists) // greater than, or smaller than specified value
+		{
+			if (ch_veh_first_logic[0] == '>')
+			{
+				display = value_to_compare >= veh_display_first_value;
+			}
+			else
+			{
+				display = value_to_compare <= veh_display_first_value;
+			}
+		}
+		else if ((ti_veh_first_value_exists && ti_veh_second_logic_exists && ti_veh_second_value_exists) && !ti_veh_first_logic_exists) // greater than lowest the lowest and smaller than highest value specified
+		{
+			display = (value_to_compare >= veh_display_first_value) && (value_to_compare <= veh_display_second_value);
+		}
+		else
+		{
+			display = true;
+		}
+
+	}
+
+
+
+
+
+
+
+	//else
+	{
+		//display = true;
 	}
 
 	return display;
