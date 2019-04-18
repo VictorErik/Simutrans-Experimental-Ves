@@ -117,7 +117,8 @@ private:
 	bool selected = false;
 	int entry_height;
 	gui_speedbar_t filled_bar;
-	sint32 load_percentage;
+	int load_percentage;
+
 	int sort_mode;
 	int display_mode;
 

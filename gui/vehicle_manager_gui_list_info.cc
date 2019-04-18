@@ -954,7 +954,7 @@ gui_veh_info_t::gui_veh_info_t(vehicle_t* veh, int sortmode_index, int displaymo
 
 	if (veh->get_cargo_max() > 0)
 	{
-		load_percentage = veh->get_cargo_carried() / veh->get_cargo_max() * 100;
+		load_percentage = (veh->get_cargo_carried() * 100) / veh->get_cargo_max();
 		filled_bar.set_pos(scr_coord(0, 0));
 		filled_bar.set_size(scr_size(D_BUTTON_WIDTH, 4));
 		filled_bar.add_color_value(&load_percentage, COL_GREEN);
@@ -1231,8 +1231,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		
 		if (veh->get_cargo_max() > 0)
 		{
-			load_percentage = veh->get_cargo_carried() / veh->get_cargo_max() * 100;
-			//filled_bar.draw(pos + offset + scr_coord(xoff, 0));
+			load_percentage = (veh->get_cargo_carried() * 100) / veh->get_cargo_max();
 			filled_bar.draw(scr_coord(pos.x + offset.x + xoff - 4, pos.y + offset.y + entry_height - (LINESPACE/2)));
 		}
 
