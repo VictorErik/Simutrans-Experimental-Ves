@@ -1534,6 +1534,76 @@ bool vehicle_manager_t::is_desc_displayable(vehicle_desc_t *desc)
 	return display;
 }
 
+bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
+{
+	bool display = false;
+
+	if (display_veh == displ_veh_cargo)
+	{
+		if (display_veh_by_cargo == 0) // Show all vehicles
+		{
+			display = true;
+		}
+		else if (display_veh_by_cargo == 1) // Show only empty vehicles
+		{
+			if (veh->get_cargo_carried() <= 0)
+			{
+				display = true;
+			}
+		}
+		else if (display_veh_by_cargo == 2 && display_show_any)
+		{
+			if (veh->get_cargo_carried() > 0)
+			{
+				display = true;
+			}
+		}
+		else
+		{
+			int extra_select = 2;
+			if (display_show_any)
+			{
+				extra_select = 3;
+			}
+			uint8 number_of_classes = veh->get_desc()->get_number_of_classes();
+			vector_tpl<ware_t> fracht_array(number_of_classes);
+			fracht_array.clear();
+			int counter = 0;
+			for (uint8 i = 0; i < number_of_classes; i++)
+			{
+				FOR(slist_tpl<ware_t>, w, veh->get_cargo(i))
+				{
+					counter++;
+				}
+			}
+			fracht_array.resize(counter);
+			for (uint8 i = 0; i < number_of_classes; i++)
+			{
+				FOR(slist_tpl<ware_t>, w, veh->get_cargo(i))
+				{
+					fracht_array.append(w);
+				}
+			}
+			for (int i = 0; i < fracht_array.get_count(); i++)
+			{
+				int freight_category = fracht_array.get_element(i).get_index();
+				int freight_category_vehicle = veh_display_combobox_indexes[display_veh_by_cargo];
+				if (freight_category == freight_category_vehicle)
+				{
+					display = true;
+				}
+			}
+
+		}
+	}
+	else
+	{
+		display = true;
+	}
+
+	return display;
+}
+
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 {
 	char buf[1024];
@@ -3773,7 +3843,7 @@ void vehicle_manager_t::build_veh_list()
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 			{
 				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == desc_for_display)
+				if (v->get_desc() == desc_for_display && is_veh_displayable((vehicle_t*)v))
 				{
 					counter++;
 				}
@@ -3788,7 +3858,7 @@ void vehicle_manager_t::build_veh_list()
 			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 			{
 				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == desc_for_display)
+				if (v->get_desc() == desc_for_display && is_veh_displayable((vehicle_t*)v))
 				{
 					veh_list.append(v);
 				}
