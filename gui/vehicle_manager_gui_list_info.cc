@@ -994,6 +994,9 @@ void gui_veh_info_t::draw(scr_coord offset)
 		int ypos_name = LINESPACE / 2;
 		int min_size = LINESPACE * 4;
 		entry_height = min_size;
+		static cbuffer_t freight_info;
+		freight_info.clear();
+		int x_size = get_size().w - 51 - pos.x;
 
 		COLOR_VAL text_color = COL_BLACK;
 		scr_coord_val x, y, w, h;
@@ -1201,16 +1204,45 @@ void gui_veh_info_t::draw(scr_coord offset)
 		ypos_name += LINESPACE;
 
 		// Carried amount, extended display when "displ_veh_cargo"
+		char freight[256];
 		if (veh->get_desc()->get_total_capacity() > 0)
 		{
-			char amount[256];
-			sprintf(amount, "%i%s %s", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
-				veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
-			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
+			if (display_mode == vehicle_manager_t::display_mode_veh_t::displ_veh_cargo) // Extended display
+			{
 
+				int returns = 0;
+
+				// We get the freight info via the freight_list_sorter, so no need to do anything but fetch it
+				veh->get_cargo_info(freight_info, true);
+				display_multiline_text(pos.x + offset.x + 2 + xpos_extra - (D_BUTTON_WIDTH*2), pos.y + offset.y + ypos_name, freight_info, text_color);
+
+				returns = 0;
+				const char *p = freight_info;
+				for (int i = 0; i < freight_info.len(); i++)
+				{
+					if (p[i] == '\n')
+					{
+						returns++;
+					}
+				}
+				ypos_name += (returns*LINESPACE) + (2 * LINESPACE);
+			}
+			else // Simple display
+			{
+				sprintf(freight, "%i%s %s", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
+					veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
+				display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, freight, ALIGN_RIGHT, text_color, true) + 2;
+				ypos_name += LINESPACE;
+			}
+			
+		}
+		else if (display_mode == vehicle_manager_t::display_mode_veh_t::displ_veh_cargo) // Carries no good
+		{
+			sprintf(freight, "%s", translator::translate("carries_no_good"));
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, freight, ALIGN_RIGHT, text_color, true) + 2;
 			ypos_name += LINESPACE;
-
-
+		}
+		
 
 		// TODO: odometer	
 		//char odometer[20];
@@ -1227,6 +1259,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 			filled_bar.draw(scr_coord(pos.x + offset.x + xoff - 4, pos.y + offset.y + entry_height - (LINESPACE/2)));
 		}
 
+		entry_height = ypos_name > entry_height ? ypos_name : entry_height;
 		entry_height += 2;
 
 	}
