@@ -1194,29 +1194,21 @@ void gui_veh_info_t::draw(scr_coord offset)
 		ypos_name = LINESPACE / 2;
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;
 
-		// Carried amount
-		if (veh->get_desc()->get_total_capacity() > 0)
-		{
-			char amount[256];
-			sprintf(amount, "%i%s %s\n", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
-				veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
-			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
-		}
-		ypos_name += LINESPACE;
-
 		// age		
 		char year[20];
 		sprintf(year, "%s: %i", translator::translate("bought"), veh->get_purchase_time() / 12);
 		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
 		ypos_name += LINESPACE;
 
-		if (veh->get_cargo_max() > 0 && display_mode == vehicle_manager_t::display_mode_veh_t::displ_veh_cargo)
+		// Carried amount, extended display when "displ_veh_cargo"
+		if (veh->get_desc()->get_total_capacity() > 0)
 		{
-			char year[20];
-			sprintf(year, "%s: %i", translator::translate("cargo"), veh->get_cargo_carried());
-			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
+			char amount[256];
+			sprintf(amount, "%i%s %s", veh->get_cargo_carried(), translator::translate(veh->get_desc()->get_freight_type()->get_mass()),
+				veh->get_desc()->get_freight_type()->get_catg() == 0 ? translator::translate(veh->get_desc()->get_freight_type()->get_name()) : translator::translate(veh->get_desc()->get_freight_type()->get_catg_name()));
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, amount, ALIGN_RIGHT, text_color, true) + 2;
+
 			ypos_name += LINESPACE;
-		}
 
 
 
