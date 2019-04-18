@@ -31,7 +31,7 @@ public:
 		by_accommodation_via = 10
 		};
 
-	static void sort_freight(vector_tpl<ware_t> const& warray, cbuffer_t& buf, sort_mode_t sort_mode, const slist_tpl<ware_t>* full_list, const char* what_doing, const uint8 accommodation = all_classes, const uint32 accommodation_capacity = 0, const ware_t *accommodation_ware = NULL, const bool show_empty = false);
+	static void sort_freight(vector_tpl<ware_t> const& warray, cbuffer_t& buf, sort_mode_t sort_mode, const slist_tpl<ware_t>* full_list, const char* what_doing, const uint8 accommodation = all_classes, const uint32 accommodation_capacity = 0, const ware_t *accommodation_ware = NULL, const bool show_empty = false, const bool show_simple_display = false);
 
 private:
 	static karte_ptr_t welt;
@@ -41,7 +41,6 @@ private:
 	static bool compare_ware(ware_t const& w1, ware_t const& w2);
 
 	static void add_ware_heading( cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class = all_classes, uint32 total_pass_mail = 0, bool show_empty = false);
-
 
 
 //	vector_tpl<transferring_cargo_t> *transferring_cargoes;

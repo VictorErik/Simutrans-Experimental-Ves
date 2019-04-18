@@ -242,7 +242,7 @@ void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 
 
 
 
-void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuffer_t& buf, sort_mode_t sort_mode, const slist_tpl<ware_t>* full_list, const char* what_doing, const uint8 accommodation, const uint32 accommodation_capacity, const ware_t *accommodation_ware, const bool show_empty)
+void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuffer_t& buf, sort_mode_t sort_mode, const slist_tpl<ware_t>* full_list, const char* what_doing, const uint8 accommodation, const uint32 accommodation_capacity, const ware_t *accommodation_ware, const bool show_empty, const bool show_simple_display)
 {
 	sortby = sort_mode;
 
@@ -273,116 +273,129 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 			continue;
 		}
 		wlist[pos] = ware;
-		// for the sorting via the number for the next stop we unify entries
-		if ((sort_mode == by_via_sum || sort_mode == by_accommodation_via) && pos > 0)
+		if (!show_simple_display)
 		{
-			//DBG_MESSAGE("freight_list_sorter_t::get_freight_info()","for halt %i check connection",pos);
-			// only add it, if there is not another thing waiting with the same via but another destination
-			for (int i = 0; i < pos; i++)
+			// for the sorting via the number for the next stop we unify entries
+			if ((sort_mode == by_via_sum || sort_mode == by_accommodation_via) && pos > 0)
 			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_zwischenziel() == wlist[pos].get_zwischenziel() &&
-					(wlist[i].get_ziel() == wlist[i].get_zwischenziel()) == (wlist[pos].get_ziel() == wlist[pos].get_zwischenziel()))
+				//DBG_MESSAGE("freight_list_sorter_t::get_freight_info()","for halt %i check connection",pos);
+				// only add it, if there is not another thing waiting with the same via but another destination
+				for (int i = 0; i < pos; i++)
 				{
-					wlist[i].menge += wlist[pos--].menge;
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_zwischenziel() == wlist[pos].get_zwischenziel() &&
+						(wlist[i].get_ziel() == wlist[i].get_zwischenziel()) == (wlist[pos].get_ziel() == wlist[pos].get_zwischenziel()))
+					{
+						wlist[i].menge += wlist[pos--].menge;
+					}
 				}
 			}
+			if (sort_mode == by_origin_amount && pos > 0)
+			{
+				for (int i = 0; i < pos; i++)
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_origin() == wlist[pos].get_origin())
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
+				}
+			}
+
+			if (sort_mode == by_origin && pos > 0)
+			{
+				for (int i = 0; i < pos; i++)
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_origin() == wlist[pos].get_origin() &&
+						wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_ziel() == wlist[pos].get_ziel())
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
+				}
+			}
+
+			if ((sort_mode == by_name || sort_mode == by_via || sort_mode == by_amount) && pos > 0)
+			{
+				for (int i = 0; i < pos; i++)
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_ziel() == wlist[pos].get_ziel())
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
+				}
+			}
+
+			if ((sort_mode == by_destination_detail || sort_mode == by_accommodation_detail) && pos > 0)
+			{
+				for (int i = 0; i < pos; i++)
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_zielpos() == wlist[pos].get_zielpos())
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
+				}
+			}
+
+			if (sort_mode == by_wealth_detail && pos > 0)
+			{
+				for (int i = 0; i < pos; i++)
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_class() == wlist[pos].get_class() &&
+						wlist[i].get_zielpos() == wlist[pos].get_zielpos())
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
+				}
+			}
+			if (sort_mode == by_wealth_via && pos > 0)
+			{
+				for (int i = 0; i < pos; i++)
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_zwischenziel() == wlist[pos].get_zwischenziel() &&
+						(wlist[i].get_ziel() == wlist[i].get_zwischenziel()) == (wlist[pos].get_ziel() == wlist[pos].get_zwischenziel()) &&
+						wlist[i].get_class() == wlist[pos].get_class())
+					{
+						wlist[i].menge += wlist[pos--].menge;
+					}
+				}
+			}
+
+			/*	if (sort_mode == by_transfer_time && pos > 0)
+			{
+			for (int i = 0; i < pos; i++)
+			{
+			uint32 rt_i = wlist[i] == tc.ware ? tc.ready_time : NULL;
+			uint32 rt_pos = wlist[pos] == tc.ware ? tc.ready_time : NULL;
+			if (wlist[i].get_index() == wlist[pos].get_index() && rt_i == rt_pos)
+			{
+			wlist[i].menge += wlist[pos--].menge;
+			break;
+			}
+			}
+			}*/
 		}
-		if (sort_mode == by_origin_amount && pos > 0)
+		else
 		{
 			for (int i = 0; i < pos; i++)
 			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_origin() == wlist[pos].get_origin())
+				if (wlist[i].get_index() == wlist[pos].get_index())
 				{
 					wlist[i].menge += wlist[pos--].menge;
 					break;
 				}
 			}
 		}
-
-		if (sort_mode == by_origin && pos > 0)
-		{
-			for (int i = 0; i < pos; i++)
-			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_origin() == wlist[pos].get_origin() &&
-					wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_ziel() == wlist[pos].get_ziel())
-				{
-					wlist[i].menge += wlist[pos--].menge;
-					break;
-				}
-			}
-		}
-
-		if ((sort_mode == by_name || sort_mode == by_via || sort_mode == by_amount) && pos > 0)
-		{
-			for (int i = 0; i < pos; i++)
-			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_ziel() == wlist[pos].get_ziel())
-				{
-					wlist[i].menge += wlist[pos--].menge;
-					break;
-				}
-			}
-		}
-
-		if ((sort_mode == by_destination_detail || sort_mode == by_accommodation_detail) && pos > 0)
-		{
-			for (int i = 0; i < pos; i++)
-			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_zielpos() == wlist[pos].get_zielpos())
-				{
-					wlist[i].menge += wlist[pos--].menge;
-					break;
-				}
-			}
-		}
-
-		if (sort_mode == by_wealth_detail && pos > 0)
-		{
-			for (int i = 0; i < pos; i++)
-			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_class() == wlist[pos].get_class() &&
-					wlist[i].get_zielpos() == wlist[pos].get_zielpos())
-				{
-					wlist[i].menge += wlist[pos--].menge;
-					break;
-				}
-			}
-		}
-		if (sort_mode == by_wealth_via && pos > 0)
-		{
-			for (int i = 0; i < pos; i++)
-			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_zwischenziel() == wlist[pos].get_zwischenziel() &&
-					(wlist[i].get_ziel() == wlist[i].get_zwischenziel()) == (wlist[pos].get_ziel() == wlist[pos].get_zwischenziel()) &&
-					wlist[i].get_class() == wlist[pos].get_class())
-				{
-					wlist[i].menge += wlist[pos--].menge;
-				}
-			}
-		}
-
-		/*	if (sort_mode == by_transfer_time && pos > 0)
-		{
-		for (int i = 0; i < pos; i++)
-		{
-		uint32 rt_i = wlist[i] == tc.ware ? tc.ready_time : NULL;
-		uint32 rt_pos = wlist[pos] == tc.ware ? tc.ready_time : NULL;
-		if (wlist[i].get_index() == wlist[pos].get_index() && rt_i == rt_pos)
-		{
-		wlist[i].menge += wlist[pos--].menge;
-		break;
-		}
-		}
-		}*/
-
 		pos++;
 	}
 
@@ -472,7 +485,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				}
 			}
 			//Do we need to show a new wealth heading?
-			if (sorting_by_wealth && is_class_cargo && (last_ware_class != ware.get_class() ||  sum > 0))
+			if (sorting_by_wealth && is_class_cargo && (last_ware_class != ware.get_class() || sum > 0))
 			{
 				uint32 class_total = 0;
 
@@ -487,7 +500,6 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				}
 				add_ware_heading(buf, sum, 0, &ware, what_doing, last_ware_class, class_total, show_empty);
 			}
-
 			// Classes preparations.
 			// Only show the wealth if we are not already sorting by wealth
 			char g_class_untranslated[32] = "\0";
@@ -507,130 +519,142 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 				sprintf(g_class_alone, " (%s)", translator::translate(g_class_untranslated));
 
 			}
-			// detail amount
-			goods_desc_t const& desc = *ware.get_desc();
-			buf.printf("   %u%s %s %c ", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()), ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
 
 			{
-			/*	const sint64 current_time = welt->get_ticks();
-				char transfer_time_left[32] = "";
-				if (halt->get_transferring_cargoes_count() > 0)
-				{
-					transferring_cargo_t tc;
-					uint32 rt_i = wlist[j] == tc.ware ? tc.ready_time : NULL;
-					const uint32 tc_ready_time = tc.ware == ware ? world()->ticks_to_seconds(tc.ready_time - current_time) : NULL;
-					const uint32 ready_seconds = world()->ticks_to_seconds(tc.ready_time - current_time);
-					welt->sprintf_ticks(transfer_time_left, sizeof(transfer_time_left), tc_ready_time);
-				}*/
+				/*	const sint64 current_time = welt->get_ticks();
+					char transfer_time_left[32] = "";
+					if (halt->get_transferring_cargoes_count() > 0)
+					{
+						transferring_cargo_t tc;
+						uint32 rt_i = wlist[j] == tc.ware ? tc.ready_time : NULL;
+						const uint32 tc_ready_time = tc.ware == ware ? world()->ticks_to_seconds(tc.ready_time - current_time) : NULL;
+						const uint32 ready_seconds = world()->ticks_to_seconds(tc.ready_time - current_time);
+						welt->sprintf_ticks(transfer_time_left, sizeof(transfer_time_left), tc_ready_time);
+					}*/
 
 			}
-
-			 // the target name is not correct for the via sort
-			if (sortby != by_via_sum && sortby != by_origin_amount && sortby != by_wealth_via && sortby != by_accommodation_via)
+			if (show_simple_display)
 			{
-				koord zielpos = ware.get_zielpos();
-				const grund_t* gr = welt->lookup_kartenboden(zielpos);
-				const gebaeude_t* const gb = gr ? gr->get_building() : NULL;
-				cbuffer_t dbuf;
-				if (gb)
+				if (!is_class_cargo || ware.get_catg()!=0) // For passenger, mail and special cargo, we dont need to show again how many units when using "simple display"
 				{
-					gb->get_description(dbuf);
+					// detail amount without >
+					goods_desc_t const& desc = *ware.get_desc();
+					buf.printf("   %u%s %s", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()));
 				}
-				else
-				{
-					dbuf.append(translator::translate("Unknown destination"));
-				}
-				const stadt_t* city = welt->get_city(zielpos);
+			}
+			else
+			{
+				// detail amount with >
+				goods_desc_t const& desc = *ware.get_desc();
+				buf.printf("   %u%s %s %c ", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()), ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
 
-				if (ware.is_passenger() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail))
+				// the target name is not correct for the via sort
+				if (sortby != by_via_sum && sortby != by_origin_amount && sortby != by_wealth_via && sortby != by_accommodation_via)
 				{
-					const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
-
-					if (city)
+					koord zielpos = ware.get_zielpos();
+					const grund_t* gr = welt->lookup_kartenboden(zielpos);
+					const gebaeude_t* const gb = gr ? gr->get_building() : NULL;
+					cbuffer_t dbuf;
+					if (gb)
 					{
-						buf.printf("%s <%i, %i> (%s; %s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name(), trip_type, g_class_text);
+						gb->get_description(dbuf);
 					}
 					else
 					{
-						buf.printf("%s <%i, %i> (%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, trip_type, g_class_text);
+						dbuf.append(translator::translate("Unknown destination"));
+					}
+					const stadt_t* city = welt->get_city(zielpos);
+
+					if (ware.is_passenger() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail))
+					{
+						const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
+
+						if (city)
+						{
+							buf.printf("%s <%i, %i> (%s; %s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name(), trip_type, g_class_text);
+						}
+						else
+						{
+							buf.printf("%s <%i, %i> (%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, trip_type, g_class_text);
+						}
+					}
+					else if (ware.is_mail() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail))
+					{
+						if (city)
+						{
+							buf.printf("%s <%i, %i> (%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name(), g_class_text);
+						}
+						else
+						{
+							buf.printf("%s <%i, %i>%s\n     ", dbuf.get_str(), zielpos.x, zielpos.y, g_class_alone);
+						}
+					}
+					else if (sortby == by_destination_detail)
+					{
+						if (city)
+						{
+							buf.printf("%s <%i, %i> (%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name());
+						}
+						else
+						{
+							buf.printf("%s <%i, %i>\n     ", dbuf.get_str(), zielpos.x, zielpos.y);
+						}
 					}
 				}
-				else if (ware.is_mail() && (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail))
+
+				if (sortby == by_name || sortby == by_destination_detail || sortby == by_amount || sortby == by_origin || (sortby == by_via_sum && via_halt == halt) || sortby == by_via || sortby == by_wealth_detail || (sortby == by_wealth_via && via_halt == halt) || sortby == by_accommodation_detail || (sortby == by_accommodation_via && via_halt == halt))
 				{
-					if (city)
+					const char *destination_name = translator::translate("unknown");
+					if (halt.is_bound())
 					{
-						buf.printf("%s <%i, %i> (%s%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name(), g_class_text);
+						destination_name = halt->get_name();
+					}
+					if (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail)
+					{
+						buf.printf(translator::translate(" via %s"), destination_name);
 					}
 					else
 					{
-						buf.printf("%s <%i, %i>%s\n     ", dbuf.get_str(), zielpos.x, zielpos.y, g_class_alone);
+						buf.printf(destination_name);
 					}
 				}
-				else if (sortby == by_destination_detail)
+
+				if (sortby == by_origin_amount)
 				{
-					if (city)
+					const char *origin_name = translator::translate("unknown");
+					if (origin_halt.is_bound())
 					{
-						buf.printf("%s <%i, %i> (%s)\n     ", dbuf.get_str(), zielpos.x, zielpos.y, city->get_name());
+						origin_name = origin_halt->get_name();
 					}
-					else
+					buf.printf(origin_name);
+				}
+
+				if (via_halt != halt && (sortby == by_via || sortby == by_via_sum || sortby == by_wealth_via || sortby == by_accommodation_via))
+				{
+					const char *via_name = translator::translate("unknown");
+					if (via_halt.is_bound())
 					{
-						buf.printf("%s <%i, %i>\n     ", dbuf.get_str(), zielpos.x, zielpos.y);
+						via_name = via_halt->get_name();
 					}
+					buf.printf(translator::translate(" via %s"), via_name);
 				}
-			}
+				if (sortby == by_origin)
+				{
+					const char *origin_name = translator::translate("unknown");
+					if (origin_halt.is_bound())
+					{
+						origin_name = origin_halt->get_name();
+					}
+					if (ware.is_passenger())
+					{
+						const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
 
-			if (sortby == by_name || sortby == by_destination_detail || sortby == by_amount || sortby == by_origin || (sortby == by_via_sum && via_halt == halt) || sortby == by_via || sortby == by_wealth_detail || (sortby == by_wealth_via && via_halt == halt) || sortby == by_accommodation_detail || (sortby == by_accommodation_via && via_halt == halt))
-			{
-				const char *destination_name = translator::translate("unknown");
-				if (halt.is_bound())
-				{
-					destination_name = halt->get_name();
-				}
-				if (sortby == by_destination_detail || sortby == by_wealth_detail || sortby == by_accommodation_detail)
-				{
-					buf.printf(translator::translate(" via %s"), destination_name);
-				}
-				else
-				{
-					buf.printf(destination_name);
-				}
-			}
-
-			if (sortby == by_origin_amount)
-			{
-				const char *origin_name = translator::translate("unknown");
-				if (origin_halt.is_bound())
-				{
-					origin_name = origin_halt->get_name();
-				}
-				buf.printf(origin_name);
-			}
-
-			if (via_halt != halt && (sortby == by_via || sortby == by_via_sum || sortby == by_wealth_via || sortby == by_accommodation_via))
-			{
-				const char *via_name = translator::translate("unknown");
-				if (via_halt.is_bound())
-				{
-					via_name = via_halt->get_name();
-				}
-				buf.printf(translator::translate(" via %s"), via_name);
-			}
-			if (sortby == by_origin)
-			{
-				const char *origin_name = translator::translate("unknown");
-				if (origin_halt.is_bound())
-				{
-					origin_name = origin_halt->get_name();
-				}
-				if (ware.is_passenger())
-				{
-					const char* trip_type = (ware.is_commuting_trip ? translator::translate("commuting") : translator::translate("visiting"));
-
-					buf.printf(translator::translate(" from %s (%s%s)"), origin_name, trip_type, g_class_text); // With class entries
-				}
-				else if (ware.is_mail())
-				{
-					buf.printf(translator::translate(" from %s%s"), origin_name, g_class_alone); // With class entries
+						buf.printf(translator::translate(" from %s (%s%s)"), origin_name, trip_type, g_class_text); // With class entries
+					}
+					else if (ware.is_mail())
+					{
+						buf.printf(translator::translate(" from %s%s"), origin_name, g_class_alone); // With class entries
+					}
 				}
 			}
 

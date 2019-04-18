@@ -2122,10 +2122,12 @@ const char *vehicle_t::get_cargo_name() const
 }
 
 
-void vehicle_t::get_cargo_info(cbuffer_t & buf) const
+void vehicle_t::get_cargo_info(cbuffer_t & buf, bool simple_view) const
 {
 	const goods_desc_t* ware_desc = get_desc()->get_freight_type();
 	const uint16 menge = get_desc()->get_total_capacity();
+	char loaded_text[15];
+	sprintf(loaded_text, simple_view ? "" : "loaded");
 	
 	vector_tpl<vector_tpl<ware_t>> fracht_array(number_of_classes);
 	for (uint8 i = 0; i < number_of_classes; i++)
@@ -2148,7 +2150,7 @@ void vehicle_t::get_cargo_info(cbuffer_t & buf) const
 		ware_t cargo_type = get_cargo_type();
 		for (uint8 i = 0; i < number_of_classes; i++)
 		{
-			freight_list_sorter_t::sort_freight(fracht_array[i], buf, (freight_list_sorter_t::sort_mode_t)freight_info_order, NULL, "loaded", i, get_accommodation_capacity(i), &cargo_type, true);
+			freight_list_sorter_t::sort_freight(fracht_array[i], buf, (freight_list_sorter_t::sort_mode_t)freight_info_order, NULL, loaded_text, i, get_accommodation_capacity(i), &cargo_type, true, simple_view);
 		}
 	}
 	else
@@ -2158,7 +2160,7 @@ void vehicle_t::get_cargo_info(cbuffer_t & buf) const
 		ware_t ware = get_cargo_type();
 		ware.menge = desc->get_total_capacity();
 		capacity.insert(ware);
-		freight_list_sorter_t::sort_freight(fracht_array[0], buf, (freight_list_sorter_t::sort_mode_t)freight_info_order, &capacity, "loaded", NULL, NULL, NULL, true);
+		freight_list_sorter_t::sort_freight(fracht_array[0], buf, (freight_list_sorter_t::sort_mode_t)freight_info_order, &capacity, loaded_text, NULL, NULL, NULL, true, simple_view);
 	}
 }
 

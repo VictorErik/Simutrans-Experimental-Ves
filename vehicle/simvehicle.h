@@ -581,7 +581,7 @@ public:
 	* e.g. to display in a info window
 	* @author Hj. Malthaner
 	*/
-	void get_cargo_info(cbuffer_t & buf) const;
+	void get_cargo_info(cbuffer_t & buf, bool simple = false) const;
 
 	// Check for straightness of way.
 	//@author jamespetts
