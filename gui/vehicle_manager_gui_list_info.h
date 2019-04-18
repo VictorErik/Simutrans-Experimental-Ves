@@ -118,9 +118,11 @@ private:
 	int entry_height;
 	gui_speedbar_t filled_bar;
 	sint32 load_percentage;
+	int sort_mode;
+	int display_mode;
 
 public:
-	gui_veh_info_t(vehicle_t* veh);
+	gui_veh_info_t(vehicle_t* veh, int sortmode_index, int displaymode_index);
 
 	bool infowin_event(event_t const*) OVERRIDE;
 	void draw(scr_coord offset);

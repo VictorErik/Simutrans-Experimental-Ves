@@ -3926,7 +3926,7 @@ void vehicle_manager_t::display_veh_list()
 	for (i = 0; i < icnv; i++) {
 		if (veh_list.get_element(i) != NULL)
 		{
-			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index));
+			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index), sortby_veh, display_veh);
 			vinfo->set_pos(scr_coord(0, ypos));
 			vinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, vinfo->get_entry_height()));
 			vinfo->set_selection(veh_selection[i + offset_index]);

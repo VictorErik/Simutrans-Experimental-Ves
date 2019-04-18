@@ -945,10 +945,12 @@ void gui_desc_info_t::draw(scr_coord offset)
 // ***************************************** //
 // Actual vehicles:
 // ***************************************** //
-gui_veh_info_t::gui_veh_info_t(vehicle_t* veh)
+gui_veh_info_t::gui_veh_info_t(vehicle_t* veh, int sortmode_index, int displaymode_index)
 {
 	this->veh = veh;
 	draw(scr_coord(0, 0));
+	sort_mode = sortmode_index;
+	display_mode = displaymode_index;
 
 	if (veh->get_cargo_max() > 0)
 	{
@@ -1207,6 +1209,16 @@ void gui_veh_info_t::draw(scr_coord offset)
 		sprintf(year, "%s: %i", translator::translate("bought"), veh->get_purchase_time() / 12);
 		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
 		ypos_name += LINESPACE;
+
+		if (veh->get_cargo_max() > 0 && display_mode == vehicle_manager_t::display_mode_veh_t::displ_veh_cargo)
+		{
+			char year[20];
+			sprintf(year, "%s: %i", translator::translate("cargo"), veh->get_cargo_carried());
+			display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
+			ypos_name += LINESPACE;
+		}
+
+
 
 		// TODO: odometer	
 		//char odometer[20];
