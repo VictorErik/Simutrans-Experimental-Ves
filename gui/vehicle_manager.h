@@ -82,6 +82,14 @@ public:
 		displ_veh_cargo,
 		DISPLAY_MODES_VEH
 	};
+
+	enum info_tab_t {
+		infotab_general,
+		infotab_maintenance,
+		infotab_economics,
+		infotab_advanced,
+		DISPLAY_MODES_INFOTAB
+	};
 private:
 	player_t *player;
 	uint8 player_nr;

@@ -448,12 +448,14 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	tabs_info.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	tabs_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH*2, SCL_HEIGHT));
 
-	tabs_info.add_tab(&dummy, translator::translate("general_information"));
-	tabs_to_index_information[max_idx_information++] = 0;
-	tabs_info.add_tab(&cont_maintenance_info, translator::translate("maintenance_information"));
-	tabs_to_index_information[max_idx_information++] = 1;
-	tabs_info.add_tab(&dummy, translator::translate("details"));
-	tabs_to_index_information[max_idx_information++] = 2;
+	tabs_info.add_tab(&dummy, translator::translate("infotab_general_information"));
+	tabs_to_index_information[max_idx_information++] = infotab_general;
+	tabs_info.add_tab(&cont_maintenance_info, translator::translate("infotab_economics_information"));
+	tabs_to_index_information[max_idx_information++] = infotab_economics;
+	tabs_info.add_tab(&cont_maintenance_info, translator::translate("infotab_maintenance_information"));
+	tabs_to_index_information[max_idx_information++] = infotab_maintenance;
+	tabs_info.add_tab(&dummy, translator::translate("infotab_advanced"));
+	tabs_to_index_information[max_idx_information++] = infotab_advanced;
 
 	selected_tab_information = tabs_to_index_information[tabs_info.get_active_tab_index()];
 	tabs_info.add_listener(this);
@@ -2397,11 +2399,15 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	// 2 = echonomics information
 	// 3 = advanced actions
 	int info_display = (uint16)selected_tab_information;
-	if (info_display == 0)
+	if (info_display == infotab_general)
 	{
 		draw_general_information(pos + desc_info_text_pos);
 	}
-	else if (info_display == 1)
+	else if (info_display == infotab_economics)
+	{
+
+	}
+	else if (info_display == infotab_maintenance)
 	{
 		if (update_veh_list)
 		{
@@ -2409,7 +2415,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 		}
 		draw_maintenance_information(pos + desc_info_text_pos);
 	}
-	else if (info_display == 2)
+	else if (info_display == infotab_advanced)
 	{
 
 	}
