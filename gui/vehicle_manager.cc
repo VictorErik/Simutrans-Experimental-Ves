@@ -855,6 +855,7 @@ void vehicle_manager_t::display_tab_objects()
 	{
 		bt_upgrade_to_from.set_visible(true);
 		scrolly_upgrade.set_visible(true);
+		build_upgrade_list();
 	}
 	else if (info_display == 2)
 	{
@@ -1690,7 +1691,7 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 
 	}
 
-	// Now return false if any of these statements are true
+	// Now dont display anyway if any of these statements are true
 	if (hide_veh_in_depot && veh->get_convoi()->in_depot())
 	{
 		display = false;
