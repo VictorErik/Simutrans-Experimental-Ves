@@ -63,6 +63,9 @@
 #define RIGHT_HAND_COLUMN (D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH + 10)
 #define SCL_HEIGHT (15*LINESPACE)
 
+#define MIN_WIDTH (VEHICLE_NAME_COLUMN_WIDTH * 2) + (D_MARGIN_LEFT * 3)
+#define MIN_HEIGHT (D_BUTTON_HEIGHT + 11 + VEHICLE_NAME_COLUMN_HEIGHT + SCL_HEIGHT + INFORMATION_COLUMN_HEIGHT)
+
 static uint16 tabs_to_index_waytype[8];
 static uint16 tabs_to_index_vehicletype[5];
 static uint16 tabs_to_index_information[8];
@@ -168,6 +171,9 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	veh_is_selected = false;
 	goto_this_desc = NULL;
+
+	scr_coord coord_dummy = scr_coord(0, 0);
+	scr_size size_dummy = scr_size(0, 0);
 
 	int y_pos = 5;
 
@@ -381,7 +387,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	// ----------- The two lists of vehicles and their counting labels -----------------//
 	// "Desc" list
-	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH, VEHICLE_NAME_COLUMN_HEIGHT));
+	cont_desc.set_size(size_dummy);
 	scrolly_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	scrolly_desc.set_show_scroll_y(true);
 	scrolly_desc.set_scroll_amount_y(40);
@@ -521,13 +527,10 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	set_desc_display_rules();
 	build_desc_list();
 	display_tab_objects();
+	
 
-	// Sizes:
-	const int min_width = (VEHICLE_NAME_COLUMN_WIDTH * 2) + (D_MARGIN_LEFT*3);
-	const int min_height = tabs_info.get_pos().y + D_BUTTON_HEIGHT*2 + LINESPACE + INFORMATION_COLUMN_HEIGHT;
-
-	set_min_windowsize(scr_size(min_width, min_height));
-	set_windowsize(scr_size(min_width, min_height));
+	set_min_windowsize(scr_size(MIN_WIDTH, MIN_HEIGHT));
+	set_windowsize(scr_size(MIN_WIDTH, MIN_HEIGHT));
 	set_resizemode(diagonal_resize);
 	resize(scr_coord(0, 0));
 }
@@ -2450,12 +2453,183 @@ void vehicle_manager_t::display(scr_coord pos)
 void vehicle_manager_t::set_windowsize(scr_size size)
 {
 	gui_frame_t::set_windowsize(size);
+
+	// For some strange reason, having "extra_width = get_windowsize().w - MIN_WIDTH" directly generates strange results...
+	int minwidth = MIN_WIDTH;
+	int minheight = MIN_HEIGHT;
+	int width = get_windowsize().w;
+	int height = get_windowsize().h;
+
+	// The added width and height to the window from default
+	int extra_width = width - minwidth;
+	int extra_height = height - minheight;
+
+	// Define the columns for upper section
+	// Start by determining which of these translations is the longest, since the GUI depends upon it:
+	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
+	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
+	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
+	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
+
+	// Now the actual columns:
+	int column_1 = D_MARGIN_LEFT;
+	int column_2 = column_1 + label_length + 5 + (extra_width / 6);
+	int column_3 = column_2 + combobox_width + 5 + (extra_width / 6);
+
+	int y_pos = 5;
+
+	
+	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
+	// Show available vehicles button
+	bt_show_available_vehicles.set_pos(scr_coord(column_1, y_pos));
+	bt_show_available_vehicles.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	y_pos += D_BUTTON_HEIGHT;
+
+	// Waytype tab panel
+	tabs_waytype.set_pos(scr_coord(column_1, y_pos));
+	tabs_waytype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width / 2), SCL_HEIGHT));
+	y_pos += D_BUTTON_HEIGHT * 2;
+
+	// Vehicle type tab panel
+	tabs_vehicletype.set_pos(scr_coord(column_1, y_pos));
+	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width/2), SCL_HEIGHT));
+	y_pos += (D_BUTTON_HEIGHT*2) + 6;
+
+	// "Desc" sorting label, combobox and reverse sort button
+	lb_desc_sortby.set_pos(scr_coord(column_1, y_pos));
+	combo_sorter_desc.set_pos(scr_coord(column_2, y_pos));
+	combo_sorter_desc.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_sorter_desc.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	bt_desc_sortreverse.set_pos(scr_coord(column_3, y_pos));
+	bt_desc_sortreverse.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	y_pos += D_BUTTON_HEIGHT;
+
+	// "Desc" display label, combobox and textfield/combobox
+	lb_display_desc.set_pos(scr_coord(column_1, y_pos));
+	combo_display_desc.set_pos(scr_coord(column_2, y_pos));
+	combo_display_desc.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_display_desc.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	ti_desc_display.set_pos(scr_coord(column_3, y_pos));
+	ti_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_desc_display.set_pos(scr_coord(column_3, y_pos));
+	combo_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_desc_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+
+	// ----------- Right hand side upper labels, buttons and comboboxes -----------------//
+	// Define the columns for use in the "Veh" section
+	y_pos = 5;
+	column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
+	column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+
+	y_pos += D_BUTTON_HEIGHT;
+	y_pos += D_BUTTON_HEIGHT;
+	y_pos += D_BUTTON_HEIGHT;
+	y_pos += D_BUTTON_HEIGHT;
+
+	// Diverse buttons
+	bt_select_all.set_pos(scr_coord(column_1, y_pos));
+	bt_select_all.set_size(scr_size(column_2 - column_1, D_BUTTON_HEIGHT));
+	bt_hide_in_depot.set_pos(scr_coord(column_2, y_pos));
+	bt_hide_in_depot.set_size(scr_size(column_3 - column_2, D_BUTTON_HEIGHT));
+	y_pos += D_BUTTON_HEIGHT + 6;
+
+	// "Veh" sorting label, combobox and reverse sort button
+	lb_veh_sortby.set_pos(scr_coord(column_1, y_pos));
+	lb_veh_sortby.set_size(D_BUTTON_SIZE);
+	combo_sorter_veh.set_pos(scr_coord(column_2, y_pos));
+	combo_sorter_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_sorter_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	bt_veh_sortreverse.set_pos(scr_coord(column_3, y_pos));
+	bt_veh_sortreverse.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	y_pos += D_BUTTON_HEIGHT;
+
+	// "Veh" display label, combobox and textfield/combobox
+	lb_display_veh.set_pos(scr_coord(column_1, y_pos));
+	combo_display_veh.set_pos(scr_coord(column_2, y_pos));
+	combo_display_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_display_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	ti_veh_display.set_pos(scr_coord(column_3, y_pos));
+	ti_veh_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_veh_display.set_pos(scr_coord(column_3, y_pos));
+	combo_veh_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	combo_veh_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+	y_pos += D_BUTTON_HEIGHT * 2;
+
+
+	// ----------- The two lists of vehicles and their counting labels -----------------//
+	// "Desc" list
+	//cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
+	scrolly_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	scrolly_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
+	// "Veh" list
+	//cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
+	scrolly_veh.set_pos(scr_coord(RIGHT_HAND_COLUMN + (extra_width / 2), y_pos));
+	scrolly_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
+	y_pos += VEHICLE_NAME_COLUMN_HEIGHT + extra_height;
+
+	// "Desc" and "Veh" -amount of entries labels
+	lb_amount_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	lb_amount_veh.set_pos(scr_coord(RIGHT_HAND_COLUMN + (extra_width / 2), y_pos));
+
+	// "Desc" and "Veh" -list arrow buttons and labels
+	bt_desc_prev_page.set_pos(scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - 110 + (extra_width / 2), y_pos));
+	lb_desc_page.set_pos(scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - 90 + (extra_width / 2), y_pos));
+	bt_desc_next_page.set_pos(scr_coord(D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH - gui_theme_t::gui_arrow_right_size.w + (extra_width / 2), y_pos));
+
+	bt_veh_prev_page.set_pos(scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - 110 + extra_width, y_pos));
+	lb_veh_page.set_pos(scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - 90 + extra_width, y_pos));
+	bt_veh_next_page.set_pos(scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - gui_theme_t::gui_arrow_right_size.w + extra_width, y_pos));
+
+	y_pos += D_BUTTON_HEIGHT;
+
+	// ----------- Lower section info box with tab panels, buttons, labels and whatnot -----------------//
+	// Lower section tab panels
+	tabs_info.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	tabs_info.set_size(scr_size((VEHICLE_NAME_COLUMN_WIDTH * 2) + extra_width, SCL_HEIGHT));
+
+	y_pos += D_BUTTON_HEIGHT * 2 + LINESPACE;
+
+	desc_info_text_pos = scr_coord(D_MARGIN_LEFT, y_pos);
+
+	// The information tabs have objects attached to some containers. Rearrange the columns into even spaces we can put buttons, lists and labels into
+
+	//y_pos -= tabs_info.get_pos().y + D_BUTTON_HEIGHT * 2;
+	y_pos = D_MARGIN_TOP;
+	column_1 = D_MARGIN_LEFT;
+	column_2 = column_1 + D_BUTTON_WIDTH + 10;
+	column_3 = column_2 + D_BUTTON_WIDTH + 10;
+	int column_4 = column_3 + D_BUTTON_WIDTH + 10;
+	int column_5 = column_4 + D_BUTTON_WIDTH + 10;
+	int column_6 = column_5 + D_BUTTON_WIDTH + 10;
+	int column_7 = column_6 + D_BUTTON_WIDTH + 10;
+	int column_8 = column_7 + D_BUTTON_WIDTH + 10;
+	int column_9 = column_8 + D_BUTTON_WIDTH + 10;
+	int column_10 = column_9 + D_BUTTON_WIDTH + 10;
+
+	// Maintenance tab:
+	{
+		bt_upgrade.set_pos(scr_coord(column_6, y_pos));
+		bt_upgrade_to_from.set_pos(scr_coord(column_6, y_pos));
+		lb_upgrade_to_from.set_pos(scr_coord(column_6 + bt_upgrade_to_from.get_size().w + 5, y_pos));
+
+		y_pos += LINESPACE * 2;
+
+		// Upgrade list
+		//cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_upgrade.set_pos(scr_coord(column_6, y_pos));
+
+	}
+
+
+
+
 }
 
 void vehicle_manager_t::update_tabs()
 {
 	// tab panel
-	tabs_waytype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4, SCL_HEIGHT));
 	max_idx_waytype = 0;
 	bool maglev = false;
 	bool monorail = false;
@@ -2659,7 +2833,6 @@ void vehicle_manager_t::update_tabs()
 
 void vehicle_manager_t::update_vehicle_type_tabs()
 {
-	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4, SCL_HEIGHT));
 	way_type = (waytype_t)selected_tab_waytype;
 	const uint16 month_now = welt->get_timeline_year_month();
 	max_idx_vehicletype = 0;
