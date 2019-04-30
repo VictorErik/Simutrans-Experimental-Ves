@@ -96,7 +96,7 @@ private:
 	gui_combobox_t combo_display_desc, combo_display_veh;
 
 	button_t bt_show_available_vehicles;
-	button_t bt_select_all;
+	button_t bt_select_all, bt_hide_in_depot;
 	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
 	button_t bt_upgrade;
 	button_t bt_upgrade_to_from;
@@ -118,6 +118,7 @@ private:
 
 	bool show_available_vehicles;
 	bool select_all;
+	bool hide_veh_in_depot;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;

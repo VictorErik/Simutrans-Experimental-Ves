@@ -170,9 +170,22 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	goto_this_desc = NULL;
 
 	int y_pos = 5;
-	int x_pos = 0;
 
-	bt_show_available_vehicles.init(button_t::square_state, translator::translate("show_available_vehicles"), scr_coord(D_MARGIN_LEFT, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	// Define the columns.
+	// Start by determining which of these translations is the longest, since the GUI depends upon it:
+	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
+	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
+	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
+	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
+
+	// Now the actual columns:
+	int column_1 = D_MARGIN_LEFT;
+	int column_2 = column_1 + label_length + 5;
+	int column_3 = column_2 + combobox_width + 5;
+
+	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
+	// Show available vehicles button
+	bt_show_available_vehicles.init(button_t::square_state, translator::translate("show_available_vehicles"), scr_coord(column_1, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_show_available_vehicles.add_listener(this);
 	bt_show_available_vehicles.set_tooltip(translator::translate("tick_to_show_all_available_vehicles"));
 	bt_show_available_vehicles.pressed = false;
@@ -181,44 +194,21 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	y_pos += D_BUTTON_HEIGHT;
 
-	// waytype tab panel
-	tabs_waytype.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	// Waytype tab panel
+	tabs_waytype.set_pos(scr_coord(column_1, y_pos));
 	tabs_waytype.add_listener(this);
 	add_component(&tabs_waytype);
 
 	y_pos += D_BUTTON_HEIGHT*2;
 
-	// vehicle type tab panel
-	tabs_vehicletype.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
+	// Vehicle type tab panel
+	tabs_vehicletype.set_pos(scr_coord(column_1, y_pos));
 	tabs_vehicletype.add_listener(this);
 	add_component(&tabs_vehicletype);
 	update_tabs();
 
 	y_pos += D_BUTTON_HEIGHT;
-
-	// "Veh" select all button
-	bt_select_all.init(button_t::square_state, translator::translate("preselect_all"), scr_coord(RIGHT_HAND_COLUMN, y_pos), scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
-	bt_select_all.add_listener(this);
-	bt_select_all.set_tooltip(translator::translate("preselects_all_vehicles_in_the_list_automatically"));
-	bt_select_all.pressed = false;
-	select_all = bt_select_all.pressed;
-	//bt_select_all.set_pos(scr_coord(10, y_pos));
-	add_component(&bt_select_all);
-
 	y_pos += D_BUTTON_HEIGHT + 6;
-	x_pos = D_MARGIN_LEFT;
-
-	// Sorting and display section
-	// Start by determining which translation is the longest, since the GUI depends upon it:
-	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
-	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
-	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
-	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
-
-	// Define the columns:
-	int column_1 = D_MARGIN_LEFT;
-	int column_2 = column_1 + label_length + 5;
-	int column_3 = column_2 + combobox_width + 5;
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_pos(scr_coord(column_1, y_pos));
@@ -288,11 +278,37 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	display_desc_by_class = 0;
 	display_veh_by_cargo = 0;
 
+	// ----------- Right hand side upper labels, buttons and comboboxes -----------------//
 	// Define the columns for use in the "Veh" section
-	y_pos -= D_BUTTON_HEIGHT;
-	column_1 += RIGHT_HAND_COLUMN;
-	column_2 += RIGHT_HAND_COLUMN;
-	column_3 += RIGHT_HAND_COLUMN;
+	y_pos = 5;
+	//y_pos -= D_BUTTON_HEIGHT;
+	column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT; // D_MARGIN_LEFT is already added to column_1
+	column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT;
+	column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT;
+
+	y_pos += D_BUTTON_HEIGHT;
+	y_pos += D_BUTTON_HEIGHT;
+	y_pos += D_BUTTON_HEIGHT;
+	y_pos += D_BUTTON_HEIGHT;
+
+	// "Veh" select all button
+	bt_select_all.init(button_t::square_state, translator::translate("preselect_all"), scr_coord(column_1, y_pos), scr_size(column_2 - column_1, D_BUTTON_HEIGHT));
+	bt_select_all.add_listener(this);
+	bt_select_all.set_tooltip(translator::translate("preselects_all_vehicles_in_the_list_automatically"));
+	bt_select_all.pressed = false;
+	select_all = bt_select_all.pressed;
+	add_component(&bt_select_all);
+
+	// Hide vehicles in depot button
+	bt_hide_in_depot.init(button_t::square_state, translator::translate("hide_in_depot"), scr_coord(column_2, y_pos), scr_size(column_3 - column_2, D_BUTTON_HEIGHT));
+	bt_hide_in_depot.add_listener(this);
+	bt_hide_in_depot.set_tooltip(translator::translate("hides_vehicles_that_are_currently_located_in_a_depot"));
+	bt_hide_in_depot.pressed = false;
+	hide_veh_in_depot = bt_hide_in_depot.pressed;
+	add_component(&bt_hide_in_depot);
+
+
+	y_pos += D_BUTTON_HEIGHT + 6;
 
 	// "Veh" sorting label, combobox and reverse sort button
 	lb_veh_sortby.set_pos(scr_coord(column_1, y_pos));
@@ -363,6 +379,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	scrolly_desc_pos = scr_coord(D_MARGIN_LEFT, y_pos);
 	
 
+	// ----------- The two lists of vehicles and their counting labels -----------------//
 	// "Desc" list
 	cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH, VEHICLE_NAME_COLUMN_HEIGHT));
 	scrolly_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
@@ -426,6 +443,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		
 	y_pos += D_BUTTON_HEIGHT;
 
+	// ----------- Lower section info box with tab panels, buttons, labels and whatnot -----------------//
 	// Lower section tab panels
 	tabs_info.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	tabs_info.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH*2, SCL_HEIGHT));
