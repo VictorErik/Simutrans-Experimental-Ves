@@ -617,6 +617,12 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		display(scr_coord(0, 0));
 	}
 
+	if (comp == &bt_hide_in_depot) {
+		bt_hide_in_depot.pressed = !bt_hide_in_depot.pressed;
+		hide_veh_in_depot = bt_hide_in_depot.pressed;
+		build_veh_list();
+	}
+
 	if (comp == &combo_sorter_desc) {
 		sint32 sort_mode = combo_sorter_desc.get_selection();
 		if (sort_mode < 0)
@@ -1546,6 +1552,7 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 {
 	bool display = false;
 
+	// First, go through the different display categories to see if this vehicle fit
 	if (display_veh == displ_veh_cargo)
 	{
 		if (display_veh_by_cargo == 0) // Show all vehicles
@@ -1683,15 +1690,10 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 
 	}
 
-
-
-
-
-
-
-	//else
+	// Now return false if any of these statements are true
+	if (hide_veh_in_depot && veh->get_convoi()->in_depot())
 	{
-		//display = true;
+		display = false;
 	}
 
 	return display;
