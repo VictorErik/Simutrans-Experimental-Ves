@@ -450,7 +450,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	tabs_info.add_tab(&dummy, translator::translate("infotab_general_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_general;
-	tabs_info.add_tab(&cont_maintenance_info, translator::translate("infotab_economics_information"));
+	tabs_info.add_tab(&cont_economics_info, translator::translate("infotab_economics_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_economics;
 	tabs_info.add_tab(&cont_maintenance_info, translator::translate("infotab_maintenance_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_maintenance;
@@ -809,16 +809,19 @@ void vehicle_manager_t::display_tab_objects()
 	bt_upgrade_to_from.set_visible(false);
 	scrolly_upgrade.set_visible(false);*/
 	int info_display = (uint16)selected_tab_information;
-	if (info_display == 0)
+	if (info_display == infotab_general)
 	{
 	}
-	else if (info_display == 1)
+	else if (info_display == infotab_economics)
+	{
+	}
+	else if (info_display == infotab_maintenance)
 	{
 		bt_upgrade_to_from.set_visible(true);
 		scrolly_upgrade.set_visible(true);
 		build_upgrade_list();
 	}
-	else if (info_display == 2)
+	else if (info_display == infotab_advanced)
 	{
 	}
 }

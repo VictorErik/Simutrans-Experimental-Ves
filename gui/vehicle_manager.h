@@ -94,7 +94,7 @@ private:
 	player_t *player;
 	uint8 player_nr;
 
-	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_maintenance_info, dummy;
+	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_maintenance_info, cont_economics_info, dummy;
 	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_vehicletype;
