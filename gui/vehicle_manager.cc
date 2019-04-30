@@ -2475,28 +2475,24 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	//y_pos -= tabs_info.get_pos().y + D_BUTTON_HEIGHT * 2;
 	y_pos = D_MARGIN_TOP;
 	column_1 = D_MARGIN_LEFT;
-	column_2 = column_1 + D_BUTTON_WIDTH + 10;
-	column_3 = column_2 + D_BUTTON_WIDTH + 10;
-	int column_4 = column_3 + D_BUTTON_WIDTH + 10;
-	int column_5 = column_4 + D_BUTTON_WIDTH + 10;
-	int column_6 = column_5 + D_BUTTON_WIDTH + 10;
-	int column_7 = column_6 + D_BUTTON_WIDTH + 10;
-	int column_8 = column_7 + D_BUTTON_WIDTH + 10;
-	int column_9 = column_8 + D_BUTTON_WIDTH + 10;
-	int column_10 = column_9 + D_BUTTON_WIDTH + 10;
+	column_2 = (width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6;
+	column_3 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 2;
+	int column_4 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 3;
+	int column_5 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 4;
+	int column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
 
 	// Maintenance tab:
 	{
-		bt_upgrade.set_pos(scr_coord(column_6, y_pos));
-		bt_upgrade_to_from.set_pos(scr_coord(column_6, y_pos));
-		lb_upgrade_to_from.set_pos(scr_coord(column_6 + bt_upgrade_to_from.get_size().w + 5, y_pos));
+		bt_upgrade.set_pos(scr_coord(column_4, y_pos));
+		bt_upgrade_to_from.set_pos(scr_coord(column_4, y_pos));
+		lb_upgrade_to_from.set_pos(scr_coord(column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
 
 		y_pos += LINESPACE * 2;
 
 		// Upgrade list
 		//cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
 		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
-		scrolly_upgrade.set_pos(scr_coord(column_6, y_pos));
+		scrolly_upgrade.set_pos(scr_coord(column_4, y_pos));
 
 	}
 
