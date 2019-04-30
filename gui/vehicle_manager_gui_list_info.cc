@@ -29,6 +29,9 @@
 #define RIGHT_HAND_COLUMN (D_MARGIN_LEFT + VEHICLE_NAME_COLUMN_WIDTH + 10)
 #define SCL_HEIGHT (15*LINESPACE)
 
+#define MIN_WIDTH (VEHICLE_NAME_COLUMN_WIDTH * 2) + (D_MARGIN_LEFT * 3)
+#define MIN_HEIGHT (D_BUTTON_HEIGHT + 11 + VEHICLE_NAME_COLUMN_HEIGHT + SCL_HEIGHT + INFORMATION_COLUMN_HEIGHT)
+
 static const char * engine_type_names[11] =
 {
 	"unknown",
@@ -51,7 +54,7 @@ gui_special_info_t::gui_special_info_t(int entry_width, cbuffer_t message, COLOR
 {
 	translated_text_string.clear();
 	translated_text_string = message;
-	width = entry_width;
+	//width = entry_width;
 	background_color = color;
 	draw(scr_coord(0, 0));
 }
@@ -87,6 +90,7 @@ void gui_special_info_t::draw(scr_coord offset)
 		COLOR_VAL text_color = MN_GREY3;
 		COLOR_VAL box_color = MN_GREY1;
 		int box_height = LINESPACE * 3;
+		int width = get_client().get_width(); // Width of the scrolled list
 
 		display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y, width, box_height, background_color, true);
 		display_proportional_clip(pos.x + offset.x + (width/2), pos.y + offset.y + LINESPACE, translated_text_string, ALIGN_CENTER_H, text_color, true);
@@ -158,6 +162,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 		scr_coord_val x, y, w, h;
 		bool counting = true;
 		int lines_of_text = 0;
+		int width = get_client().get_width(); // Width of the scrolled list
 
 		sprintf(name, translator::translate(upgrade->get_name()));
 		sprintf(name_display, name);
@@ -585,6 +590,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		bool retired = false;
 		bool only_as_upgrade = false;
 		int window_height = 6 * LINESPACE; // minimum size of the entry
+		int width = get_client().get_width(); // Width of the scrolled list
 
 		sprintf(name, translator::translate(veh->get_name()));
 		sprintf(name_display, name);
@@ -625,7 +631,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		}
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, window_height - 2, COL_DARK_BLUE, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, window_height - 2, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 
@@ -997,6 +1003,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		static cbuffer_t freight_info;
 		freight_info.clear();
 		int x_size = get_size().w - 51 - pos.x;
+		int width = get_client().get_width(); // Width of the scrolled list
 
 		COLOR_VAL text_color = COL_BLACK;
 		scr_coord_val x, y, w, h;
@@ -1011,7 +1018,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		}
 		if (selected)
 		{
-			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, VEHICLE_NAME_COLUMN_WIDTH, entry_height, COL_DARK_BLUE, true);
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, entry_height, COL_DARK_BLUE, true);
 			text_color = COL_WHITE;
 		}
 		// name wont be necessary, since we get the name from the left hand column and also elsewhere.

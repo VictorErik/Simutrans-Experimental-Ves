@@ -20,7 +20,7 @@ private:
 	uint8 player_nr;
 	int entry_height;
 	cbuffer_t translated_text_string;
-	int width;
+	//int width;
 	COLOR_VAL background_color;
 
 public:

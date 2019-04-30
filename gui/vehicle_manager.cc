@@ -2440,10 +2440,20 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	//cont_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
 	scrolly_desc.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
 	scrolly_desc.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
+	for (int i = 0; i < desc_info.get_count(); i++)
+	{
+		desc_info[i]->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), desc_info[i]->get_size().h));
+	}
+
 	// "Veh" list
 	//cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
 	scrolly_veh.set_pos(scr_coord(RIGHT_HAND_COLUMN + (extra_width / 2), y_pos));
 	scrolly_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), VEHICLE_NAME_COLUMN_HEIGHT + extra_height));
+	for (int i = 0; i < veh_info.get_count(); i++)
+	{
+		veh_info[i]->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH + (extra_width / 2), veh_info[i]->get_size().h));
+	}
+	
 	y_pos += VEHICLE_NAME_COLUMN_HEIGHT + extra_height;
 
 	// "Desc" and "Veh" -amount of entries labels
