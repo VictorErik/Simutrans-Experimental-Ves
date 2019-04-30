@@ -486,7 +486,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 						sprintf(issues, "%s", translator::translate("out_of_production"));
 						issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
 					}
-					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, issues, ALIGN_LEFT, issue_color, true);
+					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, issues, ALIGN_RIGHT, issue_color, true);
 					y_pos += LINESPACE;
 				}
 			}
@@ -501,7 +501,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 				{
 					sprintf(issues, "%s", translator::translate("only_as_upgrade"));
 					issue_color = selected ? text_color : SYSCOL_EDIT_TEXT_DISABLED;
-					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, issues, ALIGN_LEFT, issue_color, true);
+					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, issues, ALIGN_RIGHT, issue_color, true);
 					y_pos += LINESPACE;
 				}
 			}
