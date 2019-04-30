@@ -73,11 +73,16 @@ static uint8 max_idx_waytype = 0;
 static uint8 max_idx_vehicletype = 0;
 static uint8 max_idx_information = 0;
 static uint8 selected_tab_waytype = 0;
+static uint8 selected_tab_waytype_index = 0;
 static uint8 selected_tab_vehicletype = 0;
 static uint8 selected_tab_information = 0;
+static vehicle_desc_t* desc_for_display = NULL;
 
 bool vehicle_manager_t::desc_sortreverse = false;
 bool vehicle_manager_t::veh_sortreverse = false;
+bool vehicle_manager_t::show_available_vehicles = false;
+bool vehicle_manager_t::select_all = false;
+bool vehicle_manager_t::hide_veh_in_depot = false;
 
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
@@ -176,8 +181,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_show_available_vehicles.init(button_t::square_state, translator::translate("show_available_vehicles"), coord_dummy, scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	bt_show_available_vehicles.add_listener(this);
 	bt_show_available_vehicles.set_tooltip(translator::translate("tick_to_show_all_available_vehicles"));
-	bt_show_available_vehicles.pressed = false;
-	show_available_vehicles = bt_show_available_vehicles.pressed;
+	bt_show_available_vehicles.pressed = show_available_vehicles;
 	add_component(&bt_show_available_vehicles);
 
 	// Waytype tab panel
@@ -206,7 +210,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_desc_sortreverse.add_listener(this);
 	bt_desc_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_list"));
 	bt_desc_sortreverse.pressed = false;
-	desc_sortreverse = bt_desc_sortreverse.pressed;
+	bt_desc_sortreverse.pressed = desc_sortreverse;
 	add_component(&bt_desc_sortreverse);
 
 	// "Desc" display label, combobox and textfield/comboboxcoord_dummy
@@ -240,16 +244,14 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_select_all.init(button_t::square_state, translator::translate("preselect_all"), coord_dummy, size_dummy);
 	bt_select_all.add_listener(this);
 	bt_select_all.set_tooltip(translator::translate("preselects_all_vehicles_in_the_list_automatically"));
-	bt_select_all.pressed = false;
-	select_all = bt_select_all.pressed;
+	bt_select_all.pressed = select_all;
 	add_component(&bt_select_all);
 
 	// Hide vehicles in depot button
 	bt_hide_in_depot.init(button_t::square_state, translator::translate("hide_in_depot"), coord_dummy, size_dummy);
 	bt_hide_in_depot.add_listener(this);
 	bt_hide_in_depot.set_tooltip(translator::translate("hides_vehicles_that_are_currently_located_in_a_depot"));
-	bt_hide_in_depot.pressed = false;
-	hide_veh_in_depot = bt_hide_in_depot.pressed;
+	bt_hide_in_depot.pressed = hide_veh_in_depot;
 	add_component(&bt_hide_in_depot);
 	
 	// "Veh" sorting label, combobox and reverse sort button
@@ -269,8 +271,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_veh_sortreverse.init(button_t::square_state, translator::translate("reverse_sort_order"), coord_dummy, size_dummy);
 	bt_veh_sortreverse.add_listener(this);
 	bt_veh_sortreverse.set_tooltip(translator::translate("tick_to_reverse_the_sort_order_of_the_list"));
-	bt_veh_sortreverse.pressed = false;
-	veh_sortreverse = bt_veh_sortreverse.pressed;
+	bt_veh_sortreverse.pressed = veh_sortreverse;
 	add_component(&bt_veh_sortreverse);
 
 	// "Veh" display label, combobox and textfield/combobox
@@ -357,7 +358,15 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	tabs_info.add_tab(&dummy, translator::translate("infotab_advanced"));
 	tabs_to_index_information[max_idx_information++] = infotab_advanced;
 
-	selected_tab_information = tabs_to_index_information[tabs_info.get_active_tab_index()];
+	//selected_tab_information = tabs_to_index_information[tabs_info.get_active_tab_index()];
+	if (selected_tab_information <= max_idx_information)
+	{
+		tabs_info.set_active_tab_index(selected_tab_information);
+	}
+	else
+	{
+		tabs_info.set_active_tab_index(0);
+	}
 	tabs_info.add_listener(this);
 	add_component(&tabs_info);
 	
@@ -399,7 +408,11 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	selected_desc_index = -1;
 	selected_upgrade_index = -1;
 	veh_is_selected = false;
-	goto_this_desc = NULL;
+	goto_this_desc = desc_for_display;
+	if (desc_for_display)
+	{
+		selected_tab_waytype_index = 0;
+	}
 
 	update_tabs();
 	reset_desc_text_input_display();
@@ -449,6 +462,8 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		int const tab = tabs_waytype.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab_waytype;
 		selected_tab_waytype = tabs_to_index_waytype[tab];
+		selected_tab_waytype_index = tab;
+		selected_tab_vehicletype = 0;
 		update_vehicle_type_tabs();
 		build_desc_list();
 		page_turn_desc = false;
@@ -2538,6 +2553,10 @@ void vehicle_manager_t::update_tabs()
 			}
 		}
 	}
+	else if (desc_for_display)
+	{ // Should only come in here when window is just opened and no tabs have been created yet
+		old_selected_tab = (waytype_t*)desc_for_display->get_waytype();
+	}
 
 	tabs_waytype.clear();
 
@@ -2708,7 +2727,7 @@ void vehicle_manager_t::update_tabs()
 		}
 		else
 		{
-			tabs_waytype.set_active_tab_index(0);
+			tabs_waytype.set_active_tab_index(selected_tab_waytype_index);
 		}
 	}
 	selected_tab_waytype = tabs_to_index_waytype[tabs_waytype.get_active_tab_index()];
@@ -2842,8 +2861,7 @@ void vehicle_manager_t::update_vehicle_type_tabs()
 		tabs_to_index_vehicletype[max_idx_vehicletype++] = 4;
 	}
 
-	tabs_vehicletype.set_active_tab_index(0);
-	
+	tabs_vehicletype.set_active_tab_index(selected_tab_vehicletype);	
 	selected_tab_vehicletype = tabs_to_index_vehicletype[tabs_vehicletype.get_active_tab_index()];
 
 }

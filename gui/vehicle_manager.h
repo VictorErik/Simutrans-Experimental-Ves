@@ -124,9 +124,9 @@ private:
 	bool display_upgrade_into;
 	int amount_of_upgrades;
 
-	bool show_available_vehicles;
-	bool select_all;
-	bool hide_veh_in_depot;
+	static bool show_available_vehicles;
+	static bool select_all;
+	static bool hide_veh_in_depot;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;
@@ -184,8 +184,6 @@ private:
 	uint32 amount_veh;
 	uint32 amount_veh_owned;
 
-
-	vehicle_desc_t* desc_for_display = NULL;
 	vehicle_desc_t* old_desc_for_display;
 	vehicle_desc_t* goto_this_desc = NULL;
 	int selected_desc_index;
