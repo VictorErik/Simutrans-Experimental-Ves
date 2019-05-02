@@ -745,11 +745,11 @@ void vehicle_manager_t::reset_desc_text_input_display()
 	char default_display[64];	
 	static cbuffer_t tooltip_syntax_display;
 	tooltip_syntax_display.clear();
-	
+
 	ti_desc_display.set_visible(false);
 	//combo_desc_display.set_visible(false); // If this line is uncommented, the combobox wont show up at all
 	ti_desc_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
-
+	
 	if (ti_desc_invalid_entry_form)
 	{
 		sprintf(default_display, translator::translate("invalid_entry"));
@@ -4148,5 +4148,36 @@ void vehicle_manager_t::update_veh_selection()
 uint32 vehicle_manager_t::get_rdwr_id()
 {
 	return magic_vehicle_manager_t+player->get_player_nr();
+}
+void vehicle_manager_t::rdwr(loadsave_t *file)
+{
+	scr_size size;
+	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff;
+	if (file->is_saving()) {
+		size = get_windowsize();
+		desc_xoff = scrolly_desc.get_scroll_x();
+		desc_yoff = scrolly_desc.get_scroll_y();
+		veh_xoff = scrolly_veh.get_scroll_x();
+		veh_yoff = scrolly_veh.get_scroll_y();
+		upgrade_xoff = scrolly_upgrade.get_scroll_x();
+		upgrade_yoff = scrolly_upgrade.get_scroll_y();
+	}
+	size.rdwr(file);
+
+	file->rdwr_long(desc_xoff);
+	file->rdwr_long(desc_yoff);
+	file->rdwr_long(veh_xoff);
+	file->rdwr_long(veh_yoff);
+	file->rdwr_long(upgrade_xoff);
+	file->rdwr_long(upgrade_yoff);
+
+	// open dialogue
+	if (file->is_loading()) {
+		set_windowsize(size);
+		resize(scr_coord(0, 0));
+		scrolly_desc.set_scroll_position(desc_xoff, desc_yoff);
+		scrolly_veh.set_scroll_position(veh_xoff, veh_yoff);
+		scrolly_upgrade.set_scroll_position(upgrade_xoff, upgrade_yoff);
+	}
 }
 
