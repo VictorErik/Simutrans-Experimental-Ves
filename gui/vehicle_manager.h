@@ -85,8 +85,8 @@ public:
 
 	enum info_tab_t {
 		infotab_general,
-		infotab_maintenance,
 		infotab_economics,
+		infotab_maintenance,
 		infotab_advanced,
 		DISPLAY_MODES_INFOTAB
 	};
