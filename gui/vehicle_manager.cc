@@ -76,6 +76,12 @@ static uint8 selected_tab_waytype = 0;
 static uint8 selected_tab_waytype_index = 0;
 static uint8 selected_tab_vehicletype = 0;
 static uint8 selected_tab_information = 0;
+static uint8 selected_sortby_desc = 0;
+static uint8 selected_sortby_veh = 0;
+static uint8 selected_displ_desc = 0;
+static uint8 selected_displ_veh = 0;
+static char typed_ti_desc_display[64] = "";
+//static char* typed_ti_veh_display = NULL;
 static vehicle_desc_t* desc_for_display = NULL;
 
 bool vehicle_manager_t::desc_sortreverse = false;
@@ -83,6 +89,15 @@ bool vehicle_manager_t::veh_sortreverse = false;
 bool vehicle_manager_t::show_available_vehicles = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
+
+vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
+vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
+vehicle_manager_t::display_mode_desc_t vehicle_manager_t::display_desc = displ_desc_name;
+vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh_age;
+
+int vehicle_manager_t::display_desc_by_good = 0;
+int vehicle_manager_t::display_desc_by_class = 0;
+int vehicle_manager_t::display_veh_by_cargo = 0;
 
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
@@ -147,15 +162,6 @@ static const char * engine_type_names[11] =
 	"petrol",
 	"turbine"
 };
-
-vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
-vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
-vehicle_manager_t::display_mode_desc_t vehicle_manager_t::display_desc = displ_desc_name;
-vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh_age;
-
-int vehicle_manager_t::display_desc_by_good = 0;
-int vehicle_manager_t::display_desc_by_class = 0;
-int vehicle_manager_t::display_veh_by_cargo = 0;
 
 vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	gui_frame_t(translator::translate("vehicle_manager"), player_),
@@ -402,17 +408,24 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	}
 
 	// Initiate default values and make stuff that is necesary for the window to work
-	display_desc_by_good = 0;
-	display_desc_by_class = 0;
-	display_veh_by_cargo = 0;
+	//display_desc_by_good = 0;
+	//display_desc_by_class = 0;
+	//display_veh_by_cargo = 0;
 	selected_desc_index = -1;
 	selected_upgrade_index = -1;
 	veh_is_selected = false;
 	goto_this_desc = desc_for_display;
+	sortby_desc = (sort_mode_desc_t)selected_sortby_desc;
+	display_desc = (display_mode_desc_t)selected_displ_desc;
+	sortby_veh = (sort_mode_veh_t)selected_sortby_veh;
+	display_veh = (display_mode_veh_t)selected_displ_veh;
+	
 	if (desc_for_display)
 	{
 		selected_tab_waytype_index = 0;
 	}
+	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
+	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
 
 	update_tabs();
 	reset_desc_text_input_display();
@@ -515,6 +528,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			sort_mode = 0;
 		}
 		sortby_desc = (sort_mode_desc_t)sort_mode;
+		selected_sortby_desc = sortby_desc;
 		save_previously_selected_desc();
 		page_turn_desc = false;
 		display_desc_list();
@@ -527,6 +541,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			sort_mode = 0;
 		}
 		sortby_veh = (sort_mode_veh_t)sort_mode;
+		selected_sortby_veh = sortby_veh;
 		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
@@ -550,6 +565,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			display_mode = 0;
 		}
 		display_desc = (display_mode_desc_t)display_mode;
+		selected_displ_desc = display_desc;
 		save_previously_selected_desc();
 		page_turn_desc = false; 
 		reset_desc_text_input_display();
@@ -564,6 +580,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 			display_mode = 0;
 		}
 		display_veh = (display_mode_veh_t)display_mode;
+		selected_displ_veh = display_veh;
 		reset_veh_text_input_display();
 		set_veh_display_rules();
 		build_veh_list();
@@ -571,6 +588,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 	if (comp == &ti_desc_display) {
 		update_desc_text_input_display();
 		build_desc_list();
+		sprintf(typed_ti_desc_display, ti_desc_display.get_text());
 	}
 	if (comp == &ti_veh_display) {
 		update_veh_text_input_display();
@@ -727,7 +745,7 @@ void vehicle_manager_t::reset_desc_text_input_display()
 	char default_display[64];	
 	static cbuffer_t tooltip_syntax_display;
 	tooltip_syntax_display.clear();
-
+	
 	ti_desc_display.set_visible(false);
 	//combo_desc_display.set_visible(false); // If this line is uncommented, the combobox wont show up at all
 	ti_desc_display.set_color(SYSCOL_TEXT_HIGHLIGHT);
@@ -2359,8 +2377,6 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 	// Define the columns for upper section
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
-	sprintf(sortby_text, translator::translate("sort_vehicles_by:"));
-	sprintf(displayby_text, translator::translate("display_vehicles_by:"));
 	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
 	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
 
