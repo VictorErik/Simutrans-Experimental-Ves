@@ -80,8 +80,6 @@ static uint8 selected_sortby_desc = 0;
 static uint8 selected_sortby_veh = 0;
 static uint8 selected_displ_desc = 0;
 static uint8 selected_displ_veh = 0;
-static char typed_ti_desc_display[64] = "";
-//static char* typed_ti_veh_display = NULL;
 static vehicle_desc_t* desc_for_display = NULL;
 
 bool vehicle_manager_t::desc_sortreverse = false;
@@ -395,7 +393,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 		cont_maintenance_info.add_component(&lb_upgrade_to_from);
 
-		display_upgrade_into = true;
 		
 		// Upgrade list
 		cont_upgrade.set_size(size_dummy);
@@ -413,6 +410,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	//display_veh_by_cargo = 0;
 	selected_desc_index = -1;
 	selected_upgrade_index = -1;
+	display_upgrade_into = true;
 	veh_is_selected = false;
 	goto_this_desc = desc_for_display;
 	sortby_desc = (sort_mode_desc_t)selected_sortby_desc;
@@ -588,7 +586,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 	if (comp == &ti_desc_display) {
 		update_desc_text_input_display();
 		build_desc_list();
-		sprintf(typed_ti_desc_display, ti_desc_display.get_text());
 	}
 	if (comp == &ti_veh_display) {
 		update_veh_text_input_display();
