@@ -8,7 +8,9 @@
 #include "dataobj/schedule.h"
 #include "dataobj/translator.h"
 #include "dataobj/loadsave.h"
+#include "gui/gui_theme.h"
 #include "player/simplay.h"
+#include "player/finance.h" // convert_money
 #include "vehicle/simvehicle.h"
 #include "simconvoi.h"
 #include "convoihandle_t.h"
@@ -99,6 +101,21 @@ simline_t::~simline_t()
 	delete schedule;
 	self.detach();
 	DBG_MESSAGE("simline_t::~simline_t()", "line %d (%p) destroyed", self.get_id(), this);
+}
+
+simline_t::linetype simline_t::get_linetype(const waytype_t wt)
+{
+	switch (wt) {
+		case road_wt: return simline_t::truckline;
+		case track_wt: return simline_t::trainline;
+		case water_wt: return simline_t::shipline;
+		case monorail_wt: return simline_t::monorailline;
+		case maglev_wt: return simline_t::maglevline;
+		case tram_wt: return simline_t::tramline;
+		case narrowgauge_wt: return simline_t::narrowgaugeline;
+		case air_wt: return simline_t::airline;
+		default: return simline_t::MAX_LINE_TYPE;
+	}
 }
 
 void simline_t::create_schedule()
@@ -621,13 +638,13 @@ void simline_t::recalc_status()
 	// normal state
 	// Moved from an else statement at bottom
 	// to ensure that this value is always initialised.
-	state_color = COL_BLACK;
+	state_color = SYSCOL_TEXT;
 	state = line_normal_state;
 
 	if(financial_history[0][LINE_CONVOIS]==0) 
 	{
 		// no convoys assigned to this line
-		state_color = COL_WHITE;
+		state_color = SYSCOL_TEXT_HIGHLIGHT;
 		state = line_no_convoys;
 		withdraw = false;
 	}
@@ -711,12 +728,6 @@ void simline_t::recalc_status()
 			state_color = COL_DARK_BLUE;
 			state = line_has_obsolete_vehicles;
 		}
-		else
-		{
-			state_color = COL_BLACK;
-			state = line_normal_state;
-		}
-
 	}
 }
 
@@ -1068,4 +1079,19 @@ void simline_t::propagate_triggers(uint16 triggers, bool trigger_one_only)
 			}
 		}
 	}
+}
+
+sint64 simline_t::get_stat_converted(int month, int cost_type) const
+{
+	sint64 value = financial_history[month][cost_type];
+	switch (cost_type) {
+	case LINE_REVENUE:
+	case LINE_OPERATIONS:
+	case LINE_PROFIT:
+		// case LINE_WAYTOLL:
+		value = convert_money(value);
+		break;
+	default:;
+	}
+	return value;
 }

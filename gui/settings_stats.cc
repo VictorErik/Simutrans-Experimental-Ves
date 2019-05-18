@@ -13,6 +13,7 @@
 #include "../dataobj/translator.h"
 #include "../player/finance.h" // MAX_PLAYER_HISTORY_YEARS
 #include "../vehicle/simvehicle.h"
+#include "../path_explorer.h"
 #include "settings_stats.h"
 
 /* stuff not set here ....
@@ -298,6 +299,12 @@ void settings_extended_general_stats_t::init( settings_t *sets )
 		set_cell_component(tbl, new_label(scr_coord(2, 0), "default_increase_maintenance_after_years_air"), 1, row);
 		INIT_TABLE_END(tbl);
 	}	
+
+	SEPERATOR;
+
+	INIT_NUM("path_explorer_time_midpoint", sets->get_path_explorer_time_midpoint(), 1, 2048, gui_numberinput_t::PLAIN, false);
+	INIT_BOOL("save_path_explorer_data", sets->get_save_path_explorer_data()); 
+
 	clear_dirty();
 	height = ypos;
 	set_size(settings_stats_t::get_size());
@@ -383,6 +390,11 @@ void settings_extended_general_stats_t::read(settings_t *sets)
 			sets->set_default_increase_maintenance_after_years((waytype_t)i, default_increase_maintenance_after_years_other);
 		}
 	}
+	
+	READ_NUM_VALUE(sets->path_explorer_time_midpoint);
+	READ_BOOL_VALUE(sets->save_path_explorer_data); 
+
+	path_explorer_t::set_absolute_limits_external(); 
 }
 
 
@@ -506,6 +518,7 @@ void settings_extended_revenue_stats_t::init( settings_t *sets )
 	INIT_NUM("max_comfort_preference_percentage", sets->get_max_comfort_preference_percentage(), 100, 65535, gui_numberinput_t::AUTOLINEAR, false);
 	INIT_BOOL("rural_industries_no_staff_shortage", sets->rural_industries_no_staff_shortage); 
 	INIT_BOOL("simplified_maintenance", sets->simplified_maintenance); 
+
 	clear_dirty();
 	height = ypos;
 	set_size(settings_stats_t::get_size());
@@ -633,7 +646,7 @@ void settings_general_stats_t::init(settings_t const* const sets)
 	INIT_NUM( "use_timeline", sets->get_use_timeline(), 0, 3, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM_NEW( "starting_year", sets->get_starting_year(), 0, 2999, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM_NEW( "starting_month", sets->get_starting_month(), 0, 11, gui_numberinput_t::AUTOLINEAR, false );
-	INIT_NUM( "show_month", env_t::show_month, 0, 8, gui_numberinput_t::AUTOLINEAR, true );
+	INIT_NUM( "show_month", env_t::show_month, 0, 9, gui_numberinput_t::AUTOLINEAR, true );
 	SEPERATOR
 	INIT_NUM( "random_grounds_probability", env_t::ground_object_probability, 0, 0x7FFFFFFFul, gui_numberinput_t::POWER2, false );
 	INIT_NUM( "random_wildlife_probability", env_t::moving_object_probability, 0, 0x7FFFFFFFul, gui_numberinput_t::POWER2, false );
@@ -881,12 +894,15 @@ void settings_economy_stats_t::init(settings_t const* const sets)
 	INIT_COST( "starting_money", sets->get_starting_money(sets->get_starting_year()), 1, 0x7FFFFFFFul, 10000, false );
 	INIT_BOOL_NEW( "first_beginner", sets->get_beginner_mode() );
 	INIT_NUM( "beginner_price_factor", sets->get_beginner_price_factor(), 1, 25000, gui_numberinput_t::AUTOLINEAR, false );
-	INIT_BOOL( "allow_buying_obsolete_vehicles", sets->get_allow_buying_obsolete_vehicles() );
+	INIT_NUM( "allow_buying_obsolete_vehicles", sets->get_allow_buying_obsolete_vehicles(), 0, 2, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM( "used_vehicle_reduction", sets->get_used_vehicle_reduction(), 0, 1000, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM( "toll_runningcost_percentage", sets->get_way_toll_runningcost_percentage(), 0, 100, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM( "toll_waycost_percentage", sets->get_way_toll_waycost_percentage(), 0, 100, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM( "toll_revenue_percentage", sets->get_way_toll_revenue_percentage(), 0, 100, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_BOOL("disable_make_way_public", sets->get_disable_make_way_public());
+	SEPERATOR
+
+	INIT_NUM( "ai_construction_speed", sets->get_default_ai_construction_speed(), 0, 1000000000, 1000, false );
 	SEPERATOR
 
 	INIT_BOOL( "just_in_time", sets->get_just_in_time() );
@@ -899,6 +915,7 @@ void settings_economy_stats_t::init(settings_t const* const sets)
 	INIT_NUM( "max_factory_spacing", sets->get_max_factory_spacing(), 1, 32767, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_NUM( "electric_promille", sets->get_electric_promille(), 0, 2000, gui_numberinput_t::AUTOLINEAR, false );
 	INIT_BOOL( "allow_underground_transformers", sets->get_allow_underground_transformers() );
+	INIT_NUM( "way_height_clearance", sets->get_way_height_clearance(), 1, 2, gui_numberinput_t::AUTOLINEAR, true );
 	SEPERATOR
 
 	INIT_NUM( "city_isolation_factor", sets->get_city_isolation_factor(), 1, 20000, 1, false );
@@ -938,13 +955,16 @@ void settings_economy_stats_t::read(settings_t* const sets)
 	}
 	READ_BOOL_VALUE_NEW( sets->beginner_mode );
 	READ_NUM_VALUE( sets->beginner_price_factor );
-	READ_BOOL_VALUE( sets->allow_buying_obsolete_vehicles );
+	READ_NUM_VALUE( sets->allow_buying_obsolete_vehicles );
 	READ_NUM_VALUE( sets->used_vehicle_reduction );
 	READ_NUM_VALUE( sets->way_toll_runningcost_percentage );
 	READ_NUM_VALUE( sets->way_toll_waycost_percentage );
 	READ_NUM_VALUE( sets->way_toll_revenue_percentage );
 	READ_BOOL_VALUE(sets->disable_make_way_public);
-	
+
+	READ_NUM_VALUE( sets->default_ai_construction_speed );
+	env_t::default_ai_construction_speed = sets->get_default_ai_construction_speed();
+
 	READ_BOOL_VALUE( sets->just_in_time );
 	READ_NUM_VALUE( sets->factory_maximum_intransit_percentage );
 	READ_BOOL_VALUE( sets->crossconnect_factories );
@@ -955,6 +975,7 @@ void settings_economy_stats_t::read(settings_t* const sets)
 	READ_NUM_VALUE( sets->max_factory_spacing );
 	READ_NUM_VALUE( sets->electric_promille );
 	READ_BOOL_VALUE( sets->allow_underground_transformers );
+	READ_NUM_VALUE( sets->way_height_clearance );
 
 	READ_NUM_VALUE( sets->city_isolation_factor );
 	READ_NUM_VALUE( sets->special_building_distance );

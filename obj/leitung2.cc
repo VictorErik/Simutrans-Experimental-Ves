@@ -158,7 +158,6 @@ leitung_t::~leitung_t()
 		gr->obj_remove(this);
 		set_flag( obj_t::not_on_map );
 
-		powernet_t *new_net = NULL;
 		if(neighbours>1) {
 			// only reconnect if two connections ...
 			bool first = true;
@@ -166,7 +165,7 @@ leitung_t::~leitung_t()
 				if(conn[i]!=NULL) {
 					if(!first) {
 						// replace both nets
-						new_net = new powernet_t();
+						powernet_t *new_net = new powernet_t();
 						conn[i]->replace(new_net);
 					}
 					first = false;
@@ -558,6 +557,17 @@ void leitung_t::rdwr(loadsave_t *file)
 		char dummy[2] = "~";
 		file->rdwr_str(dummy, 2);
 	}
+}
+
+
+// returns NULL, if removal is allowed
+// players can remove public owned powerlines
+const char *leitung_t::is_deletable(const player_t *player)
+{
+	if(  get_player_nr()==welt->get_public_player()->get_player_nr()  &&  player  ) {
+		return NULL;
+	}
+	return obj_t::is_deletable(player);
 }
 
 
@@ -976,17 +986,11 @@ void senke_t::step(uint32 delta_t)
 			adjusted_power_load = ((municipal_power_load>>POWER_TO_MW) * load_proportion) / 100;
 			adjusted_power_demand = (municipal_power_demand>>POWER_TO_MW) * (load_proportion * load_proportion) / 10000;
 		}
-		else if(municipal_power_demand / KW_DIVIDER)
+		else
 		{
 			// Smaller amounts of power: measure in kW
 			adjusted_power_load = ((municipal_power_load / KW_DIVIDER) * load_proportion) / 100;
 			adjusted_power_demand = (municipal_power_demand / KW_DIVIDER) * (load_proportion * load_proportion) / 10000;
-		}
-		else
-		{
-			// Very small amounts of power: measure in W * 10
-			adjusted_power_load = ((municipal_power_load / DIVIDER_10W) * load_proportion) / 100;
-			adjusted_power_demand = (municipal_power_demand / DIVIDER_10W) * (load_proportion * load_proportion) / 10000;
 		}
 
 		city->add_power(adjusted_power_load);

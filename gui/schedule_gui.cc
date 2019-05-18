@@ -95,9 +95,9 @@ void schedule_gui_stats_t::highlight_schedule( schedule_t *markschedule, bool ma
 /**
  * Append description of entry to buf.
  */
-void schedule_gui_t::gimme_stop_name(cbuffer_t & buf, const player_t *player, const schedule_entry_t &entry, bool no_control_tower )
+void schedule_gui_t::gimme_stop_name(cbuffer_t & buf, const player_t *player_, const schedule_entry_t &entry, bool no_control_tower )
 {
-	halthandle_t halt = haltestelle_t::get_halt(entry.pos, player);
+	halthandle_t halt = haltestelle_t::get_halt(entry.pos, player_);
 	if(halt.is_bound()) 
 	{
 		bool prefix = false;
@@ -177,7 +177,7 @@ void schedule_gui_t::gimme_stop_name(cbuffer_t & buf, const player_t *player, co
 }
 
 
-void schedule_gui_t::gimme_short_stop_name(cbuffer_t& buf, player_t const* const player, const schedule_t *schedule, int i, int max_chars)
+void schedule_gui_t::gimme_short_stop_name(cbuffer_t& buf, player_t const* const player_, const schedule_t *schedule, int i, int max_chars)
 {
 	if (i < 0 || schedule == NULL || i >= schedule->get_count()) {
 		dbg->warning("void schedule_gui_t::gimme_short_stop_name()", "tried to receive unused entry %i in schedule %p.", i, schedule);
@@ -185,7 +185,7 @@ void schedule_gui_t::gimme_short_stop_name(cbuffer_t& buf, player_t const* const
 	}
 	const schedule_entry_t& entry = schedule->entries[i];
 	const char* p;
-	halthandle_t halt = haltestelle_t::get_halt(entry.pos, player);
+	halthandle_t halt = haltestelle_t::get_halt(entry.pos, player_);
 	if (halt.is_bound()) {
 		p = halt->get_name();
 	}
@@ -321,7 +321,7 @@ void schedule_gui_stats_t::draw(scr_coord offset)
 		}
 		distance = (double)(shortest_distance(last_stop_pos, schedule->entries[0].pos.get_2d()) * welt->get_settings().get_meters_per_tile()) / 1000;
 		buf.printf(" %.1f%s", distance, "km");
-		PLAYER_COLOR_VAL c = sel == 0 ? COL_WHITE : COL_BLACK;
+		PLAYER_COLOR_VAL c = sel == 0 ? SYSCOL_TEXT_HIGHLIGHT : SYSCOL_TEXT;
 		sint16           w = display_proportional_clip(offset.x + 4 + 10, offset.y, buf, ALIGN_LEFT, c, true);
 		if (width < w) 
 		{
@@ -338,10 +338,10 @@ void schedule_gui_stats_t::draw(scr_coord offset)
 
 
 
-schedule_gui_stats_t::schedule_gui_stats_t(player_t *s)
+schedule_gui_stats_t::schedule_gui_stats_t(player_t *player_)
 {
 	schedule = NULL;
-	player = s;
+	player = player_;
 	if(  current_stop_mark==NULL  ) {
 		current_stop_mark = new zeiger_t(koord3d::invalid, NULL );
 		current_stop_mark->set_image( tool_t::general_tool[TOOL_SCHEDULE_ADD]->cursor );
@@ -376,7 +376,7 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 	gui_frame_t( translator::translate("Fahrplan"), player_),
 	lb_line("Serves Line:"),
 	lb_wait("month wait time"),
-	lb_waitlevel_as_clock(NULL, COL_WHITE, gui_label_t::right),
+	lb_waitlevel_as_clock(NULL, SYSCOL_TEXT_HIGHLIGHT, gui_label_t::right),
 	lb_wait_condition("wait_for_trigger"),
 	lb_broadcast_condition("broadcast_trigger_on_arrival"),
 	lb_load("Full load"),
@@ -1191,7 +1191,7 @@ schedule_gui_t::schedule_gui_t():
 gui_frame_t( translator::translate("Fahrplan"), NULL),
 	lb_line("Serves Line:"),
 	lb_wait("month wait time"),
-	lb_waitlevel_as_clock(NULL, COL_WHITE, gui_label_t::right),
+	lb_waitlevel_as_clock(NULL, SYSCOL_TEXT_HIGHLIGHT, gui_label_t::right),
 	lb_load("Full load"),
 	stats(NULL),
 	scrolly(&stats),

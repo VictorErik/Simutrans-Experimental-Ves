@@ -138,6 +138,8 @@ convoi_info_t::convoi_info_t(convoihandle_t cnv)
 	this->mean_convoi_speed = speed_to_kmh(cnv->get_akt_speed()*4);
 	this->max_convoi_speed = speed_to_kmh(cnv->get_min_top_speed()*4);
 
+	const sint16 offset_below_viewport = D_MARGIN_TOP + D_BUTTON_HEIGHT + D_V_SPACE + view.get_size().h;
+
 	scr_coord cursor(D_MARGIN_LEFT, D_MARGIN_TOP);
 	input.set_pos( cursor );
 	cursor.y += D_BUTTON_HEIGHT + D_V_SPACE;
@@ -176,7 +178,7 @@ convoi_info_t::convoi_info_t(convoihandle_t cnv)
 	add_component(&times_history_button);
 	times_history_button.add_listener(this);
 
-	//Position is set in convoi_info_t::set_fenstergroesse()
+	//Position is set in convoi_info_t::set_windowsize()
 	follow_button.init(button_t::roundbox_state, "follow me", dummy, scr_size(view.get_size().w, D_BUTTON_HEIGHT));
 	follow_button.set_tooltip("Follow the convoi on the map.");
 	follow_button.add_listener(this);
@@ -189,11 +191,15 @@ convoi_info_t::convoi_info_t(convoihandle_t cnv)
 	chart.set_visible(false);
 	chart.set_background(SYSCOL_CHART_BACKGROUND);
 	chart.set_ltr(env_t::left_to_right_graphs);
+	const sint16 offset_below_chart = offset_below_viewport+D_BUTTON_HEIGHT+11 // chart position
+	                                  +88                                      // chart size
+	                                  +6+LINESPACE+D_V_SPACE;                  // chart x-axis labels plus space
+
 	int btn;
 	for (btn = 0; btn < convoi_t::MAX_CONVOI_COST; btn++) {
 		chart.add_curve( cost_type_color[btn], cnv->get_finance_history(), convoi_t::MAX_CONVOI_COST, btn, MAX_MONTHS, cost_type_money[btn], false, true, cost_type_money[btn]*2 );
 		filterButtons[btn].init(button_t::box_state, cost_type[btn], 
-			scr_coord(BUTTON1_X+(D_BUTTON_WIDTH+D_H_SPACE)*(btn%4), view.get_size().h+174+(D_BUTTON_HEIGHT+D_H_SPACE)*(btn/4)), 
+			scr_coord(BUTTON1_X+(D_BUTTON_WIDTH+D_H_SPACE)*(btn%4), offset_below_chart+(D_BUTTON_HEIGHT+D_V_SPACE)*(btn/4)), 
 			D_BUTTON_SIZE);
 		filterButtons[btn].add_listener(this);
 		filterButtons[btn].background_color = cost_type_color[btn];
@@ -231,6 +237,8 @@ convoi_info_t::convoi_info_t(convoihandle_t cnv)
 	statistics_height = 16 + view.get_size().h+174+(D_BUTTON_HEIGHT+D_H_SPACE)*(btn/4 + 1) - chart.get_pos().y;
 
 	add_component(&chart);
+	
+	chart_total_size = filterButtons[convoi_t::MAX_CONVOI_COST-1].get_pos().y + D_BUTTON_HEIGHT + D_V_SPACE - (chart.get_pos().y - 11);
 
 	add_component(&sort_label);
 
@@ -568,7 +576,8 @@ void convoi_info_t::draw(scr_coord pos, scr_size size)
 			break;
 
 		case convoi_t::NO_ROUTE_TOO_COMPLEX:
-			sprintf(speed_text, translator::translate("no_route_too_complex_message"));
+			//sprintf(speed_text, translator::translate("no_route_too_complex_message"));
+			sprintf(speed_text, translator::translate("clf_chk_noroute"));
 			speed_color = COL_RED;
 			break;
 
@@ -922,7 +931,7 @@ koord3d convoi_info_t::get_weltpos( bool set )
 void convoi_info_t::show_hide_statistics( bool show )
 {
 	toggler.pressed = show;
-	const scr_coord offset = show ? scr_coord(0, 155) : scr_coord(0, -155);
+	const scr_coord offset = show ? scr_coord(0, chart_total_size) : scr_coord(0, -chart_total_size);
 	set_min_windowsize(get_min_windowsize() + offset);
 	scrolly.set_pos(scrolly.get_pos() + offset);
 	chart.set_visible(show);
@@ -1100,26 +1109,34 @@ void convoi_info_t::set_windowsize(scr_size size)
 	line_button.set_pos(scr_coord(D_MARGIN_LEFT, y0 - LINESPACE));
 
 	view.set_pos(scr_coord(right - view.get_size().w, y));
-	y += view.get_size().h + 8;
+	follow_button.set_pos(scr_coord(view.get_pos().x, y + view.get_size().h + 8));
+	y += max(view.get_size().h + 8, LINESPACE * 7 + D_V_SPACE);
 
-	follow_button.set_pos(scr_coord(view.get_pos().x, y));
-
-	bool too_small_for_5_buttons = view.get_pos().x < BUTTON_X(4);
-	if (y0 + D_V_SPACE + D_BUTTON_HEIGHT <= y && too_small_for_5_buttons)
-	{
-		replace_button.set_pos(scr_coord(BUTTON3_X, y - D_V_SPACE - D_BUTTON_HEIGHT));
-	}
-	else
+	bool too_small_for_5_buttons = view.get_pos().x < 5*(D_BUTTON_WIDTH + D_H_SPACE) - min(view.get_size().w, D_BUTTON_WIDTH);
+	if (y0 + D_V_SPACE + D_BUTTON_HEIGHT <= y)
 	{
 		if (too_small_for_5_buttons)
 		{
+			replace_button.set_pos(scr_coord(BUTTON3_X, y - D_V_SPACE - D_BUTTON_HEIGHT));
+		}
+		else {
+			replace_button.set_pos(scr_coord(BUTTON4_X, y));
+		}
+		times_history_button.set_pos(scr_coord(BUTTON1_X, y - D_V_SPACE - D_BUTTON_HEIGHT));
+	}
+	else {
+		if (too_small_for_5_buttons)
+		{
 			y += D_BUTTON_HEIGHT + D_V_SPACE;
+			times_history_button.set_pos(scr_coord(BUTTON1_X, y - D_V_SPACE - D_BUTTON_HEIGHT));
+		}
+		else {
+			times_history_button.set_pos(scr_coord(BUTTON4_X + D_BUTTON_WIDTH + D_H_SPACE, y));
 		}
 		replace_button.set_pos(scr_coord(BUTTON4_X, y));
 	}
 
 	button.set_pos(scr_coord(BUTTON1_X, y));
-	times_history_button.set_pos(scr_coord(BUTTON1_X, y - D_V_SPACE - D_BUTTON_HEIGHT));
 	go_home_button.set_pos(scr_coord(BUTTON2_X, y));
 	no_load_button.set_pos(scr_coord(BUTTON3_X, y));
 	y += D_BUTTON_HEIGHT + D_V_SPACE; 
