@@ -429,7 +429,7 @@ void schedule_t::rdwr(loadsave_t *file)
 			sp = spacing * 12;
 		}
 	}
-	if (file->get_extended_version() >= 14)
+	if (file->get_extended_version() >= 15)
 	{
 		file->rdwr_short(spacing); 
 

@@ -5024,7 +5024,7 @@ void convoi_t::rdwr(loadsave_t *file)
 		last_stop_was_depot = lswd;
 	}
 
-	if (file->get_extended_version() >= 14)
+	if (file->get_extended_version() >= 15)
 	{
 		file->rdwr_short(conditions_bitfield);
 	}

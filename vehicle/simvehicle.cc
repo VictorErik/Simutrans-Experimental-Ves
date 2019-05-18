@@ -2908,7 +2908,7 @@ void vehicle_t::rdwr_from_convoi(loadsave_t *file)
 		}
 	}
 
-	if (file->get_extended_version() >= 14)
+	if (file->get_extended_version() >= 15)
 	{
 		file->rdwr_long(overhaul_time);
 		
@@ -8407,7 +8407,7 @@ void air_vehicle_t::rdwr_from_convoi(loadsave_t *file)
 	file->rdwr_long(touchdown);
 	file->rdwr_long(takeoff);
 
-	if (file->get_extended_version() >= 14)
+	if (file->get_extended_version() >= 15)
 	{
 		file->rdwr_long(number_of_takeoffs);
 	}

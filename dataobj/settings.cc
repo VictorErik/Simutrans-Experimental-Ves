@@ -1717,7 +1717,7 @@ void settings_t::rdwr(loadsave_t *file)
 			file->rdwr_long(power_revenue_factor_percentage);
 		}
 
-		if (file->get_extended_version() >= 14)
+		if (file->get_extended_version() >= 15)
 		{
 			file->rdwr_bool(simplified_maintenance);
 		}
