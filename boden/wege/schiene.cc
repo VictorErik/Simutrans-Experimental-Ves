@@ -41,6 +41,7 @@ schiene_t::schiene_t(waytype_t waytype) : weg_t (waytype)
 schiene_t::schiene_t() : weg_t(track_wt)
 {
 	reserved = convoihandle_t();
+	type = block;
 	set_desc(schiene_t::default_schiene);
 }
 
@@ -48,6 +49,7 @@ schiene_t::schiene_t() : weg_t(track_wt)
 schiene_t::schiene_t(loadsave_t *file) : weg_t(track_wt)
 {
 	reserved = convoihandle_t();
+	type = block;
 	rdwr(file);
 }
 
@@ -114,7 +116,7 @@ void schiene_t::info(cbuffer_t & buf, bool is_bridge) const
 			textlines += 1;
 			buf.append("\n   ");
 
-			// We dont need to specify if the reservation is a "block" type. Only show the two other more interresting reservation types
+			// We do not need to specify if the reservation is a "block" type. Only show the two other more interresting reservation types
 			if (get_reservation_type() != block) {
 				buf.append(translator::translate(get_reservation_type_name(get_reservation_type())));
 				if (get_reservation_type() == directional)
@@ -206,10 +208,10 @@ void schiene_t::info(cbuffer_t & buf, bool is_bridge) const
  */
 bool schiene_t::reserve(convoihandle_t c, ribi_t::ribi dir, reservation_type t, bool check_directions_at_junctions)
 {
-	if (can_reserve(c, dir, t, check_directions_at_junctions))
+	if (can_reserve(c, dir, t, check_directions_at_junctions)) 
 	{
 		ribi_t::ribi old_direction = direction;
-		if (type == block && t == directional && reserved.is_bound())
+		if ((type == block || type == stale_block) && t == directional && reserved.is_bound())
 		{
 			// Do not actually reserve here, as the directional reservation 
 			// is already done, but show that this is reservable. 

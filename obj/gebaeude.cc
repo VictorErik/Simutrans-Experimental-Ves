@@ -27,7 +27,6 @@ static pthread_mutex_t add_to_city_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "../gui/simwin.h"
 #include "../simcity.h"
 #include "../player/simplay.h"
-#include "../utils/simrandom.h"
 #include "../simdebug.h"
 #include "../simintr.h"
 #include "../simskin.h"
@@ -43,6 +42,7 @@ static pthread_mutex_t add_to_city_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "../descriptor/ground_desc.h"
 
 #include "../utils/cbuffer_t.h"
+#include "../utils/simrandom.h"
 
 #include "../dataobj/loadsave.h"
 #include "../dataobj/translator.h"
@@ -79,6 +79,10 @@ void gebaeude_t::init()
 	passengers_succeeded_visiting = 0;
 	passenger_success_percent_last_year_visiting = 65535;
 	available_jobs_by_time = -9223372036854775808ll;
+	mail_generated = 0;
+	mail_delivery_succeeded_last_year = 65535;
+	mail_delivery_succeeded = 0;
+	mail_delivery_success_percent_last_year = 65535;
 	is_in_world_list = 0;
 	loaded_passenger_and_mail_figres = false;
 }
@@ -207,7 +211,6 @@ gebaeude_t::gebaeude_t(koord3d pos, player_t *player, const building_tile_desc_t
 	if (gr  &&  gr->get_weg_hang() != gr->get_grund_hang()) {
 		set_yoff(-gr->get_weg_yoff());
 	}
-
 	check_road_tiles(false);
 
 	// This sets the number of jobs per building at initialisation to zero. As time passes,
@@ -227,7 +230,7 @@ stadt_t* gebaeude_t::get_stadt() const
 }
 
 /**
-* Destructor. Removes this from the list of sync objects if neccesary.
+* Destructor. Removes this from the list of sync objects if necessary.
 *
 * @author Hj. Malthaner
 */
@@ -399,14 +402,14 @@ void gebaeude_t::rotate90()
 				// rotate 180 degree
 				new_offset = koord(building_desc->get_x() - 1 - new_offset.x, building_desc->get_y() - 1 - new_offset.y);
 			}
-			// do nothing here, since we cannot fix it porperly
+			// do nothing here, since we cannot fix it properly
 		}
 		else {
 			// rotate on ...
 			new_offset = koord(building_desc->get_y(tile->get_layout()) - 1 - new_offset.y, new_offset.x);
 		}
 
-		// suche a tile exist?
+		// such a tile exist?
 		if (building_desc->get_x(layout) > new_offset.x  &&  building_desc->get_y(layout) > new_offset.y) {
 			const building_tile_desc_t* const new_tile = building_desc->get_tile(layout, new_offset.x, new_offset.y);
 			// add new tile: but make them old (no construction)
@@ -429,9 +432,6 @@ void gebaeude_t::rotate90()
 			welt->set_nosave();
 		}
 	}
-
-	// These will be re-initialised where necessary.
-	building_tiles.clear();
 }
 
 
@@ -452,7 +452,7 @@ void gebaeude_t::set_fab(fabrik_t *fd)
 		{
 			// We cannot set this until we know what sort of factory that this is.
 			// If it is not an end consumer, do not allow any visitor demand by default.
-			if (fd->is_end_consumer())
+			if (fd->get_sector() == fabrik_t::end_consumer)
 			{
 				people.visitor_demand = tile->get_desc()->get_level() * welt->get_settings().get_visitor_demand_per_level();
 				adjusted_people.visitor_demand = welt->calc_adjusted_monthly_figure(people.visitor_demand);
@@ -636,7 +636,7 @@ image_id gebaeude_t::get_image() const
 			// hide with transparency or tile without information
 			if (env_t::hide_with_transparency) {
 				if (tile->get_desc()->get_type() == building_desc_t::factory  &&  ptr.fab->get_desc()->get_placement() == factory_desc_t::Water) {
-					// no ground tiles for water thingies
+					// no ground tiles for water things
 					return IMG_EMPTY;
 				}
 				return skinverwaltung_t::fussweg->get_image_id(0);
@@ -678,7 +678,7 @@ PLAYER_COLOR_VAL gebaeude_t::get_outline_colour() const
 			disp_colour = colours[0] | TRANSPARENT50_FLAG | OUTLINE_FLAG;
 		}
 		else if (env_t::hide_buildings == env_t::ALL_HIDDEN_BUILDING && tile->get_desc()->get_type() < building_desc_t::others) {
-			// special bilding
+			// special building
 			disp_colour = colours[tile->get_desc()->get_type()] | TRANSPARENT50_FLAG | OUTLINE_FLAG;
 		}
 	}
@@ -763,7 +763,7 @@ bool gebaeude_t::is_monument() const
 
 bool gebaeude_t::is_headquarter() const
 {
-	return tile->get_desc()->is_headquarter();
+	return tile->get_desc()->is_headquarters();
 }
 
 bool gebaeude_t::is_attraction() const
@@ -792,7 +792,7 @@ void gebaeude_t::show_info()
 		create_win(new money_frame_t(get_owner()), w_info, magic_finances_t + get_owner()->get_player_nr());
 	}
 	else if (is_townhall()) {
-		welt->find_nearest_city(get_pos().get_2d())->show_info();
+		get_stadt()->show_info();
 	}
 
 	if (!tile->get_desc()->no_info_window()) {
@@ -1059,6 +1059,19 @@ void gebaeude_t::info(cbuffer_t & buf, bool dummy) const
 				buf.printf(" 0%%");
 			}
 			buf.printf("\n");
+			if (adjusted_mail_demand)
+			{
+				buf.printf("%s", translator::translate("Mail delivery success this year:"));
+				if (get_mail_delivery_success_percent_this_year() < 65535)
+				{
+					buf.printf(" %i%%", get_mail_delivery_success_percent_this_year());
+				}
+				else {
+					buf.printf(" 0%%");
+				}
+				buf.printf("\n");
+			}
+			buf.printf("\n");
 
 			if (get_passenger_success_percent_last_year_commuting() < 65535)
 			{
@@ -1073,19 +1086,59 @@ void gebaeude_t::info(cbuffer_t & buf, bool dummy) const
 				buf.printf(" %i%%", get_passenger_success_percent_last_year_visiting());
 				buf.printf("\n");
 			}
+			if (adjusted_mail_demand && mail_delivery_succeeded_last_year < 65535)
+			{
+				buf.printf("%s", translator::translate("Mail delivery success last year:"));
+				if (get_mail_delivery_success_percent_last_year() < 65535)
+				{
+					buf.printf(" %i%%", mail_delivery_success_percent_last_year);
+				}
+				else {
+					buf.printf(" 0%%");
+				}
+				buf.printf("\n");
+			}
 		}
 		else
 		{
-			buf.printf("%s %i\n", translator::translate("Visitors this year:"), passengers_succeeded_visiting);
+			if (get_adjusted_visitor_demand())
+			{
+				buf.printf("%s %i\n", translator::translate("Visitors this year:"), passengers_succeeded_visiting);
+			}
 			buf.printf("%s %i\n", translator::translate("Commuters this year:"), passengers_succeeded_commuting);
+			if (adjusted_mail_demand)
+			{
+				buf.printf("%s", translator::translate("Mail sent this year:"));
+				if (get_mail_delivery_success_percent_this_year() < 65535)
+				{
+					buf.printf(" %i (%i%%)", mail_delivery_succeeded, get_mail_delivery_success_percent_this_year());
+				}
+				else {
+					buf.printf(" 0 (0%%)");
+				}
+				buf.printf("\n");
+			}
+			buf.printf("\n");
 
+			if (get_adjusted_visitor_demand() && passenger_success_percent_last_year_visiting < 65535)
+			{
+				buf.printf("%s %i\n", translator::translate("Visitors last year:"), passenger_success_percent_last_year_visiting);
+			}
 			if (passenger_success_percent_last_year_commuting < 65535)
 			{
-				buf.printf("\n%s %i\n", translator::translate("Visitors last year:"), passenger_success_percent_last_year_visiting);
-			}
-			if (passenger_success_percent_last_year_visiting < 65535)
-			{
 				buf.printf("%s %i\n", translator::translate("Commuters last year:"), passenger_success_percent_last_year_commuting);
+			}
+			if (adjusted_mail_demand && mail_delivery_succeeded_last_year < 65535)
+			{
+				buf.printf("%s", translator::translate("Mail sent last year:"));
+				if (get_mail_delivery_success_percent_last_year() < 65535)
+				{
+					buf.printf(" %i (%i%%)", mail_delivery_succeeded_last_year, mail_delivery_success_percent_last_year);
+				}
+				else {
+					buf.printf(" 0 (0%%)");
+				}
+				buf.printf("\n");
 			}
 		}
 
@@ -1303,8 +1356,8 @@ void gebaeude_t::get_class_percentage(cbuffer_t & buf) const
 {
 	building_desc_t const& h = *tile->get_desc();
 	uint8 pass_classes = goods_manager_t::passengers->get_number_of_classes();
-	int class_percentage[255] = { 0 };
-	int class_percentage_job[255] = { 0 };
+	uint8 class_percentage[256] = { 0 };
+	uint8 class_percentage_job[256] = { 0 };
 
 	// Does this building have any class related stuff assigned?
 	if (h.get_class_proportions_sum() == 0)
@@ -1315,7 +1368,7 @@ void gebaeude_t::get_class_percentage(cbuffer_t & buf) const
 		}
 	}
 
-	// Apparently it does (if it continues past this point), so lets get on with the calculations!
+	// Apparently it does (if it continues past this point), so let's get on with the calculations!
 	else
 	{
 		int class_proportions_sum = h.get_class_proportions_sum();
@@ -1331,7 +1384,7 @@ void gebaeude_t::get_class_percentage(cbuffer_t & buf) const
 			count_to_hundred += class_percentage[i];
 		}
 
-		//  We rounded down, so lets increase some of the figures to make the sum 100%
+		//  We rounded down, so let's increase some of the figures to make the sum 100%
 		while (count_to_hundred < 100)
 		{
 			for (int i = 0; i < pass_classes; i++)
@@ -1366,7 +1419,7 @@ void gebaeude_t::get_class_percentage(cbuffer_t & buf) const
 
 		for (int i = 0; i < pass_classes; i++)
 		{
-			class_percentage_job[i] = (h.get_class_proportion_jobs(i) - last_class_proportion) / class_proportions_sum * 100;
+			class_percentage_job[i] = (h.get_class_proportion_jobs(i) - last_class_proportion) * 100 / class_proportions_sum;
 			last_class_proportion = h.get_class_proportion_jobs(i);
 			count_to_hundred += class_percentage_job[i];
 		}
@@ -1419,19 +1472,18 @@ void gebaeude_t::get_class_percentage(cbuffer_t & buf) const
 		const char* class_name = translator::translate(class_name_untranslated);
 		if (condition == 1)
 		{
-			buf.printf("  %i%% %s\n", class_percentage[i], class_name);
+			buf.printf(" %3i%% %s\n", class_percentage[i], class_name);
 		}
 		else if (condition == 2)
 		{
-			buf.printf("  %i%% / %i%% %s\n", class_percentage[i], class_percentage_job[i], class_name);
+			buf.printf(" %3i%% /%3i%% %s\n", class_percentage[i], class_percentage_job[i], class_name);
 		}
 		if (condition == 3)
 		{
-			buf.printf("  %i%% %s\n", class_percentage_job[i], class_name);
+			buf.printf(" %3i%% %s\n", class_percentage_job[i], class_name);
 		}
 	}
 }
-
 
 void gebaeude_t::new_year()
 {
@@ -1449,8 +1501,10 @@ void gebaeude_t::new_year()
 		passenger_success_percent_last_year_commuting = passengers_succeeded_commuting;
 		passenger_success_percent_last_year_visiting = passengers_succeeded_visiting;
 	}
+	mail_delivery_succeeded_last_year = mail_delivery_succeeded;
+	mail_delivery_success_percent_last_year = get_mail_delivery_success_percent_this_year();
 
-	passengers_succeeded_commuting = passengers_generated_commuting = passengers_succeeded_visiting = passengers_generated_visiting = 0;
+	passengers_succeeded_commuting = passengers_generated_commuting = passengers_succeeded_visiting = passengers_generated_visiting = mail_delivery_succeeded = mail_delivery_succeeded = 0;
 }
 
 
@@ -1698,6 +1752,14 @@ void gebaeude_t::rdwr(loadsave_t *file)
 		file->rdwr_short(adjusted_mail_demand);
 	}
 
+	if ((file->get_extended_version() == 14 && file->get_extended_revision() >= 4) || file->get_extended_version() >= 15)
+	{
+		file->rdwr_short(mail_generated);
+		file->rdwr_short(mail_delivery_succeeded_last_year);
+		file->rdwr_short(mail_delivery_succeeded);
+		file->rdwr_short(mail_delivery_success_percent_last_year);
+	}
+
 	if (file->is_loading())
 	{
 		anim_frame = 0;
@@ -1821,6 +1883,7 @@ void gebaeude_t::finish_rd()
 		// This will save much time in looking this up when generating passengers/mail.
 		ptr.stadt = welt->get_city(get_pos().get_2d());
 	}
+	set_building_tiles();
 }
 
 
@@ -2085,59 +2148,49 @@ uint8 gebaeude_t::get_random_class(const goods_desc_t * wtyp)
 	return g_class;
 }
 
-const minivec_tpl<const planquadrat_t*> &gebaeude_t::get_tiles()
+void gebaeude_t::set_building_tiles()
 {
+	building_tiles.clear();
 	const building_tile_desc_t* tile = get_tile();
 	const building_desc_t *bdsc = tile->get_desc();
 	const koord size = bdsc->get_size(tile->get_layout());
-	if (building_tiles.empty())
+	if (size == koord(1, 1))
 	{
-#ifdef MULTI_THREAD
-		int mutex_error = pthread_mutex_lock(&karte_t::step_passengers_and_mail_mutex);
-		assert(mutex_error == 0);
-#endif
-		// Clear just in case another thread has just run this algorithm on the same building.
-		building_tiles.clear();
-		if (size == koord(1, 1))
+		// A single tiled building - just add the single tile.
+		building_tiles.append(welt->access_nocheck(get_pos().get_2d()));
+	}
+	else
+	{
+		// A multi-tiled building: check all tiles. Any tile within the
+		// coverage radius of a building connects the whole building.
+
+		// Then, store these tiles here, as this is computationally expensive
+		// and frequently requested by the passenger/mail generation algorithm.
+
+		koord3d k = get_pos();
+		const koord start_pos = k.get_2d() - tile->get_offset();
+		const koord end_pos = k.get_2d() + size;
+
+		for (k.y = start_pos.y; k.y < end_pos.y; k.y++)
 		{
-			// A single tiled building - just add the single tile.
-			building_tiles.append(welt->access_nocheck(get_pos().get_2d()));
-		}
-		else
-		{
-			// A multi-tiled building: check all tiles. Any tile within the
-			// coverage radius of a building connects the whole building.
-
-			// Then, store these tiles here, as this is computationally expensive
-			// and frequently requested by the passenger/mail generation algorithm.
-
-			koord3d k = get_pos();
-			const koord start_pos = k.get_2d() - tile->get_offset();
-			const koord end_pos = k.get_2d() + size;
-
-			for (k.y = start_pos.y; k.y < end_pos.y; k.y++)
+			for (k.x = start_pos.x; k.x < end_pos.x; k.x++)
 			{
-				for (k.x = start_pos.x; k.x < end_pos.x; k.x++)
+				grund_t *gr = welt->lookup(k);
+				if (gr)
 				{
-					grund_t *gr = welt->lookup(k);
-					if (gr)
+					/* This would fail for depots, but those are 1x1 buildings */
+					gebaeude_t *gb_part = gr->find<gebaeude_t>();
+					// There may be buildings with holes.
+					if (gb_part && gb_part->get_tile()->get_desc() == bdsc)
 					{
-						/* This would fail for depots, but those are 1x1 buildings */
-						gebaeude_t *gb_part = gr->find<gebaeude_t>();
-						// There may be buildings with holes.
-						if (gb_part && gb_part->get_tile()->get_desc() == bdsc)
+						const planquadrat_t* plan = welt->access_nocheck(k.get_2d());
+						if (!plan->is_being_deleted())
 						{
-							const planquadrat_t* plan = welt->access_nocheck(k.get_2d());
 							building_tiles.append(plan);
 						}
 					}
 				}
 			}
 		}
-#ifdef MULTI_THREAD
-		mutex_error = pthread_mutex_unlock(&karte_t::step_passengers_and_mail_mutex);
-		assert(mutex_error == 0);
-#endif
 	}
-	return building_tiles;
 }

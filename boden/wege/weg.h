@@ -14,6 +14,7 @@
 #include "../../descriptor/way_desc.h"
 #include "../../dataobj/koord3d.h"
 #include "../../tpl/minivec_tpl.h"
+#include "../../simskin.h"
 
 class karte_t;
 class way_desc_t;
@@ -143,16 +144,15 @@ private:
 
 	// BG, 24.02.2012 performance enhancement avoid virtual method call, use inlined get_waytype()
 	waytype_t    wtyp;
-	
 
-	
+
 	/* These are statistics showing when this way was last built and when it was last renewed.
 	 * @author: jamespetts
 	 */
 	uint16 creation_month_year;
 	uint16 last_renewal_month_year;
 
-	/* This figure gives the condition of the way: UINT32_MAX = new; 0 = unusable. 
+	/* This figure gives the condition of the way: UINT32_MAX = new; 0 = unusable.
 	 * @author: jamespetts
 	 */
 	uint32 remaining_wear_capacity;
@@ -163,10 +163,10 @@ private:
 	* and access settings. Permits upgrades but not downgrades, and prohibits private road signs.
 	* @author: jamespetts
 	*/
-	bool public_right_of_way:1; 
-		
+	bool public_right_of_way:1;
+
 	// Whether the way is in a degraded state.
-	bool degraded:1;	
+	bool degraded:1;
 
 protected:
 
@@ -178,19 +178,20 @@ protected:
 	 */
 	void set_images(image_type typ, uint8 ribi, bool snow, bool switch_nw=false);
 
-	
+
 	/* This is the way with which this way will be replaced when it comes time for renewal.
 	 * NULL = do not replace.
 	 * @author: jamespetts
 	 */
 	const way_desc_t *replacement_way;
 
-	/* 
+public:
+
+	/*
 	 * Degrade the way owing to excessive wear without renewal.
 	 */
 	void degrade();
 
-public:
 	inline weg_t(waytype_t waytype, loadsave_t*) : obj_no_info_t(obj_t::way), wtyp(waytype) { init(); }
 	inline weg_t(waytype_t waytype) : obj_no_info_t(obj_t::way), wtyp(waytype) { init(); }
 
@@ -232,11 +233,11 @@ public:
 	/* Way constraints: determines whether vehicles
 	 * can travel on this way. This method decodes
 	 * the byte into bool values. See here for
-	 * information on bitwise operations: 
+	 * information on bitwise operations:
 	 * http://www.cprogramming.com/tutorial/bitwise_operators.html
 	 * @author: jamespetts
 	 * */
-	
+
 	const way_constraints_of_way_t& get_way_constraints() const { return way_constraints; }
 	void add_way_constraints(const way_constraints_of_way_t& value) { way_constraints.add(value); }
 	void remove_way_constraints(const way_constraints_of_way_t& value) { way_constraints.remove(value); }
@@ -286,7 +287,7 @@ public:
 	*/
 	waytype_t get_waytype() const { return wtyp; }
 
-	bool is_rail_type() const { return wtyp == track_wt || wtyp == maglev_wt || wtyp == tram_wt || wtyp == narrowgauge_wt || wtyp == monorail_wt;  }
+	inline bool is_rail_type() const { return wtyp == track_wt || wtyp == maglev_wt || wtyp == tram_wt || wtyp == narrowgauge_wt || wtyp == monorail_wt;  }
 
 	/**
 	* 'Jedes Ding braucht einen Typ.'
@@ -339,7 +340,7 @@ public:
 	/**
 	* Get the masked direction bits (ribi) for the way (with signals or other ribi changer).
 	*/
-	ribi_t::ribi get_ribi() const { return (ribi_t::ribi)(ribi & ~ribi_maske); }
+	virtual ribi_t::ribi get_ribi() const { return (ribi_t::ribi)(ribi & ~ribi_maske); }
 
 	/**
 	* für Signale ist es notwendig, bestimmte Richtungsbits auszumaskieren
@@ -353,7 +354,7 @@ public:
 	 * called during map rotation
 	 * @author priss
 	 */
-	void rotate90();
+	virtual void rotate90();
 
 	/**
 	* book statistics - is called very often and therefore inline
@@ -405,7 +406,7 @@ public:
 	image_id get_image() const {return image;}
 
 	inline void set_after_image( image_id b ) { foreground_image = b; }
-	image_id get_front_image() const {return foreground_image;}
+	virtual image_id get_front_image() const { return foreground_image; }
 
 	// correct maintenance
 	void finish_rd();
@@ -425,15 +426,16 @@ public:
 	uint32 get_condition_percent() const;
 
 	bool is_height_restricted() const;
-	
+
 	/**
 	 * Called by a convoy or a city car when it passes over a way
 	 * to cause the way to be subject to the specified amount
 	 * of wear, denominated in Standard Axles (8t) * 10,000.
 	 */
-	void wear_way(uint32 wear); 
+	void wear_way(uint32 wear);
 
 	void set_replacement_way(const way_desc_t* replacement) { replacement_way = replacement; }
+	const way_desc_t* get_replacement_way() const { return replacement_way; }
 
 	/**
 	 * Renew the way automatically when it is worn out.

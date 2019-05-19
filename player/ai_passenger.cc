@@ -13,7 +13,6 @@
 #include "../simhalt.h"
 #include "../simline.h"
 #include "../simmenu.h"
-#include "../utils/simrandom.h"
 #include "../simmesg.h"
 #include "../simworld.h"
 
@@ -28,14 +27,13 @@
 #include "../dataobj/marker.h"
 
 #include "../utils/cbuffer_t.h"
+#include "../utils/simrandom.h"
 #include "../utils/simstring.h"
 
 #include "../vehicle/simvehicle.h"
 
 #include "ai_passenger.h"
 #include "finance.h"
-
-typedef quickstone_hashtable_tpl<haltestelle_t, haltestelle_t::connexion*> connexions_map_single_remote;
 
 ai_passenger_t::ai_passenger_t(karte_t *wl, uint8 nr) : ai_t( wl, nr )
 {
@@ -211,8 +209,10 @@ bool ai_passenger_t::create_water_transport_vehicle(const stadt_t* start_stadt, 
 			start_connect_hub = start_hub;
 			start_hub = halthandle_t();
 
+			const uint8 max_classes = max(goods_manager_t::passengers->get_number_of_classes(), goods_manager_t::mail->get_number_of_classes());
+
 			// is there already one harbour next to this one?
-			FOR(connexions_map_single_remote, & iter, *start_connect_hub->get_connexions(0) )
+			FOR(haltestelle_t::connexions_map, & iter, *start_connect_hub->get_connexions(0, 0, max_classes) )
 			{
 				halthandle_t const h = iter.key;
 				if( h.is_bound() && h->get_station_type()&haltestelle_t::dock  ) 
@@ -243,7 +243,8 @@ bool ai_passenger_t::create_water_transport_vehicle(const stadt_t* start_stadt, 
 			end_connect_hub = end_hub;
 			end_hub = halthandle_t();
 			// is there already one harbour next to this one?
-			FOR(connexions_map_single_remote, & iter, *end_connect_hub->get_connexions(0) ) 
+			const uint8 max_classes = max(goods_manager_t::passengers->get_number_of_classes(), goods_manager_t::mail->get_number_of_classes());
+			FOR(haltestelle_t::connexions_map, & iter, *end_connect_hub->get_connexions(0, 0, max_classes) ) 
 			{
 				halthandle_t const h = iter.key;
 				if( h.is_bound() && h->get_station_type()&haltestelle_t::dock  ) 
@@ -438,7 +439,6 @@ bool ai_passenger_t::create_water_transport_vehicle(const stadt_t* start_stadt, 
 	convoi_t* cnv = new convoi_t(this);
 	cnv->set_name(v->get_desc()->get_name());
 	cnv->add_vehicle( v );
-	welt->sync.add( cnv );
 	cnv->set_line(line);
 	cnv->start();
 
@@ -494,8 +494,16 @@ halthandle_t ai_passenger_t::build_airport(const stadt_t* city, koord pos, int r
 	const koord dx( size.x/2, size.y/2 );
 	for(  sint16 i=0;  i!=size.y+dx.y;  i+=dx.y  ) {
 		for( sint16 j=0;  j!=size.x+dx.x;  j+=dx.x  ) {
+			climate c = welt->get_climate(pos+koord(j,i));
 			if(!welt->flatten_tile(this,pos+koord(j,i),h)) {
 				return halthandle_t();
+			}
+			// ensure is land
+			grund_t* bd = welt->lookup_kartenboden(pos+koord(j,i));
+			if (bd->get_typ() == grund_t::wasser) {
+				welt->set_water_hgt(pos+koord(j,i), bd->get_hoehe()-1);
+				welt->access(pos+koord(j,i))->correct_water();
+				welt->set_climate(pos+koord(j,i), c, true);
 			}
 		}
 	}
@@ -638,7 +646,8 @@ bool ai_passenger_t::create_air_transport_vehicle(const stadt_t *start_stadt, co
 			start_connect_hub = start_hub;
 			start_hub = halthandle_t();
 			// is there already one airport next to this town?
-			FOR(connexions_map_single_remote, & iter, *start_connect_hub->get_connexions(0) ) 
+			const uint8 max_classes = max(goods_manager_t::passengers->get_number_of_classes(), goods_manager_t::mail->get_number_of_classes());
+			FOR(haltestelle_t::connexions_map, & iter, *start_connect_hub->get_connexions(0, 0, max_classes) ) 
 			{
 				halthandle_t const h = iter.key;
 				if( h.is_bound() && h->get_station_type()&haltestelle_t::airstop  )
@@ -668,8 +677,9 @@ bool ai_passenger_t::create_air_transport_vehicle(const stadt_t *start_stadt, co
 		if(  (end_hub->get_station_type()&haltestelle_t::airstop)==0  ) {
 			end_connect_hub = end_hub;
 			end_hub = halthandle_t();
+			const uint8 max_classes = max(goods_manager_t::passengers->get_number_of_classes(), goods_manager_t::mail->get_number_of_classes());
 			// is there already one airport next to this town?
-			FOR(connexions_map_single_remote, & iter, *end_connect_hub->get_connexions(0) ) 
+			FOR(haltestelle_t::connexions_map, & iter, *end_connect_hub->get_connexions(0, 0, max_classes) ) 
 			{
 				halthandle_t const h = iter.key;
 				if( h.is_bound() && h->get_station_type()&haltestelle_t::airstop  ) 
@@ -713,7 +723,8 @@ bool ai_passenger_t::create_air_transport_vehicle(const stadt_t *start_stadt, co
 			end_hub = build_airport(end_stadt, end_airport, true);
 			if(!end_hub.is_bound()) 
 			{
-				if(start_hub->get_connexions(0)->empty())
+				const uint8 max_classes = max(goods_manager_t::passengers->get_number_of_classes(), goods_manager_t::mail->get_number_of_classes());
+				if(start_hub->get_connexions(0, 0, max_classes)->empty())
 				{
 					// remove airport busstop
 					welt->lookup_kartenboden(start_hub->get_basis_pos())->remove_everything_from_way( this, road_wt, ribi_t::none );
@@ -758,7 +769,6 @@ bool ai_passenger_t::create_air_transport_vehicle(const stadt_t *start_stadt, co
 	convoi_t* cnv = new convoi_t(this);
 	cnv->set_name(v->get_desc()->get_name());
 	cnv->add_vehicle( v );
-	welt->sync.add( cnv );
 	cnv->set_line(line);
 	cnv->start();
 
@@ -810,7 +820,6 @@ DBG_MESSAGE("ai_passenger_t::create_bus_transport_vehicle()","bus at (%i,%i)",st
 		cnv->set_name(v->get_desc()->get_name());
 		cnv->add_vehicle( v );
 
-		welt->sync.add( cnv );
 		cnv->set_line(line);
 		cnv->start();
 	}
@@ -931,7 +940,6 @@ void ai_passenger_t::cover_city_with_bus_route(koord start_pos, int number_of_st
 		cnv->set_name(v->get_desc()->get_name());
 		cnv->add_vehicle( v );
 
-		welt->sync.add( cnv );
 		cnv->set_line(line);
 		cnv->start();
 	}
@@ -1320,7 +1328,6 @@ DBG_MESSAGE("ai_passenger_t::do_passenger_ki()","using %s on %s",road_vehicle->g
 									convoi_t* new_cnv = new convoi_t(this);
 									new_cnv->set_name( v->get_desc()->get_name() );
 									new_cnv->add_vehicle( v );
-									welt->sync.add( new_cnv );
 									new_cnv->set_line(line);
 									new_cnv->start();
 								}
@@ -1351,7 +1358,6 @@ DBG_MESSAGE("ai_passenger_t::do_passenger_ki()","using %s on %s",road_vehicle->g
 					convoi_t* new_cnv = new convoi_t(this);
 					new_cnv->set_name( v->get_desc()->get_name() );
 					new_cnv->add_vehicle( v );
-					welt->sync.add( new_cnv );
 					new_cnv->set_line( line );
 					// on waiting line, wait at alternating stations for load balancing
 					if(  line->get_schedule()->entries[1].minimum_loading==90  &&  line->get_linetype()!=simline_t::truckline  &&  (line->count_convoys()&1)==0  ) {

@@ -671,7 +671,7 @@ sint64 replace_frame_t::calc_total_cost()
 				//ITERATE(current_vehicles,l)
 				uint32 l = 0u;
 				for(auto current_vehicle : current_vehicles)
-				{	
+				{
 					for(uint8 c = 0; c < current_vehicle->get_desc()->get_upgrades_count(); c ++)
 					{
 						if(!keep_vehicles.is_contained(l) && (vehicle == current_vehicle->get_desc()->get_upgrades(c)))

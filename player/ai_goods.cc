@@ -15,7 +15,6 @@
 #include "../simintr.h"
 #include "../simline.h"
 #include "../simmesg.h"
-#include "../utils/simrandom.h"
 #include "../simworld.h"
 
 #include "../bauer/brueckenbauer.h"
@@ -29,6 +28,7 @@
 
 #include "../obj/wayobj.h"
 
+#include "../utils/simrandom.h"
 #include "../utils/simstring.h"
 #include "../utils/cbuffer_t.h"
 
@@ -444,7 +444,6 @@ bool ai_goods_t::create_ship_transport_vehicle(fabrik_t *qfab, int vehicle_count
 			cnv->add_vehicle( v );
 		}
 
-		welt->sync.add( cnv );
 		cnv->set_line(line);
 		cnv->start();
 	}
@@ -502,7 +501,6 @@ void ai_goods_t::create_road_transport_vehicle(fabrik_t *qfab, int vehicle_count
 			cnv->set_name(v->get_desc()->get_name());
 			cnv->add_vehicle( v );
 
-			welt->sync.add( cnv );
 			cnv->set_line(line);
 			cnv->start();
 		}
@@ -563,7 +561,6 @@ void ai_goods_t::create_rail_transport_vehicle(const koord platz1, const koord p
 	schedule->finish_editing();
 
 	cnv->set_schedule(schedule);
-	welt->sync.add( cnv );
 	cnv->start();
 }
 
@@ -661,8 +658,16 @@ bool ai_goods_t::create_simple_rail_transport()
 	koord diff1( sgn(size1.x), sgn(size1.y) );
 	koord perpend( sgn(size1.y), sgn(size1.x) );
 	while(k!=size1+platz1) {
+		climate c = welt->get_climate(k);
 		if(!welt->flatten_tile( this, k, z1 )) {
 			return false;
+		}
+		// ensure is land
+		grund_t* bd = welt->lookup_kartenboden(k);
+		if (bd->get_typ() == grund_t::wasser) {
+			welt->set_water_hgt(k, bd->get_hoehe()-1);
+			welt->access(k)->correct_water();
+			welt->set_climate(k, c, true);
 		}
 		k += diff1;
 	}
@@ -673,8 +678,16 @@ bool ai_goods_t::create_simple_rail_transport()
 	perpend = koord( sgn(size2.y), sgn(size2.x) );
 	koord diff2( sgn(size2.x), sgn(size2.y) );
 	while(k!=size2+platz2) {
+		climate c = welt->get_climate(k);
 		if(!welt->flatten_tile(this,k,z2)) {
 			return false;
+		}
+		// ensure is land
+		grund_t* bd = welt->lookup_kartenboden(k);
+		if (bd->get_typ() == grund_t::wasser) {
+			welt->set_water_hgt(k, bd->get_hoehe()-1);
+			welt->access(k)->correct_water();
+			welt->set_climate(k, c, true);
 		}
 		k += diff2;
 	}
@@ -796,7 +809,7 @@ void ai_goods_t::step()
 				weighted_vector_tpl<fabrik_t *> start_fabs(20);
 				FOR(vector_tpl<fabrik_t*>, const fab, welt->get_fab_list()) {
 					// consumer and not completely overcrowded
-					if(  fab->get_desc()->is_consumer_only()  &&  fab->get_status() != fabrik_t::bad  ) {
+					if(  fab->get_desc()->is_consumer_only()  &&  fab->get_status() < fabrik_t::bad  ) {
 						int missing = get_factory_tree_missing_count( fab );
 						if(  missing>0  ) {
 							start_fabs.append( fab, 100/(missing+1)+1 );

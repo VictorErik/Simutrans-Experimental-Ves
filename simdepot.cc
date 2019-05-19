@@ -151,17 +151,17 @@ unsigned depot_t::get_max_convoy_length(waytype_t wt)
 void depot_t::call_depot_tool( char tool, convoihandle_t cnv, const char *extra, uint16 livery_scheme_index)
 {
 	// call depot tool
-	tool_t *tool_tmp = create_tool( TOOL_BUILD_DEPOT_TOOL | SIMPLE_TOOL );
+	tool_t *tmp_tool = create_tool( TOOL_CHANGE_DEPOT | SIMPLE_TOOL );
 	cbuffer_t buf;
 	buf.printf( "%c,%s,%hu,%hu", tool, get_pos().get_str(), cnv.get_id(), livery_scheme_index );
 	if(  extra  ) {
 		buf.append( "," );
 		buf.append( extra );
 	}
-	tool_tmp->set_default_param(buf);
-	welt->set_tool( tool_tmp, get_owner() );
+	tmp_tool->set_default_param(buf);
+	welt->set_tool( tmp_tool, get_owner() );
 	// since init always returns false, it is safe to delete immediately
-	delete tool_tmp;
+	delete tmp_tool;
 }
 
 
@@ -171,20 +171,20 @@ void depot_t::call_depot_tool( char tool, convoihandle_t cnv, const char *extra,
  */
 void depot_t::convoi_arrived(convoihandle_t acnv, uint16 flags)
 {
-	if(flags & schedule_entry_t::delete_entry) 
+	if (flags & schedule_entry_t::delete_entry)
 	{
 		// Volker: remove depot from schedule
 		schedule_t *schedule = acnv->get_schedule();
-		for(  int i=0;  i<schedule->get_count();  i++  ) {
+		for (int i = 0; i < schedule->get_count(); i++) {
 			// only if convoi found
-			if(schedule->entries[i].pos==get_pos()) {
-				schedule->set_current_stop( i );
+			if (schedule->entries[i].pos == get_pos()) {
+				schedule->set_current_stop(i);
 				schedule->remove();
 				acnv->set_schedule(schedule);
 			}
 		}
 
-		if(acnv->get_line().is_bound())
+		if (acnv->get_line().is_bound())
 		{
 			acnv->unset_line();
 			acnv->unregister_stops();
@@ -199,9 +199,9 @@ void depot_t::convoi_arrived(convoihandle_t acnv, uint16 flags)
 			// There is no need to re-run the path explorer
 			// if this convoy is going to the depot routinely
 #ifdef MULTI_THREAD
-			world()->stop_path_explorer();
+			world()->await_path_explorer();
 #endif
-			path_explorer_t::refresh_all_categories(true);
+			path_explorer_t::refresh_all_categories(false);
 		}
 	}
 
@@ -666,10 +666,6 @@ bool depot_t::start_convoi(convoihandle_t cnv, bool local_execution)
 		else 
 		{
 			// convoi can start now
-			if (cnv->get_state() != convoi_t::ROUTE_JUST_FOUND)
-			{
-				welt->sync.add(cnv.get_rep());
-			}
 			cnv->start();
 
 			// remove from depot lists
@@ -815,7 +811,7 @@ const char * depot_t:: is_deletable(const player_t *player)
 }
 
 
-slist_tpl<vehicle_desc_t*> & depot_t::get_vehicle_type()
+slist_tpl<vehicle_desc_t*> const & depot_t::get_vehicle_type()
 {
 	return vehicle_builder_t::get_info(get_waytype());
 }
@@ -944,3 +940,4 @@ void depot_t::add_to_world_list(bool lock)
 		city->update_city_stats_with_building(this, false);
 	}
 }
+

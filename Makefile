@@ -69,10 +69,14 @@ ifeq ($(OSTYPE),mac)
   LDFLAGS += -stdlib=libstdc++
 endif
 
-ifeq ($(OSTYPE),mingw32 mingw64)
+ifeq ($(OSTYPE), mingw64)
   SOURCES += clipboard_w32.cc
 else
-  SOURCES += clipboard_internal.cc
+	ifeq ($(OSTYPE),mingw32)
+	  SOURCES += clipboard_w32.cc
+	else
+	  SOURCES += clipboard_internal.cc
+  endif
 endif
 
 ifeq ($(OSTYPE),openbsd)
@@ -147,9 +151,15 @@ ifneq ($(MULTI_THREAD),)
 endif
 
 ifneq ($(WITH_REVISION),)
-  REV = $(shell git rev-parse --short HEAD)
-  ifneq ($(REV),)
-    CFLAGS  += -DREVISION="$(REV)"
+  ifeq ($(shell expr $(WITH_REVISION) \>= 1), 1)
+    ifeq ($(shell expr $(WITH_REVISION) \>= 2), 1)
+      REV = $(WITH_REVISION)
+    else
+      REV = $(shell git rev-parse --short=7 HEAD)
+    endif
+    ifneq ($(REV),)
+      CFLAGS  += -DREVISION="$(REV)"
+    endif
   endif
 endif
 
@@ -257,6 +267,7 @@ SOURCES += freight_list_sorter.cc
 SOURCES += gui/ai_option_t.cc
 SOURCES += gui/banner.cc
 SOURCES += gui/baum_edit.cc
+SOURCES += gui/base_info.cc
 SOURCES += gui/citybuilding_edit.cc
 SOURCES += gui/citylist_frame_t.cc
 SOURCES += gui/citylist_stats_t.cc
@@ -329,7 +340,9 @@ SOURCES += gui/message_option_t.cc
 SOURCES += gui/message_stats_t.cc
 SOURCES += gui/messagebox.cc
 SOURCES += gui/money_frame.cc
+SOURCES += gui/onewaysign_info.cc
 SOURCES += gui/optionen.cc
+SOURCES += gui/overtaking_mode.cc
 SOURCES += gui/pakselector.cc
 SOURCES += gui/password_frame.cc
 SOURCES += gui/player_frame_t.cc
@@ -353,11 +366,11 @@ SOURCES += gui/times_history_entry.cc
 SOURCES += gui/city_info.cc
 SOURCES += gui/station_building_select.cc
 SOURCES += gui/themeselector.cc
-SOURCES += gui/obj_info.cc
+SOURCES += gui/tool_selector
 SOURCES += gui/trafficlight_info.cc
+SOURCES += gui/obj_info.cc
 SOURCES += gui/vehicle_class_manager.cc
 SOURCES += gui/welt.cc
-SOURCES += gui/tool_selector
 SOURCES += gui/vehicle_manager.cc
 SOURCES += network/checksum.cc
 SOURCES += network/memory_rw.cc
@@ -387,6 +400,8 @@ SOURCES += script/api/api_convoy.cc
 SOURCES += script/api/api_gui.cc
 SOURCES += script/api/api_factory.cc
 SOURCES += script/api/api_halt.cc
+SOURCES += script/api/api_include.cc
+SOURCES += script/api/api_line.cc
 SOURCES += script/api/api_map_objects.cc
 SOURCES += script/api/api_obj_desc.cc
 SOURCES += script/api/api_obj_desc_base.cc
