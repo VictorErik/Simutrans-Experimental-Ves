@@ -278,7 +278,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			}
 			else
 			{
-				char year[20];
+				char year[50];
 				sprintf(year, "%s: %u", translator::translate("available_until"), upgrade->get_retire_year_month() / 12);
 				display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, year, ALIGN_RIGHT, text_color, true);
 				y_pos += LINESPACE;
@@ -700,7 +700,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;
 
 		// Byggår
-		char year[20];
+		char year[50];
 		if (veh->get_retire_year_month() != DEFAULT_RETIRE_DATE * 12)
 		{
 			sprintf(year, "%s: %u-%u", translator::translate("available"), veh->get_intro_year_month() / 12, veh->get_retire_year_month() / 12);
@@ -713,7 +713,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		ypos_name += LINESPACE;
 
 		// Antal
-		char amount_of_vehicles[10];
+		char amount_of_vehicles[50];
 		sprintf(amount_of_vehicles, "%s: %u", translator::translate("amount"), amount);
 		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + 6 + ypos_name, amount_of_vehicles, ALIGN_RIGHT, text_color, true);
 		ypos_name += LINESPACE;
@@ -721,7 +721,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		// Load
 		if (veh->get_total_capacity() > 0)
 		{
-			char load[20];
+			char load[100];
 			//sprintf(load, ": %u", veh->get_total_capacity());
 			char extra_pass[8];
 			if (veh->get_overcrowded_capacity() > 0)
@@ -1205,7 +1205,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		const int xpos_extra = VEHICLE_NAME_COLUMN_WIDTH - D_BUTTON_WIDTH - 10;
 
 		// age		
-		char year[20];
+		char year[50];
 		sprintf(year, "%s: %i", translator::translate("bought"), veh->get_purchase_time() / 12);
 		display_proportional_clip(pos.x + offset.x + 2 + xpos_extra, pos.y + offset.y + ypos_name, year, ALIGN_RIGHT, text_color, true) + 2;
 		ypos_name += LINESPACE;
