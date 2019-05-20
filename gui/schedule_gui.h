@@ -106,7 +106,7 @@ private:
 
 	gui_label_t lb_conditional_depart, lb_broadcast_condition;
 	gui_label_t lb_wait_condition;
-	gui_numberinput_t conditional_depart, condition_broadcast;
+	gui_textinput_t ti_conditional_depart, ti_conditional_broadcast;
 
 	gui_label_t lb_spacing_shift;
 	gui_numberinput_t numimp_spacing_shift;
@@ -147,6 +147,12 @@ public:
 	// for updating info ...
 	void init_line_selector();
 
+	// This handles the bitfields for conditional departs and broadcasts
+	void reset_conditional_depart();
+	void update_conditional_depart();
+	void specify_conditional_depart();
+	char conditional_depart_param[64], old_conditional_depart_param[64];
+	bool conditional_depart_invalid_entry_form = false;
 	bool infowin_event(event_t const*) OVERRIDE;
 
 	const char *get_help_filename() const {return "schedule.txt";}

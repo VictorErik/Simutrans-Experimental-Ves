@@ -133,7 +133,21 @@ void schedule_gui_t::gimme_stop_name(cbuffer_t & buf, const player_t *player_, c
 		}
 		if (entry.condition_bitfield_receiver > 0)
 		{
-			buf.printf("[->%d] ", entry.condition_bitfield_receiver);
+			buf.printf("[->");
+			bool multiple_entries = false;
+			for (int i = 0; i < 16; i++)
+			{
+				if ((entry.condition_bitfield_receiver & 1 << i) != 0)
+				{
+					if (multiple_entries)
+					{
+						buf.printf(",");
+					}
+					buf.printf("%d", i);
+					multiple_entries = true;
+				}
+			}
+			buf.printf("] ");
 			prefix = true;
 		}
 		if (entry.condition_bitfield_broadcaster > 0)
@@ -456,13 +470,11 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 	lb_wait_condition.set_pos(scr_coord(D_MARGIN_LEFT, ypos));
 	lb_wait_condition.set_tooltip("if_this_is_set,_convoys_will_wait_until_this_condition_is_broadcasted_by_another_convoy");
 	add_component(&lb_wait_condition);
-	conditional_depart.set_pos(scr_coord(D_MARGIN_LEFT + label_width + D_H_SPACE, ypos));
-	conditional_depart.set_width(numimp_load.get_size().w);
-	conditional_depart.set_value(schedule->get_current_entry().condition_bitfield_receiver);
-	conditional_depart.set_limits(0, 15);
-	conditional_depart.set_increment_mode(1);
-	conditional_depart.add_listener(this);
-	add_component(&conditional_depart);
+
+	ti_conditional_depart.set_pos(scr_coord(D_MARGIN_LEFT + label_width + D_H_SPACE, ypos));
+	ti_conditional_depart.set_size(scr_size(numimp_load.get_size().w,D_BUTTON_HEIGHT));
+	ti_conditional_depart.add_listener(this);
+	add_component(&ti_conditional_depart);
 
 	ypos += D_BUTTON_HEIGHT;
 
@@ -538,14 +550,12 @@ schedule_gui_t::schedule_gui_t(schedule_t* sch_, player_t* player_, convoihandle
 	ypos += D_BUTTON_HEIGHT + 2;
 
 	// Condition broadcast
-	condition_broadcast.set_pos(scr_coord(column_right, ypos));
-	condition_broadcast.set_width(60);
-	condition_broadcast.set_value(schedule->get_current_entry().condition_bitfield_broadcaster);
-	condition_broadcast.set_limits(0, 15);
-	condition_broadcast.set_increment_mode(1);
-	condition_broadcast.add_listener(this);
-	add_component(&condition_broadcast);
-	lb_broadcast_condition.set_pos(scr_coord(column_right + condition_broadcast.get_size().w + 5, ypos));
+	ti_conditional_broadcast.set_pos(scr_coord(column_right, ypos));
+	ti_conditional_broadcast.set_size(D_BUTTON_SIZE);
+	ti_conditional_broadcast.add_listener(this);
+	add_component(&ti_conditional_broadcast);
+
+	lb_broadcast_condition.set_pos(scr_coord(column_right + ti_conditional_broadcast.get_size().w + 5, ypos));
 	lb_broadcast_condition.set_tooltip("if_this_is_set,_convoy_will_broadcast_this_condition_to_other_convoys_at_this_station_when_arriving");
 	add_component(&lb_broadcast_condition);
 
@@ -720,8 +730,9 @@ void schedule_gui_t::update_selection()
 	lb_load.set_color( COL_GREY3 );
 	numimp_load.disable();
 	numimp_load.set_value( 0 );
-	conditional_depart.set_value(0);
-	condition_broadcast.set_value(0);
+	//conditional_depart.set_value(0);
+	reset_conditional_depart();
+	//condition_broadcast.set_value(0);
 	bt_wait_prev.disable();
 	lb_wait.set_color( COL_GREY3 );
 	lb_spacing.set_color( COL_GREY3 );
@@ -757,15 +768,6 @@ void schedule_gui_t::update_selection()
 				// 12 because the spacing is in 12ths of a fraction of a month.
 				schedule->set_spacing(12);
 				numimp_spacing.set_value(12);
-			}
-
-			if (schedule->get_current_entry().condition_bitfield_receiver > 0)
-			{
-				conditional_depart.set_value(schedule->get_current_entry().condition_bitfield_receiver);
-			}
-			if (schedule->get_current_entry().condition_bitfield_broadcaster > 0)
-			{
-				condition_broadcast.set_value(schedule->get_current_entry().condition_bitfield_broadcaster);
 			}
 			if(  schedule->entries[current_stop].minimum_loading>0 || schedule->entries[current_stop].is_flag_set(schedule_entry_t::wait_for_time)) {
 				bt_wait_prev.enable();
@@ -886,6 +888,152 @@ bool schedule_gui_t::infowin_event(const event_t *ev)
 	}
 
 	return gui_frame_t::infowin_event(ev);
+}
+
+
+void schedule_gui_t::reset_conditional_depart()
+{
+	char default_display[128];
+	char old_default_display[128];
+	static cbuffer_t tooltip_syntax_display;
+	tooltip_syntax_display.clear();
+	ti_conditional_depart.set_color(SYSCOL_TEXT_HIGHLIGHT);
+
+	if (conditional_depart_invalid_entry_form)
+	{
+		sprintf(default_display, translator::translate("invalid_entry"));
+		ti_conditional_depart.set_color(COL_RED);
+		conditional_depart_invalid_entry_form = false;
+	}
+	else
+	{
+		sprintf(default_display, "");
+		bool multiple_entries = false;
+		for (int i = 0; i < 16; i++)
+		{
+			if ((schedule->entries[schedule->get_current_stop()].condition_bitfield_receiver & 1 << i) != 0)
+			{
+				sprintf(old_default_display, "%s", default_display);
+				char value[4];
+				multiple_entries ? sprintf(value, ",%d", i) : sprintf(value, "%d", i);
+				sprintf(default_display, "%s%s", old_default_display , value);
+				multiple_entries = true;
+			}
+		}
+	}
+	tstrncpy(old_conditional_depart_param, default_display, sizeof(old_conditional_depart_param));
+	tstrncpy(conditional_depart_param, default_display, sizeof(conditional_depart_param));
+	ti_conditional_depart.set_text(conditional_depart_param, sizeof(conditional_depart_param));
+}
+
+void schedule_gui_t::update_conditional_depart()
+{
+	const char *t = ti_conditional_depart.get_text();
+	ti_conditional_depart.set_color(SYSCOL_TEXT_HIGHLIGHT);
+	// only change if old name and current name are the same
+	// otherwise some unintended undo if renaming would occur
+	if (t  &&  t[0] && strcmp(t, conditional_depart_param) && strcmp(old_conditional_depart_param, conditional_depart_param) == 0) {
+		// do not trigger this command again
+		tstrncpy(old_conditional_depart_param, t, sizeof(old_conditional_depart_param));
+	}
+	specify_conditional_depart();
+}
+
+void schedule_gui_t::specify_conditional_depart()
+{
+	char entry[64] = { 0 };
+	sprintf(entry, ti_conditional_depart.get_text());
+
+	// This is the syntax:
+	// Values, separated by commas.
+	// value A, value B, value C, ... etc
+
+
+	char value[2];
+	value[0] = '\0';
+	value[1] = '\0';
+	int conditional_depart_value;
+	int conditional_depart_bitfield = 0;
+
+	int first_value_offset = 0;
+	int secon_value_offset = 0;
+	char c[1] = { '\0' }; // need to give c some value, since the forloop depends on it.
+
+	for (int j = 0; j<64; j++)
+	{
+		*c = entry[j];
+		if (*c == ',') // Separator, fetch the numbers
+		{
+			if (value[0] != '\0') // do we have any value to add to the bitfield ?
+			{
+				conditional_depart_value = std::atoi(value);
+				if (conditional_depart_value < 16)
+				{
+					conditional_depart_bitfield |= 1 << conditional_depart_value;
+				}
+				else
+				{
+					conditional_depart_invalid_entry_form = true;
+					break;
+				}
+			}
+			// Reset the value
+			value[0] = '\0';
+			value[1] = '\0';
+		}
+		else if ((*c == '0' || *c == '1' || *c == '2' || *c == '3' || *c == '4' || *c == '5' || *c == '6' || *c == '7' || *c == '8' || *c == '9'))
+		{
+			if (value[0] == '\0')
+			{
+				value[0] = *c;
+			}
+			else if (value[1] == '\0')
+			{
+				value[1] = *c;
+			}
+			else
+			{
+				conditional_depart_invalid_entry_form = true;
+				break;
+			}
+		}
+		else if (*c == ' ')
+		{
+			//ignore spaces
+		}
+		else if (*c == '\0') // No more entries have been typed in
+		{
+			if (value[0] != '\0') // do we have any value to add to the bitfield ?
+			{
+				conditional_depart_value = std::atoi(value);
+				if (conditional_depart_value < 16)
+				{
+					conditional_depart_bitfield |= 1 << conditional_depart_value;
+				}
+				else
+				{
+					conditional_depart_invalid_entry_form = true;
+					break;
+				}
+			}
+			break;
+		}
+		else // Some random caracter has been entered, therefore invalid entry
+		{
+			conditional_depart_invalid_entry_form = true;
+			break;
+		}
+
+	}
+	if (conditional_depart_invalid_entry_form)
+	{
+		reset_conditional_depart();
+	}
+	else
+	{
+		schedule->entries[schedule->get_current_stop()].condition_bitfield_receiver = conditional_depart_bitfield;
+	}
+
 }
 
 
@@ -1039,13 +1187,11 @@ DBG_MESSAGE("schedule_gui_t::action_triggered()","comp=%p combo=%p",comp,&line_s
 	else if (comp == &bt_consist_order) {
 		// Opens new window to alter the consist order
 	}
-	else if (comp == &conditional_depart){
-		schedule->entries[schedule->get_current_stop()].condition_bitfield_receiver = conditional_depart.get_value();
-		update_selection();
+	else if (comp == &ti_conditional_depart){
+		update_conditional_depart();
 	}
-	else if (comp == &condition_broadcast) {
-		schedule->entries[schedule->get_current_stop()].condition_bitfield_broadcaster = condition_broadcast.get_value();
-		update_selection();
+	else if (comp == &ti_conditional_broadcast) {
+		//update_conditional_broadcast();
 	}
 	else if (comp == &bt_lay_over) {
 		if (!schedule->empty())
