@@ -153,6 +153,14 @@ public:
 	void specify_conditional_depart();
 	char conditional_depart_param[64], old_conditional_depart_param[64];
 	bool conditional_depart_invalid_entry_form = false;
+
+	void reset_conditional_broadcast();
+	void update_conditional_broadcast();
+	void specify_conditional_broadcast();
+	char conditional_broadcast_param[64], old_conditional_broadcast_param[64];
+	bool conditional_broadcast_invalid_entry_form = false;
+
+
 	bool infowin_event(event_t const*) OVERRIDE;
 
 	const char *get_help_filename() const {return "schedule.txt";}
