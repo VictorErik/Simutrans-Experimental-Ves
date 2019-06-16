@@ -1494,6 +1494,10 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 		}
 		else
 		{
+			if (veh->get_convoi()->in_depot() && (veh_display_location[0] == 'd' &&veh_display_location[1] == 'e' &&veh_display_location[2] == 'p' &&veh_display_location[3] == 'o' &&veh_display_location[4] == 't'))
+			{
+				display = true;
+			}
 			if (veh->get_pos().x >= 0 && veh->get_pos().y >= 0)
 			{
 				char location_name[256] = { 0 };
