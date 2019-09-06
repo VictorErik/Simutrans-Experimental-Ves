@@ -998,7 +998,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 	if (!((pos.y + offset.y) > clip.yy || (pos.y + offset.y) < clip.y - 32) /*&& veh.is_bound()*/) {
 
 		int ypos_name = LINESPACE / 2;
-		int min_size = LINESPACE * 4;
+		int min_size = LINESPACE * 5;
 		entry_height = min_size;
 		static cbuffer_t freight_info;
 		freight_info.clear();
@@ -1263,7 +1263,7 @@ void gui_veh_info_t::draw(scr_coord offset)
 		if (veh->get_cargo_max() > 0)
 		{
 			load_percentage = (veh->get_cargo_carried() * 100) / veh->get_cargo_max();
-			filled_bar.draw(scr_coord(pos.x + offset.x + xoff - 4, pos.y + offset.y + entry_height - (LINESPACE/2)));
+			filled_bar.draw(scr_coord(offset.x + width - D_BUTTON_WIDTH, pos.y + offset.y + entry_height - (LINESPACE / 2)));
 		}
 
 		entry_height = ypos_name > entry_height ? ypos_name : entry_height;
