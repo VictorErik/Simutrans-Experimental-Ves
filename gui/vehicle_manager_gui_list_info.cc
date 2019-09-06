@@ -1195,8 +1195,15 @@ void gui_veh_info_t::draw(scr_coord offset)
 
 		}
 		else if (veh->get_convoi()->get_line().is_bound()) {
-			w = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, translator::translate("Line"), ALIGN_LEFT, text_color, true) + 2;
-			w += display_proportional_clip(pos.x + offset.x + 2 + w + 5, pos.y + offset.y + ypos_name, veh->get_convoi()->get_line()->get_name(), ALIGN_LEFT, veh->get_convoi()->get_line()->get_state_color(), true);
+			w = display_proportional_clip(pos.x + offset.x + 2, pos.y + offset.y + ypos_name, translator::translate("Line:"), ALIGN_LEFT, text_color, true) + 2;
+
+			// If the line state color is OK it will be black, and therefore very hard to see if the entry is also selected. Therefore, change the color to white like the rest of the text if the entry is selected.
+			COLOR_VAL line_color = (COLOR_VAL)veh->get_convoi()->get_line()->get_state_color();
+			if (selected && veh->get_convoi()->get_line()->get_state() == simline_t::states::line_normal_state)
+			{
+				line_color = text_color;
+			}
+			w += display_proportional_clip(pos.x + offset.x + 2 + w + 5, pos.y + offset.y + ypos_name, veh->get_convoi()->get_line()->get_name(), ALIGN_LEFT, line_color, true);
 			max_x = max(max_x, w + 5);
 		}
 		ypos_name += LINESPACE;
