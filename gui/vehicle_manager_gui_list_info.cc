@@ -54,7 +54,6 @@ gui_special_info_t::gui_special_info_t(int entry_width, cbuffer_t message, COLOR
 {
 	translated_text_string.clear();
 	translated_text_string = message;
-	//width = entry_width;
 	background_color = color;
 	draw(scr_coord(0, 0));
 }
