@@ -48,7 +48,7 @@ static const char * engine_type_names[11] =
 
 
 // We start with the "special" entries. This is used to display a message in the scrolled lists, such as class change, "no vehicles" etc
-gui_special_info_t::gui_special_info_t(int entry_width, cbuffer_t message, COLOR_VAL color)
+gui_special_info_t::gui_special_info_t(cbuffer_t message, COLOR_VAL color)
 {
 	translated_text_string.clear();
 	translated_text_string = message;

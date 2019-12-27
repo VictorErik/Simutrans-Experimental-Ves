@@ -29,7 +29,7 @@ private:
 	COLOR_VAL background_color;
 
 public:
-	gui_special_info_t(int entry_width, cbuffer_t message, COLOR_VAL color);
+	gui_special_info_t(cbuffer_t message, COLOR_VAL color);
 	
 	bool infowin_event(event_t const*) OVERRIDE;
 	bool selected = false;

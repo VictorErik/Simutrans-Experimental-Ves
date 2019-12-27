@@ -3790,7 +3790,7 @@ void vehicle_manager_t::build_upgrade_list()
 				buf.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
 			}
 			int box_height = LINESPACE * 3;
-			gui_special_info_t* const sinfo = new gui_special_info_t(UPGRADE_LIST_COLUMN_WIDTH, buf, MN_GREY1);
+			gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
 			sinfo->set_pos(scr_coord(0, ypos));
 			sinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(sinfo->get_entry_height(), box_height)));
 			cont_upgrade.add_component(sinfo);
@@ -3976,7 +3976,7 @@ void vehicle_manager_t::display_desc_list()
 		buf.clear();
 		buf.append(translator::translate("no_vehicles_to_display"));
 		int box_height = LINESPACE * 3;
-		gui_special_info_t* const sinfo = new gui_special_info_t(VEHICLE_NAME_COLUMN_WIDTH, buf, MN_GREY1);
+		gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
 		sinfo->set_pos(scr_coord(0, ypos));
 		sinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(sinfo->get_entry_height(), box_height)));
 		cont_desc.add_component(sinfo);
@@ -4116,7 +4116,7 @@ void vehicle_manager_t::display_veh_list()
 		buf.clear();
 		buf.append(translator::translate("no_vehicles_to_display"));
 		int box_height = LINESPACE * 3;
-		gui_special_info_t* const sinfo = new gui_special_info_t(VEHICLE_NAME_COLUMN_WIDTH, buf, MN_GREY1);
+		gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
 		sinfo->set_pos(scr_coord(0, ypos));
 		sinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, sinfo->get_entry_height()));
 		cont_veh.add_component(sinfo);
