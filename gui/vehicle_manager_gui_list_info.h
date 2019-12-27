@@ -1,6 +1,11 @@
-
-
-
+/*
+ * Vehicle management: Vehicle entries for the lists
+ *
+ * This file is part of the Simutrans project under the artistic licence.
+ * (see licence.txt)
+ *
+ * Author: Ves
+ */
 
 
 #include "components/gui_image_list.h"

@@ -1,13 +1,11 @@
 /*
-* 
-* Info entries for scrolled lists of vehicles
-*
-* This file is part of the Simutrans project under the artistic licence.
-* (see licence.txt)
-*
-* Author: Ves
-*
-*/
+ * Vehicle management: Vehicle entries for the lists
+ *
+ * This file is part of the Simutrans project under the artistic licence.
+ * (see licence.txt)
+ *
+ * Author: Ves
+ */
 
 #include <stdio.h>
 #include <algorithm>
