@@ -178,7 +178,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			{
 				if (selected)
 				{
-					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, max(h, fillbox_height) - 2, COL_DARK_BLUE, true);
+					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, max(h, fillbox_height), COL_DARK_BLUE, true);
 					text_color = COL_WHITE;
 				}
 
@@ -201,6 +201,8 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, width - image_offset, LINESPACE * 3, MN_GREY4, 50);
 					}
 				}
+
+				y_pos += 2;
 
 				// In order to show the name, but to prevent suuuuper long translations to ruin the layout, this will divide the name into several lines if necesary
 				if (name[max_caracters] != '\0')
@@ -265,7 +267,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 				}
 			}
 
-			y_pos = 0;
+			y_pos = 2;
 			x_pos = width - 14;
 
 			// Byggår
