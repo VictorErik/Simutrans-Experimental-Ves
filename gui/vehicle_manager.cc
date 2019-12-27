@@ -719,6 +719,15 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		}
 		build_upgrade_list();
 	}
+
+	if (comp == &bt_upgrade_im) {
+		// Code that directly sends the convoy to the depot and upgrades the particular vehicle(s)!
+	}
+	if (comp == &bt_upgrade_ov) {
+		// Code that sends the convoy to the depot and upgrades the particular vehicle(s) when it is due to overhaul!
+	}
+
+
 	return true;
 }
 
