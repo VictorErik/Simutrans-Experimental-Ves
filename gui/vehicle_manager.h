@@ -126,6 +126,7 @@ private:
 
 	bool display_upgrade_into;
 	int amount_of_upgrades;
+	int initial_upgrade_entry_width;
 
 	static bool show_available_vehicles;
 	static bool select_all;

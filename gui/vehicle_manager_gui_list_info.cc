@@ -178,7 +178,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			{
 				if (selected)
 				{
-					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, UPGRADE_LIST_COLUMN_WIDTH, max(max(h, fillbox_height), 40) - 2, COL_DARK_BLUE, true);
+					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, max(max(h, fillbox_height), 40) - 2, COL_DARK_BLUE, true);
 					text_color = COL_WHITE;
 				}
 
@@ -194,11 +194,11 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 				{
 					if (selected)
 					{
-						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, UPGRADE_LIST_COLUMN_WIDTH - image_offset, LINESPACE * 3, COL_DARK_BLUE, 50);
+						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, width - image_offset, LINESPACE * 3, COL_DARK_BLUE, 50);
 					}
 					else
 					{
-						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, UPGRADE_LIST_COLUMN_WIDTH - image_offset, LINESPACE * 3, MN_GREY4, 50);
+						display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, width - image_offset, LINESPACE * 3, MN_GREY4, 50);
 					}
 				}
 
@@ -266,7 +266,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			}
 
 			y_pos = 0;
-			x_pos = UPGRADE_LIST_COLUMN_WIDTH - 14;
+			x_pos = width - 14;
 
 			// Byggår
 			if (counting)

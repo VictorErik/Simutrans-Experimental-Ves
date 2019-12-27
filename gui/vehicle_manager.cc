@@ -2550,8 +2550,13 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 		// Upgrade list
 		//cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
-		scrolly_upgrade.set_size(scr_size(column_6 - column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 		scrolly_upgrade.set_pos(scr_coord(column_4, y_pos));
+		scrolly_upgrade.set_size(scr_size(column_6 - column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
+		for (int i = 0; i < upgrade_info.get_count(); i++)
+		{
+			upgrade_info[i]->set_size(scr_size(column_6 - column_4 + column_width, upgrade_info[i]->get_size().h));
+		}
+		initial_upgrade_entry_width = column_6 - column_4 + column_width;
 
 	}
 
@@ -3701,6 +3706,7 @@ void vehicle_manager_t::build_upgrade_list()
 	upgrade_info.clear();
 	int ypos = 10;
 	amount_of_upgrades = 0;
+	int box_height = LINESPACE * 3;
 
 	if (display_upgrade_into)
 	{
@@ -3728,7 +3734,7 @@ void vehicle_manager_t::build_upgrade_list()
 						{
 							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
 							uinfo->set_pos(scr_coord(0, ypos));
-							uinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(uinfo->get_entry_height(), 40)));
+							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 							upgrade_info.append(uinfo);
 							cont_upgrade.add_component(uinfo);
 							ypos += max(uinfo->get_entry_height(), 40);
@@ -3766,7 +3772,7 @@ void vehicle_manager_t::build_upgrade_list()
 				{
 					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
 					uinfo->set_pos(scr_coord(0, ypos));
-					uinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(uinfo->get_entry_height(), 40)));
+					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 					upgrade_info.append(uinfo);
 					cont_upgrade.add_component(uinfo);
 					ypos += max(uinfo->get_entry_height(), 40);
@@ -3792,11 +3798,11 @@ void vehicle_manager_t::build_upgrade_list()
 			int box_height = LINESPACE * 3;
 			gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
 			sinfo->set_pos(scr_coord(0, ypos));
-			sinfo->set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, max(sinfo->get_entry_height(), box_height)));
+			sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
 			cont_upgrade.add_component(sinfo);
 			ypos += max(sinfo->get_entry_height(), box_height);
 		}
-		cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH - 12, ypos));
+		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width, ypos));
 	}
 }
 
