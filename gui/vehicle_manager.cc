@@ -2550,7 +2550,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 		// Upgrade list
 		//cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
-		scrolly_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_upgrade.set_size(scr_size(column_6 - column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 		scrolly_upgrade.set_pos(scr_coord(column_4, y_pos));
 
 	}
