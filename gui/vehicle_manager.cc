@@ -377,12 +377,19 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// Maintenance tab:
 	{
 		// ---- Upgrade section ---- //
-		// Upgrade button
-		bt_upgrade.init(button_t::roundbox, translator::translate("upgrade"), coord_dummy, D_BUTTON_SIZE);
-		bt_upgrade.add_listener(this);
-		bt_upgrade.set_tooltip(translator::translate("upgrade"));
-		bt_upgrade.set_visible(false);
-		cont_maintenance_info.add_component(&bt_upgrade);
+		// Upgrade buttons
+		bt_upgrade_im.init(button_t::roundbox, translator::translate("upgrade_immediately"), coord_dummy, D_BUTTON_SIZE);
+		bt_upgrade_im.add_listener(this);
+		bt_upgrade_im.set_tooltip(translator::translate("send_the_convoy_containing_the_vehicle_immediately_to_depot_for_upgrading"));
+		bt_upgrade_im.set_visible(true);
+		cont_maintenance_info.add_component(&bt_upgrade_im);
+
+		// (I assume this will be possible, hence making space for the button now //ves)
+		bt_upgrade_ov.init(button_t::roundbox, translator::translate("upgrade_on_overhaul"), coord_dummy, D_BUTTON_SIZE);
+		bt_upgrade_ov.add_listener(this);
+		bt_upgrade_ov.set_tooltip(translator::translate("upgrade_the_vehicle_when_vehicle_is_next_due_to_overhaul"));
+		bt_upgrade_ov.set_visible(true);
+		cont_maintenance_info.add_component(&bt_upgrade_ov);
 
 		// Display upgrades / downgrades button and label
 		bt_upgrade_to_from.init(button_t::roundbox, NULL, coord_dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
@@ -2516,11 +2523,19 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	int column_5 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 4;
 	int column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
 
+	int column_width = column_2 - column_1 - 5;
+
 	// Maintenance tab:
 	{
-		bt_upgrade.set_pos(scr_coord(column_4, y_pos));
+		bt_upgrade_im.set_pos(scr_coord(column_3, y_pos));
+		bt_upgrade_im.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 		bt_upgrade_to_from.set_pos(scr_coord(column_4, y_pos));
 		lb_upgrade_to_from.set_pos(scr_coord(column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
+
+		y_pos += LINESPACE;
+
+		bt_upgrade_ov.set_pos(scr_coord(column_3, y_pos));
+		bt_upgrade_ov.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 
 		y_pos += LINESPACE * 2;
 

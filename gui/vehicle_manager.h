@@ -109,7 +109,7 @@ private:
 	button_t bt_show_available_vehicles;
 	button_t bt_select_all, bt_hide_in_depot;
 	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
-	button_t bt_upgrade;
+	button_t bt_upgrade_im, bt_upgrade_ov;
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
 
