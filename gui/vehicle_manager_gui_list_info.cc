@@ -568,34 +568,7 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					y_pos += LINESPACE;
 				}
 			}
-			// catering_level
-			// air_resistance
-			// rolling_resistance
-			if (upgrade->get_minimum_runway_length() != existing->get_minimum_runway_length())
-			{
-				if (counting)
-				{
-					lines_of_text++;
-				}
-				else
-				{
-					int difference = upgrade->get_minimum_runway_length() - existing->get_minimum_runway_length();
-					if (difference > 0)
-					{
-						sprintf(tmp, "+%4.3f%s", upgrade->get_rolling_resistance().to_double() * (double)upgrade->get_weight() / 1000.0, translator::translate("kN"));
-						difference_color = COL_RED;
-					}
-					else
-					{
-						sprintf(tmp, "%i%s", difference, translator::translate("m"));
-						difference_color = COL_DARK_GREEN;
-					}
-					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
-					sprintf(tmp, translator::translate("minimum_runway_length: %im "), upgrade->get_minimum_runway_length());
-					display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, text_color, true);
-					y_pos += LINESPACE;
-				}
-			}
+			
 			// minimum_runway_length
 			if (upgrade->get_minimum_runway_length() != existing->get_minimum_runway_length())
 			{
@@ -675,6 +648,9 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 				}
 			}
 
+			// catering_level
+			// air_resistance
+			// rolling_resistance
 
 
 
