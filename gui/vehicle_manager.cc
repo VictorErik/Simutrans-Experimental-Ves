@@ -465,7 +465,7 @@ vehicle_manager_t::~vehicle_manager_t()
 	}
 }
 
-bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v)           // 28-Dec-01    Markus Weber    Added
+bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v)           // 28-Dec-01    Markus Weber    Added
 {
 	// ---- Upper section ---- //
 	if (comp == &bt_show_available_vehicles) {
@@ -493,7 +493,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		build_desc_list();
 		page_turn_desc = false;
 	}
-	if (comp == &bt_select_all)	{
+	if (comp == &bt_select_all) {
 		bt_select_all.pressed = !bt_select_all.pressed;
 		select_all = bt_select_all.pressed;
 		for (int i = 0; i < veh_info.get_count(); i++)
@@ -572,7 +572,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		display_desc = (display_mode_desc_t)display_mode;
 		selected_displ_desc = display_desc;
 		save_previously_selected_desc();
-		page_turn_desc = false; 
+		page_turn_desc = false;
 		reset_desc_text_input_display();
 		set_desc_display_rules();
 		build_desc_list();
@@ -624,20 +624,20 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		}
 		if (display_veh == displ_veh_cargo)
 		{
-				display_veh_by_cargo = display_mode;
+			display_veh_by_cargo = display_mode;
 		}
 		build_veh_list();
 	}
-	if (comp == &bt_desc_sortreverse)	{
+	if (comp == &bt_desc_sortreverse) {
 		bt_desc_sortreverse.pressed = !bt_desc_sortreverse.pressed;
 		desc_sortreverse = bt_desc_sortreverse.pressed;
 		save_previously_selected_desc();
 		page_turn_desc = false;
 		display_desc_list();
 	}
-	if (comp == &bt_veh_sortreverse){
+	if (comp == &bt_veh_sortreverse) {
 		bt_veh_sortreverse.pressed = !bt_veh_sortreverse.pressed;
-		veh_sortreverse = bt_veh_sortreverse.pressed;		
+		veh_sortreverse = bt_veh_sortreverse.pressed;
 		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
@@ -654,7 +654,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		display_veh_list();
 	}
 	// ---- Middle section ---- //
-	if (comp == &bt_desc_prev_page){
+	if (comp == &bt_desc_prev_page) {
 		if (page_display_desc <= 1)
 		{
 			page_display_desc = page_amount_desc;
@@ -667,7 +667,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		save_previously_selected_desc();
 		display_desc_list();
 	}
-	if (comp == &bt_desc_next_page){
+	if (comp == &bt_desc_next_page) {
 		if (page_display_desc >= page_amount_desc)
 		{
 			page_display_desc = 1;
@@ -680,7 +680,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		save_previously_selected_desc();
 		display_desc_list();
 	}
-	if (comp == &bt_veh_prev_page){
+	if (comp == &bt_veh_prev_page) {
 		if (page_display_veh <= 1)
 		{
 			page_display_veh = page_amount_veh;
@@ -691,7 +691,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		}
 		display_veh_list();
 	}
-	if (comp == &bt_veh_next_page){
+	if (comp == &bt_veh_next_page) {
 		if (page_display_veh >= page_amount_veh)
 		{
 			page_display_veh = 1;
@@ -709,7 +709,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 		selected_tab_information = tabs_to_index_information[tab];
 		display_tab_objects();
 	}
-	if (comp == &bt_upgrade_to_from){
+	if (comp == &bt_upgrade_to_from) {
 		display_upgrade_into = !display_upgrade_into;
 		if (display_upgrade_into)
 		{
