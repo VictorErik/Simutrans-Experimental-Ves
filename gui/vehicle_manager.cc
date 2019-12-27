@@ -3737,7 +3737,7 @@ void vehicle_manager_t::build_upgrade_list()
 							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 							upgrade_info.append(uinfo);
 							cont_upgrade.add_component(uinfo);
-							ypos += max(uinfo->get_entry_height(), 40);
+							ypos += max(uinfo->get_entry_height(), box_height);
 							amount_of_upgrades++;
 						}
 					}
@@ -3775,7 +3775,7 @@ void vehicle_manager_t::build_upgrade_list()
 					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 					upgrade_info.append(uinfo);
 					cont_upgrade.add_component(uinfo);
-					ypos += max(uinfo->get_entry_height(), 40);
+					ypos += max(uinfo->get_entry_height(), box_height);
 					amount_of_upgrades++;
 				}
 			}
