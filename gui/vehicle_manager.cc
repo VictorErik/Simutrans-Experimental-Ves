@@ -388,7 +388,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_upgrade_to_from.init(button_t::roundbox, NULL, coord_dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
 		bt_upgrade_to_from.add_listener(this);
 		bt_upgrade_to_from.set_tooltip(translator::translate("press_to_switch_between_upgrade_to_or_upgrade_from"));
-		bt_upgrade_to_from.set_visible(false);
+		bt_upgrade_to_from.set_visible(true);
 		cont_maintenance_info.add_component(&bt_upgrade_to_from);
 
 		cont_maintenance_info.add_component(&lb_upgrade_to_from);
@@ -398,7 +398,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_upgrade.set_size(size_dummy);
 		scrolly_upgrade.set_show_scroll_y(true);
 		scrolly_upgrade.set_scroll_amount_y(40);
-		scrolly_upgrade.set_visible(false);
+		scrolly_upgrade.set_visible(true);
 		scrolly_upgrade.set_focusable(true);
 		cont_maintenance_info.add_component(&scrolly_upgrade);
 
@@ -716,9 +716,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t *comp, value_t v) 
 }
 
 void vehicle_manager_t::display_tab_objects()
-{/*
-	bt_upgrade_to_from.set_visible(false);
-	scrolly_upgrade.set_visible(false);*/
+{
 	int info_display = (uint16)selected_tab_information;
 	if (info_display == infotab_general)
 	{
@@ -728,8 +726,6 @@ void vehicle_manager_t::display_tab_objects()
 	}
 	else if (info_display == infotab_maintenance)
 	{
-		bt_upgrade_to_from.set_visible(true);
-		scrolly_upgrade.set_visible(true);
 		build_upgrade_list();
 	}
 	else if (info_display == infotab_advanced)
@@ -1672,9 +1668,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 
 		pos_x = column_2;
 		pos_y = 0;
-
-		// Upgrade button
-		bt_upgrade.set_pos(scr_coord(pos_x, pos_y));
 
 		pos_x = column_3;
 		pos_y = 0;
