@@ -3059,7 +3059,7 @@ int vehicle_manager_t::find_desc_issue_level(vehicle_desc_t* desc)
 		for (int i = 0; i < desc->get_upgrades_count(); i++)
 		{
 			vehicle_desc_t* info = (vehicle_desc_t*)desc->get_upgrades(i);
-			if (!info->is_future(month_now) && (!info->is_retired(month_now)))
+			if (info && (!info->is_future(month_now) && (!info->is_retired(month_now))))
 			{
 				desc_issue_level = 50;
 				break;
