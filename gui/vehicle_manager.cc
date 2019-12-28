@@ -2206,6 +2206,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	}
 
 	// This handles the selection of the vehicles in the "upgrade" section
+
 	for (int i = 0; i < upgrade_info.get_count(); i++)
 	{
 		if (upgrade_info.get_element(i)->is_selected())
@@ -2515,7 +2516,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// ----------- Lower section info box with tab panels, buttons, labels and whatnot -----------------//
 	// Lower section tab panels
 	tabs_info.set_pos(scr_coord(D_MARGIN_LEFT, y_pos));
-	tabs_info.set_size(scr_size((VEHICLE_NAME_COLUMN_WIDTH * 2) + extra_width, SCL_HEIGHT));
+	tabs_info.set_size(scr_size((VEHICLE_NAME_COLUMN_WIDTH * 2) + extra_width, INFORMATION_COLUMN_HEIGHT + (D_BUTTON_HEIGHT * 2)));
+	
 
 	y_pos += D_BUTTON_HEIGHT * 2 + LINESPACE;
 
@@ -2524,7 +2526,6 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// The information tabs have objects attached to some containers. Rearrange the columns into even spaces we can put buttons, lists and labels into
 
 	//y_pos -= tabs_info.get_pos().y + D_BUTTON_HEIGHT * 2;
-	y_pos = D_MARGIN_TOP;
 	column_1 = D_MARGIN_LEFT;
 	column_2 = (width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6;
 	column_3 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 2;
@@ -2536,15 +2537,20 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 	// Maintenance tab:
 	{
+		y_pos = D_MARGIN_TOP;
+
 		bt_upgrade_im.set_pos(scr_coord(column_3, y_pos));
 		bt_upgrade_im.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
-		bt_upgrade_to_from.set_pos(scr_coord(column_4, y_pos));
-		lb_upgrade_to_from.set_pos(scr_coord(column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
 
-		y_pos += LINESPACE;
+		y_pos += D_BUTTON_HEIGHT + 5;
 
 		bt_upgrade_ov.set_pos(scr_coord(column_3, y_pos));
 		bt_upgrade_ov.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
+
+		y_pos = D_MARGIN_TOP;
+
+		bt_upgrade_to_from.set_pos(scr_coord(column_4, y_pos));
+		lb_upgrade_to_from.set_pos(scr_coord(column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
 
 		y_pos += LINESPACE * 2;
 
@@ -3802,7 +3808,7 @@ void vehicle_manager_t::build_upgrade_list()
 			cont_upgrade.add_component(sinfo);
 			ypos += max(sinfo->get_entry_height(), box_height);
 		}
-		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width, ypos));
+		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
 	}
 }
 
