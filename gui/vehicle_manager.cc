@@ -465,24 +465,19 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 vehicle_manager_t::~vehicle_manager_t()
 {	
-	for (int i = 0; i <desc_info.get_count(); i++)
-	{
+	for (int i = 0; i <desc_info.get_count(); i++)	{
 		delete[] desc_info.get_element(i);
 	}
-	for (int i = 0; i <veh_info.get_count(); i++)
-	{
+	for (int i = 0; i <veh_info.get_count(); i++)	{
 		delete[] veh_info.get_element(i);
 	}
-	for (int i = 0; i <upgrade_info.get_count(); i++)
-	{
+	for (int i = 0; i <upgrade_info.get_count(); i++)	{
 		delete[] upgrade_info.get_element(i);
 	}
-	for (int i = 0; i < livery_info.get_count(); i++)
-	{
+	for (int i = 0; i < livery_info.get_count(); i++)	{
 		delete[] livery_info.get_element(i);
 	}
-	if (veh_is_selected)
-	{
+	if (veh_is_selected)	{
 		delete[] veh_selection;
 	}
 }
@@ -549,8 +544,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	}
 	if (comp == &combo_sorter_desc) {
 		sint32 sort_mode = combo_sorter_desc.get_selection();
-		if (sort_mode < 0)
-		{
+		if (sort_mode < 0)		{
 			combo_sorter_desc.set_selection(0);
 			sort_mode = 0;
 		}
@@ -562,32 +556,27 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	}
 	if (comp == &combo_sorter_veh) {
 		sint32 sort_mode = combo_sorter_veh.get_selection();
-		if (sort_mode < 0)
-		{
+		if (sort_mode < 0)		{
 			combo_sorter_veh.set_selection(0);
 			sort_mode = 0;
 		}
 		sortby_veh = (sort_mode_veh_t)sort_mode;
 		selected_sortby_veh = sortby_veh;
 		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
-		for (int i = 0; i < veh_list.get_count(); i++)
-		{
+		for (int i = 0; i < veh_list.get_count(); i++)		{
 			veh_selection[i] = select_all;
 		}
-		if (select_all)
-		{
+		if (select_all)		{
 			old_count_veh_selection = veh_list.get_count();
 		}
-		else
-		{
+		else		{
 			old_count_veh_selection = 0;
 		}
 		display_veh_list();
 	}
 	if (comp == &combo_display_desc) {
 		sint32 display_mode = combo_display_desc.get_selection();
-		if (display_mode < 0)
-		{
+		if (display_mode < 0)		{
 			combo_display_desc.set_selection(0);
 			display_mode = 0;
 		}
@@ -601,8 +590,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	}
 	if (comp == &combo_display_veh) {
 		sint32 display_mode = combo_display_veh.get_selection();
-		if (display_mode < 0)
-		{
+		if (display_mode < 0)		{
 			combo_display_veh.set_selection(0);
 			display_mode = 0;
 		}
@@ -622,30 +610,25 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	}
 	if (comp == &combo_desc_display) {
 		sint32 display_mode = combo_desc_display.get_selection();
-		if (display_mode < 0)
-		{
+		if (display_mode < 0)		{
 			combo_desc_display.set_selection(0);
 			display_mode = 0;
 		}
-		if (display_desc == displ_desc_cargo_cat)
-		{
+		if (display_desc == displ_desc_cargo_cat)	{
 			display_desc_by_good = display_mode;
 		}
-		else if (display_desc == displ_desc_classes)
-		{
+		else if (display_desc == displ_desc_classes)	{
 			display_desc_by_class = display_mode;
 		}
 		build_desc_list();
 	}
 	if (comp == &combo_veh_display) {
 		sint32 display_mode = combo_veh_display.get_selection();
-		if (display_mode < 0)
-		{
+		if (display_mode < 0)	{
 			combo_veh_display.set_selection(0);
 			display_mode = 0;
 		}
-		if (display_veh == displ_veh_cargo)
-		{
+		if (display_veh == displ_veh_cargo)	{
 			display_veh_by_cargo = display_mode;
 		}
 		build_veh_list();
@@ -661,28 +644,23 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		bt_veh_sortreverse.pressed = !bt_veh_sortreverse.pressed;
 		veh_sortreverse = bt_veh_sortreverse.pressed;
 		// Because we cant remember what vehicles we had selected when sorting, reset the selection to whatever the select all button says
-		for (int i = 0; i < veh_list.get_count(); i++)
-		{
+		for (int i = 0; i < veh_list.get_count(); i++)	{
 			veh_selection[i] = select_all;
 		}
-		if (select_all)
-		{
+		if (select_all)	{
 			old_count_veh_selection = veh_list.get_count();
 		}
-		else
-		{
+		else	{
 			old_count_veh_selection = 0;
 		}
 		display_veh_list();
 	}
 	// ---- Middle section ---- //
 	if (comp == &bt_desc_prev_page) {
-		if (page_display_desc <= 1)
-		{
+		if (page_display_desc <= 1)	{
 			page_display_desc = page_amount_desc;
 		}
-		else
-		{
+		else 	{
 			page_display_desc--;
 		}
 		page_turn_desc = true;
@@ -690,12 +668,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		display_desc_list();
 	}
 	if (comp == &bt_desc_next_page) {
-		if (page_display_desc >= page_amount_desc)
-		{
+		if (page_display_desc >= page_amount_desc)	{
 			page_display_desc = 1;
 		}
-		else
-		{
+		else	{
 			page_display_desc++;
 		}
 		page_turn_desc = true;
@@ -703,23 +679,19 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		display_desc_list();
 	}
 	if (comp == &bt_veh_prev_page) {
-		if (page_display_veh <= 1)
-		{
+		if (page_display_veh <= 1)	{
 			page_display_veh = page_amount_veh;
 		}
-		else
-		{
+		else	{
 			page_display_veh--;
 		}
 		display_veh_list();
 	}
 	if (comp == &bt_veh_next_page) {
-		if (page_display_veh >= page_amount_veh)
-		{
+		if (page_display_veh >= page_amount_veh)	{
 			page_display_veh = 1;
 		}
-		else
-		{
+		else	{
 			page_display_veh++;
 		}
 		display_veh_list();
@@ -748,27 +720,21 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	if (comp == &bt_upgrade_ov) {
 		// Code that sends the convoy to the depot and upgrades the particular vehicle(s) when it is due to overhaul!
 	}
-
-
 	return true;
 }
 
 void vehicle_manager_t::display_tab_objects()
 {
 	int info_display = (uint16)selected_tab_information;
-	if (info_display == infotab_general)
-	{
+	if (info_display == infotab_general)	{
 	}
-	else if (info_display == infotab_economics)
-	{
+	else if (info_display == infotab_economics)	{
 		build_livery_list();
 	}
-	else if (info_display == infotab_maintenance)
-	{
+	else if (info_display == infotab_maintenance)	{
 		build_upgrade_list();
 	}
-	else if (info_display == infotab_advanced)
-	{
+	else if (info_display == infotab_advanced)	{
 	}
 }
 
