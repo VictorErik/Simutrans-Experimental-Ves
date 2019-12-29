@@ -2378,8 +2378,11 @@ void vehicle_manager_t::display(scr_coord pos)
 		// Maintenance tab buttons:
 		if (amount_of_upgrades > 0)
 		{
-			bt_upgrade_im.enable();
-			bt_upgrade_ov.enable();
+			if (display_upgrade_into)
+			{
+				bt_upgrade_im.enable();
+				bt_upgrade_ov.enable();
+			}
 		}
 	}
 
