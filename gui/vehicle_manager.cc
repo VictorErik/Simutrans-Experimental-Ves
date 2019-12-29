@@ -2369,6 +2369,28 @@ void vehicle_manager_t::display(scr_coord pos)
 	lb_veh_page.set_text_pointer(buf_veh_page_select);
 	lb_veh_page.set_tooltip(buf_veh_page_tooltip);
 	lb_veh_page.set_align(gui_label_t::centered);
+
+
+	// Lower section stuff:
+
+	bt_upgrade_im.disable();
+	bt_upgrade_ov.disable();
+
+	if (desc_for_display)
+	{
+
+	}
+
+	if (veh_is_selected)
+	{
+		// Maintenance tab buttons:
+		if (amount_of_upgrades > 0)
+		{
+			bt_upgrade_im.enable();
+			bt_upgrade_ov.enable();
+		}
+	}
+
 }
 
 
@@ -3810,6 +3832,7 @@ void vehicle_manager_t::build_upgrade_list()
 		}
 		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
 	}
+	display(scr_coord(0,0));
 }
 
 void vehicle_manager_t::build_desc_list()
@@ -4172,7 +4195,6 @@ void vehicle_manager_t::update_veh_selection()
 	}
 	display(scr_coord(0, 0));
 }
-
 
 
 uint32 vehicle_manager_t::get_rdwr_id()
