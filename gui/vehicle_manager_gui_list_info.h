@@ -46,6 +46,36 @@ public:
 
 #endif
 
+// "Livery" entries: Will list all liveries there is to a particular vehicle
+#ifndef gui_livery_info_h
+#define gui_livery_info_h
+class gui_livery_info_t : public gui_world_component_t
+{
+private:
+	player_t* player;
+	uint8 player_nr;
+	vehicle_desc_t* upgrade;
+	int entry_height;
+
+public:
+	gui_livery_info_t(vehicle_desc_t* desc_);
+
+	bool infowin_event(event_t const*) OVERRIDE;
+	bool selected = false;
+	bool open_info = false;
+
+	bool is_selected() { return selected; }
+	bool set_selection(bool sel) { return selected = sel; }
+	bool is_open_info() { return open_info; }
+	int get_entry_height() { return entry_height; }
+
+	vehicle_desc_t* get_upgrade() { return upgrade; }
+	void draw(scr_coord offset);
+
+};
+
+#endif
+
 // "Upgrade" entries: Will list the difference between old and new vehicle
 #ifndef gui_upgrade_info_h
 #define gui_upgrade_info_h

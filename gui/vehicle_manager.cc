@@ -173,9 +173,11 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_display_desc(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_display_veh(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_upgrade_to_from(NULL, SYSCOL_TEXT, gui_label_t::left),
+	lb_available_liveries(translator::translate("available_liveries:"), SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
-	scrolly_upgrade(&cont_upgrade)
+	scrolly_upgrade(&cont_upgrade),
+	scrolly_livery(&cont_livery)
 {
 	scr_coord coord_dummy = scr_coord(0, 0);
 	scr_size size_dummy = scr_size(0, 0);
@@ -374,6 +376,22 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	tabs_info.add_listener(this);
 	add_component(&tabs_info);
 	
+	// Economics tab:
+	{
+		// ---- Livery section ---- //
+
+		
+		cont_economics_info.add_component(&lb_available_liveries);
+
+		// Livery list
+		cont_livery.set_size(size_dummy);
+		scrolly_livery.set_show_scroll_y(true);
+		scrolly_livery.set_scroll_amount_y(40);
+		scrolly_livery.set_visible(true);
+		scrolly_livery.set_focusable(true);
+		cont_economics_info.add_component(&scrolly_livery);
+	}
+
 	// Maintenance tab:
 	{
 		// ---- Upgrade section ---- //
@@ -458,6 +476,10 @@ vehicle_manager_t::~vehicle_manager_t()
 	for (int i = 0; i <upgrade_info.get_count(); i++)
 	{
 		delete[] upgrade_info.get_element(i);
+	}
+	for (int i = 0; i < livery_info.get_count(); i++)
+	{
+		delete[] livery_info.get_element(i);
 	}
 	if (veh_is_selected)
 	{
@@ -739,6 +761,7 @@ void vehicle_manager_t::display_tab_objects()
 	}
 	else if (info_display == infotab_economics)
 	{
+		build_livery_list();
 	}
 	else if (info_display == infotab_maintenance)
 	{
@@ -2292,7 +2315,10 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	}
 	else if (info_display == infotab_economics)
 	{
-
+		if (update_veh_list)
+		{
+			build_livery_list();
+		}
 	}
 	else if (info_display == infotab_maintenance)
 	{
@@ -2556,7 +2582,22 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	int column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
 
 	int column_width = column_2 - column_1 - 5;
+	// Economics tab:
+	{
+		y_pos = D_MARGIN_TOP;
 
+		lb_available_liveries.set_pos(scr_coord(column_4, y_pos));
+
+		y_pos += LINESPACE * 2;
+
+		// Upgrade list
+		scrolly_livery.set_pos(scr_coord(column_4, y_pos));
+		scrolly_livery.set_size(scr_size(column_6 - column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
+		for (int i = 0; i < livery_info.get_count(); i++)
+		{
+			livery_info[i]->set_size(scr_size(column_6 - column_4 + column_width, livery_info[i]->get_size().h));
+		}
+	}
 	// Maintenance tab:
 	{
 		y_pos = D_MARGIN_TOP;
@@ -2584,10 +2625,10 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		{
 			upgrade_info[i]->set_size(scr_size(column_6 - column_4 + column_width, upgrade_info[i]->get_size().h));
 		}
-		initial_upgrade_entry_width = column_6 - column_4 + column_width;
 
 	}
 
+	initial_lower_section_entry_width = column_6 - column_4 + column_width;
 
 
 
@@ -3728,6 +3769,65 @@ bool vehicle_manager_t::compare_desc_amount(char* veh1, char* veh2)
 	}
 }
 
+void vehicle_manager_t::build_livery_list()
+{
+	cont_livery.remove_all();
+	livery_info.clear();
+	int ypos = 10;
+	amount_of_liveries = 0;
+	int box_height = LINESPACE * 3;
+
+	if (desc_for_display)
+	{
+		// Resize the livery_info vector
+		uint32 n = 0;
+		for (auto scheme : *welt->get_settings().get_livery_schemes())
+		{
+			if (scheme->is_available(welt->get_timeline_year_month()))
+			{
+				n++;
+			}
+		}
+		livery_info.resize(n);
+
+		// Fill the vector with actual entries
+		for (auto scheme : *welt->get_settings().get_livery_schemes())
+		{
+			if (scheme->is_available(welt->get_timeline_year_month()))
+			{
+				if (desc_for_display->check_livery(scheme->get_name()))
+				{
+
+					gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
+					linfo->set_pos(scr_coord(0, ypos));
+					linfo->set_size(scr_size(initial_lower_section_entry_width, max(linfo->get_entry_height(), box_height)));
+					livery_info.append(linfo);
+					cont_livery.add_component(linfo);
+					ypos += max(linfo->get_entry_height(), box_height);
+					amount_of_liveries++;
+
+				}
+			}
+		}
+		
+
+		// If no liveries available, display just the one it has
+		if (amount_of_liveries <= 0)
+		{
+			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
+			linfo->set_pos(scr_coord(0, ypos));
+			linfo->set_size(scr_size(initial_lower_section_entry_width, max(linfo->get_entry_height(), box_height)));
+			livery_info.append(linfo);
+			cont_livery.add_component(linfo);
+			ypos += max(linfo->get_entry_height(), box_height);
+			amount_of_liveries++;
+		}
+		livery_info.resize(amount_of_liveries);
+		cont_livery.set_size(scr_size(initial_lower_section_entry_width - 12, ypos));
+	}
+	display(scr_coord(0, 0));
+}
+
 void vehicle_manager_t::build_upgrade_list()
 {
 	cont_upgrade.remove_all();
@@ -3762,7 +3862,7 @@ void vehicle_manager_t::build_upgrade_list()
 						{
 							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
 							uinfo->set_pos(scr_coord(0, ypos));
-							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
+							uinfo->set_size(scr_size(initial_lower_section_entry_width, max(uinfo->get_entry_height(), box_height)));
 							upgrade_info.append(uinfo);
 							cont_upgrade.add_component(uinfo);
 							ypos += max(uinfo->get_entry_height(), box_height);
@@ -3800,7 +3900,7 @@ void vehicle_manager_t::build_upgrade_list()
 				{
 					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
 					uinfo->set_pos(scr_coord(0, ypos));
-					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
+					uinfo->set_size(scr_size(initial_lower_section_entry_width, max(uinfo->get_entry_height(), box_height)));
 					upgrade_info.append(uinfo);
 					cont_upgrade.add_component(uinfo);
 					ypos += max(uinfo->get_entry_height(), box_height);
@@ -3826,11 +3926,11 @@ void vehicle_manager_t::build_upgrade_list()
 			int box_height = LINESPACE * 3;
 			gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
 			sinfo->set_pos(scr_coord(0, ypos));
-			sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
+			sinfo->set_size(scr_size(initial_lower_section_entry_width, max(sinfo->get_entry_height(), box_height)));
 			cont_upgrade.add_component(sinfo);
 			ypos += max(sinfo->get_entry_height(), box_height);
 		}
-		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
+		cont_upgrade.set_size(scr_size(initial_lower_section_entry_width - 12, ypos));
 	}
 	display(scr_coord(0,0));
 }
@@ -4032,6 +4132,7 @@ void vehicle_manager_t::display_desc_list()
 	delete[] desc_amounts;
 	build_veh_list();
 	build_upgrade_list();
+	build_livery_list();
 }
 
 void vehicle_manager_t::build_veh_list()
@@ -4204,7 +4305,7 @@ uint32 vehicle_manager_t::get_rdwr_id()
 void vehicle_manager_t::rdwr(loadsave_t *file)
 {
 	scr_size size;
-	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff;
+	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff, livery_xoff, livery_yoff;
 	if (file->is_saving()) {
 		size = get_windowsize();
 		desc_xoff = scrolly_desc.get_scroll_x();
@@ -4213,6 +4314,8 @@ void vehicle_manager_t::rdwr(loadsave_t *file)
 		veh_yoff = scrolly_veh.get_scroll_y();
 		upgrade_xoff = scrolly_upgrade.get_scroll_x();
 		upgrade_yoff = scrolly_upgrade.get_scroll_y();
+		//livery_xoff = scrolly_livery.get_scroll_x();
+		//livery_yoff = scrolly_livery.get_scroll_y();
 	}
 	size.rdwr(file);
 
@@ -4230,6 +4333,7 @@ void vehicle_manager_t::rdwr(loadsave_t *file)
 		scrolly_desc.set_scroll_position(desc_xoff, desc_yoff);
 		scrolly_veh.set_scroll_position(veh_xoff, veh_yoff);
 		scrolly_upgrade.set_scroll_position(upgrade_xoff, upgrade_yoff);
+		//scrolly_livery.set_scroll_position(livery_xoff, livery_yoff);
 	}
 }
 

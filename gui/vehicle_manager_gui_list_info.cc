@@ -94,6 +94,194 @@ void gui_special_info_t::draw(scr_coord offset)
 	}
 }
 
+// ***************************************** //
+// Upgrade entries:
+// ***************************************** //
+gui_livery_info_t::gui_livery_info_t(vehicle_desc_t* upgrade_)
+{
+	this->upgrade = upgrade_;
+	player_nr = welt->get_active_player_nr();
+	draw(scr_coord(0, 0));
+}
+
+/**
+* Events werden hiermit an die GUI-components
+* gemeldet
+* @author Hj. Malthaner
+*/
+bool gui_livery_info_t::infowin_event(const event_t* ev)
+{
+	if (IS_LEFTRELEASE(ev)) {
+		selected = !selected;
+		return true;
+	}
+	else if (IS_RIGHTRELEASE(ev)) {
+		open_info = true;
+		return true;
+	}
+
+	return false;
+}
+
+
+/**
+* Draw the component
+* @author Hj. Malthaner
+*/
+void gui_livery_info_t::draw(scr_coord offset)
+{
+	clip_dimension clip = display_get_clip_wh();
+	if (!((pos.y + offset.y) > clip.yy || (pos.y + offset.y) < clip.y - 32)) {
+		// Name colors:
+		// Black:		ok!
+		// Dark blue:	obsolete
+		// Pink:		Can upgrade
+
+		int max_caracters = D_BUTTON_WIDTH / 5; // each character is ca 5 pixels wide.
+		int look_for_spaces_or_separators = 5;
+		char name[256] = "\0"; // Translated name of the vehicle. Will not be modified
+		char name_display[256] = "\0"; // The string that will be sent to the screen
+		int y_pos = 5;
+		int x_pos = 0;
+		int suitable_break;
+		int used_caracters = 0;
+		entry_height = 0;
+		COLOR_VAL text_color = COL_BLACK;
+		const uint16 month_now = welt->get_timeline_year_month();
+		bool upgrades = false;
+		bool retired = false;
+		bool only_as_upgrade = false;
+		int fillbox_height = 4 * LINESPACE;
+		bool display_bakground = false;
+		scr_coord_val x, y, w, h;
+		bool counting = true;
+		int lines_of_text = 0;
+		int width = get_client().get_width(); // Width of the scrolled list
+
+		sprintf(name, translator::translate(upgrade->get_name()));
+		sprintf(name_display, name);
+
+
+		const image_id image = upgrade->get_base_image();
+		display_get_base_image_offset(image, &x, &y, &w, &h);
+		const int xoff = 0;
+		int left = pos.x + offset.x + xoff + 4;
+
+
+		if (selected)
+		{
+			display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, max(h, fillbox_height), COL_DARK_BLUE, true);
+			text_color = COL_WHITE;
+		}
+
+
+		display_base_img(image, left - x, pos.y + offset.y + 21 - y - h / 2, player_nr, false, true);
+
+		int image_offset = min(w + 10, D_BUTTON_WIDTH);
+		if (w > image_offset)
+		{
+			display_bakground = true;
+		}
+		if (display_bakground)
+		{
+			if (selected)
+			{
+				display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, width - image_offset, LINESPACE * 3, COL_DARK_BLUE, 50);
+			}
+			else
+			{
+				display_blend_wh(offset.x + pos.x + image_offset, pos.y + offset.y + y_pos, width - image_offset, LINESPACE * 3, MN_GREY4, 50);
+			}
+		}
+
+		y_pos += 2;
+
+		// In order to show the name, but to prevent suuuuper long translations to ruin the layout, this will divide the name into several lines if necesary
+		if (name[max_caracters] != '\0')
+		{
+			// Ok, our name is too long to be displayed in one line. Time to chup it up
+			for (int i = 1; i <= 3; i++)
+			{
+				suitable_break = max_caracters;
+				if (name_display[max_caracters] == '\0')
+				{// Finally last line of name
+					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + y_pos, name_display, ALIGN_LEFT, text_color, true);
+					y_pos += LINESPACE;
+					break;
+				}
+				else
+				{
+					bool natural_separator = false;
+					for (int j = 0; j < look_for_spaces_or_separators; j++)
+					{	// Move down to second line
+						if (name_display[max_caracters - j] == '(' || name_display[max_caracters - j] == '{' || name_display[max_caracters - j] == '[')
+						{
+							suitable_break = max_caracters - j;
+							used_caracters += suitable_break;
+							name_display[suitable_break] = '\0';
+							natural_separator = true;
+							break;
+						}
+						// Stay on upper line
+						else if (name_display[max_caracters - j] == ' ' || name_display[max_caracters - j] == '-' || name_display[max_caracters - j] == '/' ||/*name_display[max_caracters - j] == '.' || */ name_display[max_caracters - j] == ',' || name_display[max_caracters - j] == ';' || name_display[max_caracters - j] == ')' || name_display[max_caracters - j] == '}' || name_display[max_caracters - j] == ']')
+						{
+							suitable_break = max_caracters - j + 1;
+							used_caracters += suitable_break;
+							name_display[suitable_break] = '\0';
+							natural_separator = true;
+							break;
+						}
+					}
+					// No suitable breakpoint, divide line with "-"
+					if (!natural_separator)
+					{
+						suitable_break = max_caracters;
+						used_caracters += suitable_break;
+						name_display[suitable_break] = '-';
+						name_display[suitable_break + 1] = '\0';
+					}
+
+					display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + y_pos, name_display, ALIGN_LEFT, text_color, true);
+
+					// Reset the string
+					name_display[0] = '\0';
+					for (int j = 0; j < 256; j++)
+					{
+						name_display[j] = name[used_caracters + j];
+					}
+				}
+				y_pos += LINESPACE;
+			}
+		}
+		else
+		{ // Ok, name is short enough to fit one line
+			display_proportional_clip(pos.x + offset.x + image_offset, pos.y + offset.y + y_pos, name, ALIGN_LEFT, text_color, true);
+		}
+
+
+		y_pos = 2;
+		x_pos = width - 14;
+
+		// Byggår
+		if (counting)
+		{
+			lines_of_text++;
+		}
+		else
+		{
+			char year[50];
+			sprintf(year, "%s: %u", translator::translate("available_until"), upgrade->get_retire_year_month() / 12);
+			display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, year, ALIGN_RIGHT, text_color, true);
+			y_pos += LINESPACE;
+		}
+
+		fillbox_height = lines_of_text * LINESPACE;
+
+		entry_height = fillbox_height + LINESPACE;
+
+	}
+}
+
 
 
 // ***************************************** //

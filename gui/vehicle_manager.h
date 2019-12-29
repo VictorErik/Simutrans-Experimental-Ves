@@ -97,8 +97,8 @@ private:
 	player_t *player;
 	uint8 player_nr;
 
-	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_maintenance_info, cont_economics_info, dummy;
-	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade;
+	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_maintenance_info, cont_economics_info, dummy;
+	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade, scrolly_livery;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_vehicletype;
 	gui_tab_panel_t tabs_info;
@@ -116,7 +116,7 @@ private:
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
-	gui_label_t lb_upgrade_to_from;
+	gui_label_t lb_upgrade_to_from, lb_available_liveries;
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
@@ -126,7 +126,10 @@ private:
 
 	bool display_upgrade_into;
 	int amount_of_upgrades;
-	int initial_upgrade_entry_width;
+	int amount_of_liveries;
+
+	int initial_lower_section_entry_width;
+
 
 	static bool show_available_vehicles;
 	static bool select_all;
@@ -166,6 +169,9 @@ private:
 
 	// List of upgrades that is displayed
 	vector_tpl<gui_upgrade_info_t *> upgrade_info;
+
+	// List of upgrades that is displayed
+	vector_tpl<gui_livery_info_t*> livery_info;
 
 	// Array of bool's to keep track of which veh's is selected
 	bool* veh_selection;
@@ -281,6 +287,7 @@ public:
 	void display_veh_list();
 
 	void build_upgrade_list();
+	void build_livery_list();
 
 	void draw_general_information(const scr_coord& pos);
 	void draw_maintenance_information(const scr_coord& pos);
