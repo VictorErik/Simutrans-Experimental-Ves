@@ -171,7 +171,7 @@ private:
 	// List of upgrades that is displayed
 	vector_tpl<gui_upgrade_info_t *> upgrade_info;
 
-	// List of upgrades that is displayed
+	// List of liveries that is displayed
 	vector_tpl<gui_livery_info_t*> livery_info;
 
 	// Array of bool's to keep track of which veh's is selected
@@ -188,7 +188,6 @@ private:
 
 
 	// This section defines some sizes
-	// For some strange reason, having "extra_width = get_windowsize().w - MIN_WIDTH" directly generates strange results...
 	int minwidth;
 	int minheight;
 	int width;
