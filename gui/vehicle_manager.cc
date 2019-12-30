@@ -2512,10 +2512,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Define the columns for upper section
 	// Header columns:
 	h_column_1 = D_MARGIN_LEFT;
-	label_length = display_calc_proportional_string_len_width(text_show_all_vehicles, -1);
-	h_column_2 = h_column_1 + label_length + 30;
-	label_length = display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1);
-	h_column_3 = h_column_2 + label_length + 30;
+	h_column_2 = h_column_1 + display_calc_proportional_string_len_width(text_show_all_vehicles, -1) + 30;
+	h_column_3 = h_column_2 + display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1) + 30;
 
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
@@ -2525,7 +2523,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	u_column_2 = u_column_1 + label_length + 5 + (extra_width / 6);
 	u_column_3 = u_column_2 + combobox_width + 5 + (extra_width / 6);
 
-	int y_pos = 5;
+	header_section = 5;
+	int y_pos = header_section;
 
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
@@ -2539,8 +2538,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Show obsolete vehicles button
 	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_3, y_pos));
 	bt_show_obsolete_vehicles.set_size(scr_size(width - h_column_3, D_BUTTON_HEIGHT));
-
 	y_pos += D_BUTTON_HEIGHT;
+
+	upper_section = y_pos;
 
 	// Waytype tab panel
 	tabs_waytype.set_pos(scr_coord(u_column_1, y_pos));
@@ -2571,6 +2571,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	combo_desc_display.set_pos(scr_coord(u_column_3, y_pos));
 	combo_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_desc_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
+
+	middle_section = y_pos;
 
 	// ----------- Right hand side upper labels, buttons and comboboxes -----------------//
 	// Define the columns for use in the "Veh" section
@@ -2613,6 +2615,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	combo_veh_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 	y_pos += D_BUTTON_HEIGHT * 2;
 
+	middle_section = max(y_pos, middle_section);
+	y_pos = middle_section;
 
 	// ----------- The two lists of vehicles and their counting labels -----------------//
 	// "Desc" list
@@ -2649,6 +2653,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	bt_veh_next_page.set_pos(scr_coord(RIGHT_HAND_COLUMN + VEHICLE_NAME_COLUMN_WIDTH - gui_theme_t::gui_arrow_right_size.w + extra_width, y_pos));
 
 	y_pos += D_BUTTON_HEIGHT;
+	lower_section = y_pos;
 
 	// ----------- Lower section info box with tab panels, buttons, labels and whatnot -----------------//
 	// Lower section tab panels

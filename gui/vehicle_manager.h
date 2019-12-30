@@ -205,7 +205,12 @@ private:
 	int extra_width;
 	int extra_height;
 
-	// Define the columns for upper section
+	// Upper, middle and lower section
+	int header_section;
+	int upper_section;
+	int middle_section;
+	int lower_section;
+
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	int label_length;
 	int combobox_width;
@@ -220,6 +225,8 @@ private:
 	int u_column_1;
 	int u_column_2;
 	int u_column_3;
+
+	// (Middle section doesnt use columns)
 	
 	// Lower columns
 	int l_column_1;
