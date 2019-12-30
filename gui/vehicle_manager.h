@@ -106,7 +106,7 @@ private:
 	gui_combobox_t combo_sorter_veh;
 	gui_combobox_t combo_display_desc, combo_display_veh;
 
-	button_t bt_show_available_vehicles;
+	button_t bt_show_available_vehicles, bt_show_out_of_production_vehicles, bt_show_obsolete_vehicles;
 	button_t bt_select_all, bt_hide_in_depot;
 	button_t bt_veh_next_page, bt_veh_prev_page, bt_desc_next_page, bt_desc_prev_page;
 	button_t bt_upgrade_im, bt_upgrade_ov;
@@ -122,6 +122,10 @@ private:
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
 
+	char text_show_all_vehicles[50];
+	char text_show_out_of_production_vehicles[50];
+	char text_show_obsolete_vehicles[50];
+
 	char sortby_text[50];
 	char displayby_text[50];
 
@@ -134,6 +138,8 @@ private:
 
 
 	static bool show_available_vehicles;
+	static bool show_out_of_production_vehicles;
+	static bool show_obsolete_vehicles;
 	static bool select_all;
 	static bool hide_veh_in_depot;
 	static bool show_obsolete_liveries;
@@ -203,6 +209,12 @@ private:
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	int label_length;
 	int combobox_width;
+
+	// Header columns
+	int h_column_1;
+	int h_column_2;
+	int h_column_3;
+	int h_column_4;
 
 	// Upper columns
 	int u_column_1;

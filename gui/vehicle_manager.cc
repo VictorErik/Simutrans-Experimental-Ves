@@ -85,6 +85,8 @@ static vehicle_desc_t* desc_for_display = NULL;
 bool vehicle_manager_t::desc_sortreverse = false;
 bool vehicle_manager_t::veh_sortreverse = false;
 bool vehicle_manager_t::show_available_vehicles = false;
+bool vehicle_manager_t::show_out_of_production_vehicles = false;
+bool vehicle_manager_t::show_obsolete_vehicles = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
 bool vehicle_manager_t::show_obsolete_liveries = false;
@@ -185,11 +187,33 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
-	bt_show_available_vehicles.init(button_t::square_state, translator::translate("show_available_vehicles"), coord_dummy, scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	sprintf(text_show_all_vehicles, translator::translate("show_available_vehicles:"));
+	bt_show_available_vehicles.init(button_t::square_state, text_show_all_vehicles, coord_dummy, size_dummy);
 	bt_show_available_vehicles.add_listener(this);
 	bt_show_available_vehicles.set_tooltip(translator::translate("tick_to_show_all_available_vehicles"));
 	bt_show_available_vehicles.pressed = show_available_vehicles;
 	add_component(&bt_show_available_vehicles);
+
+	
+	// Show vehicles out of production button
+	sprintf(text_show_out_of_production_vehicles, translator::translate("show_vehicles_out_of_production:"));
+	bt_show_out_of_production_vehicles.init(button_t::square_state, text_show_out_of_production_vehicles, coord_dummy, size_dummy);
+	if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
+		bt_show_out_of_production_vehicles.add_listener(this);
+		bt_show_out_of_production_vehicles.set_tooltip(translator::translate("tick_to_show_vehicles_not_being_produced_anymore"));
+		bt_show_out_of_production_vehicles.pressed = show_out_of_production_vehicles;
+		add_component(&bt_show_out_of_production_vehicles);
+	}
+		
+	// Show obsolete vehicles button
+	sprintf(text_show_obsolete_vehicles, translator::translate("show_obsolete_vehicles:"));
+	bt_show_obsolete_vehicles.init(button_t::square_state, text_show_obsolete_vehicles, coord_dummy, size_dummy);
+	if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
+		bt_show_obsolete_vehicles.add_listener(this);
+		bt_show_obsolete_vehicles.set_tooltip(translator::translate("tick_to_show_all_obsolete_vehicles"));
+		bt_show_obsolete_vehicles.pressed = show_obsolete_vehicles;
+		add_component(&bt_show_obsolete_vehicles);
+	}
 
 	// Waytype tab panel
 	tabs_waytype.add_listener(this);
@@ -509,6 +533,22 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	if (comp == &bt_show_available_vehicles) {
 		bt_show_available_vehicles.pressed = !bt_show_available_vehicles.pressed;
 		show_available_vehicles = bt_show_available_vehicles.pressed;
+		update_tabs();
+		save_previously_selected_desc();
+		page_turn_desc = false;
+		build_desc_list();
+	}
+	if (comp == &bt_show_out_of_production_vehicles) {
+		bt_show_out_of_production_vehicles.pressed = !bt_show_out_of_production_vehicles.pressed;
+		show_out_of_production_vehicles = bt_show_out_of_production_vehicles.pressed;
+		update_tabs();
+		save_previously_selected_desc();
+		page_turn_desc = false;
+		build_desc_list();
+	}
+	if (comp == &bt_show_obsolete_vehicles) {
+		bt_show_obsolete_vehicles.pressed = !bt_show_obsolete_vehicles.pressed;
+		show_obsolete_vehicles = bt_show_obsolete_vehicles.pressed;
 		update_tabs();
 		save_previously_selected_desc();
 		page_turn_desc = false;
@@ -2462,22 +2502,36 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	extra_height = height - minheight;
 
 	// Define the columns for upper section
+	// Header columns:
+	h_column_1 = D_MARGIN_LEFT;
+	label_length = display_calc_proportional_string_len_width(text_show_all_vehicles, -1);
+	h_column_2 = h_column_1 + label_length + 30;
+	label_length = display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1);
+	h_column_3 = h_column_2 + label_length + 30;
+
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
 	combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
-
-	// Now the actual columns:
+	// Upper section colums
 	u_column_1 = D_MARGIN_LEFT;
 	u_column_2 = u_column_1 + label_length + 5 + (extra_width / 6);
 	u_column_3 = u_column_2 + combobox_width + 5 + (extra_width / 6);
 
 	int y_pos = 5;
 
-	
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
-	bt_show_available_vehicles.set_pos(scr_coord(u_column_1, y_pos));
-	bt_show_available_vehicles.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+	bt_show_available_vehicles.set_pos(scr_coord(h_column_1, y_pos));
+	bt_show_available_vehicles.set_size(scr_size(h_column_2 - h_column_1, D_BUTTON_HEIGHT));
+
+	// Show vehicles out of production button
+	bt_show_out_of_production_vehicles.set_pos(scr_coord(h_column_2, y_pos));
+	bt_show_out_of_production_vehicles.set_size(scr_size(h_column_3 - h_column_2, D_BUTTON_HEIGHT));
+
+	// Show obsolete vehicles button
+	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_3, y_pos));
+	bt_show_obsolete_vehicles.set_size(scr_size(width - h_column_3, D_BUTTON_HEIGHT));
+
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Waytype tab panel
@@ -2708,56 +2762,74 @@ void vehicle_manager_t::update_tabs()
 	{
 		if (maglev_t::default_maglev) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::maglev_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now,welt))) {
+									
+					//if (!info->is_future(month_now) && !info->is_retired(month_now)) {
 					maglev = true;
 				}
 			}
 		}
 		if (monorail_t::default_monorail) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::monorail_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					monorail = true;
 				}
 			}
 		}
 		if (schiene_t::default_schiene) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::track_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					train = true;
 				}
 			}
 		}
 		if (narrowgauge_t::default_narrowgauge) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::narrowgauge_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					narrowgauge = true;
 				}
 			}
 		}
 		if (!vehicle_builder_t::get_info(tram_wt).empty()) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::tram_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					tram = true;
 				}
 			}
 		}
 		if (strasse_t::default_strasse) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::road_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					truck = true;
 				}
 			}
 		}
 		if (!vehicle_builder_t::get_info(water_wt).empty()) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::water_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					ship = true;
 				}
 			}
 		}
 		if (runway_t::default_runway) {
 			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(waytype_t::air_wt)) {
-				if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+				if ((!info->is_future(month_now) && !info->is_retired(month_now))
+					|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+					|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
 					air = true;
 				}
 			}
@@ -2922,7 +2994,10 @@ void vehicle_manager_t::update_vehicle_type_tabs()
 	if (show_available_vehicles)
 	{
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
-			if (!info->is_future(month_now) && !info->is_retired(month_now)) {
+			if ((!info->is_future(month_now) && !info->is_retired(month_now))
+				|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+				|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))) {
+			//if (!info->is_future(month_now) && !info->is_retired(month_now)) {
 				if (return_desc_category(info) == 1)
 				{
 					display_passenger_tab = true;
@@ -4010,7 +4085,11 @@ void vehicle_manager_t::build_desc_list()
 	// If true, populate the list with all available desc's
 	if (show_available_vehicles) {
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
-			if ((!info->is_future(month_now) && !info->is_retired(month_now)) && is_desc_displayable(info)) {
+			//if ((!info->is_future(month_now) && !info->is_retired(month_now)) && is_desc_displayable(info)) {
+			if ((!info->is_future(month_now) && !info->is_retired(month_now))
+				|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
+				|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))
+				&& is_desc_displayable(info)) {
 				desc_list.append(info);
 			}
 		}
