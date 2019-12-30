@@ -4102,10 +4102,9 @@ void vehicle_manager_t::build_desc_list()
 	// If true, populate the list with all available desc's
 	if (show_available_vehicles) {
 		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type)) {
-			//if ((!info->is_future(month_now) && !info->is_retired(month_now)) && is_desc_displayable(info)) {
-			if ((!info->is_future(month_now) && !info->is_retired(month_now))
+			if (((!info->is_future(month_now) && !info->is_retired(month_now))
 				|| (show_out_of_production_vehicles && info->is_retired(month_now) && !info->is_obsolete(month_now, welt))
-				|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt))
+				|| (show_obsolete_vehicles && info->is_obsolete(month_now, welt)))
 				&& is_desc_displayable(info)) {
 				desc_list.append(info);
 			}
