@@ -2595,7 +2595,6 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 	// "Veh" sorting label, combobox and reverse sort button
 	lb_veh_sortby.set_pos(scr_coord(u_column_1, y_pos));
-	lb_veh_sortby.set_size(D_BUTTON_SIZE);
 	combo_sorter_veh.set_pos(scr_coord(u_column_2, y_pos));
 	combo_sorter_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_sorter_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
