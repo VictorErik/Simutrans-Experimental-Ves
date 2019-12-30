@@ -4003,7 +4003,10 @@ void vehicle_manager_t::build_upgrade_list()
 					vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
 					if (upgrade)
 					{
-						if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+						//if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+						if ((!upgrade->is_future(month_now) && !upgrade->is_retired(month_now))
+							|| (show_out_of_production_vehicles && upgrade->is_retired(month_now) && !upgrade->is_obsolete(month_now, welt))
+							|| (show_obsolete_vehicles && upgrade->is_obsolete(month_now, welt)))
 						{
 							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
 							uinfo->set_pos(scr_coord(0, ypos));
