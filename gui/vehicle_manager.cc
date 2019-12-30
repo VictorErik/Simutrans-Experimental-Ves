@@ -3760,24 +3760,42 @@ void vehicle_manager_t::build_livery_list()
 		livery_info.resize(n);
 
 		// Fill the vector with actual entries
-		for (auto scheme : *welt->get_settings().get_livery_schemes())
-		{
-			if (scheme->is_available(welt->get_timeline_year_month()))
-			{
-				if (desc_for_display->check_livery(scheme->get_name()))
-				{
 
-					gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
-					linfo->set_pos(scr_coord(0, ypos));
-					linfo->set_size(scr_size(initial_lower_section_entry_width, max(linfo->get_entry_height(), box_height)));
-					livery_info.append(linfo);
-					cont_livery.add_component(linfo);
-					ypos += max(linfo->get_entry_height(), box_height);
-					amount_of_liveries++;
+		// The following code is in pieces and does not work. "scheme" appears to not know its children schemes, and getting the available schemes out of the vehicle is cumbersome
+		//int i = 0;
+		//for (auto scheme : *welt->get_settings().get_livery_schemes())
+		//{
+		//	if (scheme->is_available(welt->get_timeline_year_month()))
+		//	{
+		//		if (desc_for_display->check_livery(scheme[i].name.c_str()))
+		//		{
 
-				}
-			}
-		}
+		//			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
+		//			linfo->set_pos(scr_coord(0, ypos));
+		//			linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
+		//			livery_info.append(linfo);
+		//			cont_livery.add_component(linfo);
+		//			ypos += max(linfo->get_entry_height(), box_height);
+		//			amount_of_liveries++;
+
+		//		}
+		//	}
+		//}
+
+		//// This code is from livery_scheme.cc
+		//const char* livery_name = NULL;
+		//uint16 latest_valid_intro_date = 0;
+		////for (uint32 i = 0; i < liveries.get_count(); i++)
+		//for (auto scheme : *welt->get_settings().get_livery_schemes())
+		//{
+		//	if (date >= liveries[i].intro_date && desc->check_livery(liveries[i].name.c_str()) && liveries[i].intro_date > latest_valid_intro_date)
+		//	{
+		//		// This returns the most recent livery available for this vehicle that is not in the future.
+		//		latest_valid_intro_date = liveries[i].intro_date;
+		//		livery_name = liveries[i].name.c_str();
+		//	}
+		//}
+		//return livery_name;
 		
 
 		// If no liveries available, display just the one it has
