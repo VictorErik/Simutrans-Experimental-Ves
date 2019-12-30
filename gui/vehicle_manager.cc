@@ -1592,23 +1592,15 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	const uint16 month_now_absolute = welt->get_current_month();
 	const uint16 month_now = welt->get_timeline_year_month();
 	player_nr = welt->get_active_player_nr();
-
-	int column_1 = D_MARGIN_LEFT;
-	int column_2 = (width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6;
-	int column_3 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 2;
-	int column_4 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 3;
-	int column_5 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 4;
-	int column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
-	int column_7 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 6; // Right hand edge of the window. Only things left from here!!
 		
 	buf[0] = '\0';
 	if (desc_info_text) {
 	}
 
 
-	display_ddd_box_clip(pos.x + column_3 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
+	display_ddd_box_clip(pos.x + l_column_3 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
-	display_ddd_box_clip(pos.x + column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
+	display_ddd_box_clip(pos.x + l_column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
 
 }
@@ -1624,9 +1616,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	const uint16 month_now_absolute = welt->get_current_month();
 	const uint16 month_now = welt->get_timeline_year_month();
 	player_nr = welt->get_active_player_nr();
-	int column_1 = 0;
-	int column_2 = D_BUTTON_WIDTH * 4 + D_MARGIN_LEFT;
-	int column_3 = D_BUTTON_WIDTH * 6 + D_MARGIN_LEFT;
 
 	buf[0] = '\0';
 	if (desc_info_text) {
@@ -1698,16 +1687,16 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 		{
 			sprintf(buf, translator::translate("age:"));
 		}
-		display_proportional_clip(pos.x + pos_x, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+		display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 
 
 		pos_y += LINESPACE * 5;
 
 
-		pos_x = column_2;
+		pos_x = l_column_2;
 		pos_y = 0;
 
-		pos_x = column_3;
+		pos_x = l_column_3;
 		pos_y = 0;
 
 
@@ -2173,6 +2162,9 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	bool update_desc_list = false;
 	bool no_desc_selected = true;
 
+	// Draw some layout
+	//display_ddd_box_clip(pos.x + column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
+
 	// This handles the selection of the vehicles in the "desc" section
 	{
 		for (int i = 0; i < desc_info.get_count(); i++)
@@ -2428,70 +2420,70 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	gui_frame_t::set_windowsize(size);
 
 	// For some strange reason, having "extra_width = get_windowsize().w - MIN_WIDTH" directly generates strange results...
-	int minwidth = MIN_WIDTH;
-	int minheight = MIN_HEIGHT;
-	int width = get_windowsize().w;
-	int height = get_windowsize().h;
+	minwidth = MIN_WIDTH;
+	minheight = MIN_HEIGHT;
+	width = get_windowsize().w;
+	height = get_windowsize().h;
 
 	// The added width and height to the window from default
-	int extra_width = width - minwidth;
-	int extra_height = height - minheight;
+	extra_width = width - minwidth;
+	extra_height = height - minheight;
 
 	// Define the columns for upper section
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
-	int label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
-	int combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
+	label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
+	combobox_width = (VEHICLE_NAME_COLUMN_WIDTH - label_length - 15) / 2;
 
 	// Now the actual columns:
-	int column_1 = D_MARGIN_LEFT;
-	int column_2 = column_1 + label_length + 5 + (extra_width / 6);
-	int column_3 = column_2 + combobox_width + 5 + (extra_width / 6);
+	u_column_1 = D_MARGIN_LEFT;
+	u_column_2 = u_column_1 + label_length + 5 + (extra_width / 6);
+	u_column_3 = u_column_2 + combobox_width + 5 + (extra_width / 6);
 
 	int y_pos = 5;
 
 	
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
-	bt_show_available_vehicles.set_pos(scr_coord(column_1, y_pos));
+	bt_show_available_vehicles.set_pos(scr_coord(u_column_1, y_pos));
 	bt_show_available_vehicles.set_size(scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Waytype tab panel
-	tabs_waytype.set_pos(scr_coord(column_1, y_pos));
+	tabs_waytype.set_pos(scr_coord(u_column_1, y_pos));
 	tabs_waytype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width / 2), SCL_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT * 2;
 
 	// Vehicle type tab panel
-	tabs_vehicletype.set_pos(scr_coord(column_1, y_pos));
+	tabs_vehicletype.set_pos(scr_coord(u_column_1, y_pos));
 	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width/2), SCL_HEIGHT));
 	y_pos += (D_BUTTON_HEIGHT*2) + 6;
 
 	// "Desc" sorting label, combobox and reverse sort button
-	lb_desc_sortby.set_pos(scr_coord(column_1, y_pos));
-	combo_sorter_desc.set_pos(scr_coord(column_2, y_pos));
+	lb_desc_sortby.set_pos(scr_coord(u_column_1, y_pos));
+	combo_sorter_desc.set_pos(scr_coord(u_column_2, y_pos));
 	combo_sorter_desc.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_sorter_desc.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
-	bt_desc_sortreverse.set_pos(scr_coord(column_3, y_pos));
+	bt_desc_sortreverse.set_pos(scr_coord(u_column_3, y_pos));
 	bt_desc_sortreverse.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// "Desc" display label, combobox and textfield/combobox
-	lb_display_desc.set_pos(scr_coord(column_1, y_pos));
-	combo_display_desc.set_pos(scr_coord(column_2, y_pos));
+	lb_display_desc.set_pos(scr_coord(u_column_1, y_pos));
+	combo_display_desc.set_pos(scr_coord(u_column_2, y_pos));
 	combo_display_desc.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_display_desc.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
-	ti_desc_display.set_pos(scr_coord(column_3, y_pos));
+	ti_desc_display.set_pos(scr_coord(u_column_3, y_pos));
 	ti_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
-	combo_desc_display.set_pos(scr_coord(column_3, y_pos));
+	combo_desc_display.set_pos(scr_coord(u_column_3, y_pos));
 	combo_desc_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_desc_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 
 	// ----------- Right hand side upper labels, buttons and comboboxes -----------------//
 	// Define the columns for use in the "Veh" section
 	y_pos = 5;
-	column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
-	column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
-	column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	u_column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
+	u_column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	u_column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
 
 	y_pos += D_BUTTON_HEIGHT;
 	y_pos += D_BUTTON_HEIGHT;
@@ -2499,30 +2491,30 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Diverse buttons
-	bt_select_all.set_pos(scr_coord(column_1, y_pos));
-	bt_select_all.set_size(scr_size(column_2 - column_1, D_BUTTON_HEIGHT));
-	bt_hide_in_depot.set_pos(scr_coord(column_2, y_pos));
-	bt_hide_in_depot.set_size(scr_size(column_3 - column_2, D_BUTTON_HEIGHT));
+	bt_select_all.set_pos(scr_coord(u_column_1, y_pos));
+	bt_select_all.set_size(scr_size(u_column_2 - u_column_1, D_BUTTON_HEIGHT));
+	bt_hide_in_depot.set_pos(scr_coord(u_column_2, y_pos));
+	bt_hide_in_depot.set_size(scr_size(u_column_3 - u_column_2, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT + 6;
 
 	// "Veh" sorting label, combobox and reverse sort button
-	lb_veh_sortby.set_pos(scr_coord(column_1, y_pos));
+	lb_veh_sortby.set_pos(scr_coord(u_column_1, y_pos));
 	lb_veh_sortby.set_size(D_BUTTON_SIZE);
-	combo_sorter_veh.set_pos(scr_coord(column_2, y_pos));
+	combo_sorter_veh.set_pos(scr_coord(u_column_2, y_pos));
 	combo_sorter_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_sorter_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
-	bt_veh_sortreverse.set_pos(scr_coord(column_3, y_pos));
+	bt_veh_sortreverse.set_pos(scr_coord(u_column_3, y_pos));
 	bt_veh_sortreverse.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// "Veh" display label, combobox and textfield/combobox
-	lb_display_veh.set_pos(scr_coord(column_1, y_pos));
-	combo_display_veh.set_pos(scr_coord(column_2, y_pos));
+	lb_display_veh.set_pos(scr_coord(u_column_1, y_pos));
+	combo_display_veh.set_pos(scr_coord(u_column_2, y_pos));
 	combo_display_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_display_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
-	ti_veh_display.set_pos(scr_coord(column_3, y_pos));
+	ti_veh_display.set_pos(scr_coord(u_column_3, y_pos));
 	ti_veh_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
-	combo_veh_display.set_pos(scr_coord(column_3, y_pos));
+	combo_veh_display.set_pos(scr_coord(u_column_3, y_pos));
 	combo_veh_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_veh_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 	y_pos += D_BUTTON_HEIGHT * 2;
@@ -2577,59 +2569,60 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// The information tabs have objects attached to some containers. Rearrange the columns into even spaces we can put buttons, lists and labels into
 
 	//y_pos -= tabs_info.get_pos().y + D_BUTTON_HEIGHT * 2;
-	column_1 = D_MARGIN_LEFT;
-	column_2 = (width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6;
-	column_3 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 2;
-	int column_4 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 3;
-	int column_5 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 4;
-	int column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
+	l_column_1 = D_MARGIN_LEFT;
+	l_column_2 = (width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6;
+	l_column_3 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 2;
+	l_column_4 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 3;
+	l_column_5 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 4;
+	l_column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
+	l_column_7 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 6;
 
-	int column_width = column_2 - column_1 - 5;
+	int column_width = l_column_2 - l_column_1 - 5;
 	// Economics tab:
 	{
 		y_pos = D_MARGIN_TOP;
 
-		lb_available_liveries.set_pos(scr_coord(column_5, y_pos));
+		lb_available_liveries.set_pos(scr_coord(l_column_5, y_pos));
 
 		y_pos += LINESPACE * 2;
 
 		// Livery list
-		scrolly_livery.set_pos(scr_coord(column_5, y_pos));
-		scrolly_livery.set_size(scr_size(column_6 - column_5 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_livery.set_pos(scr_coord(l_column_5, y_pos));
+		scrolly_livery.set_size(scr_size(l_column_6 - l_column_5 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 		for (int i = 0; i < livery_info.get_count(); i++)
 		{
-			livery_info[i]->set_size(scr_size(column_6 - column_5 + column_width, livery_info[i]->get_size().h));
+			livery_info[i]->set_size(scr_size(l_column_6 - l_column_5 + column_width, livery_info[i]->get_size().h));
 		}
-		initial_livery_entry_width = column_6 - column_5 + column_width;
+		initial_livery_entry_width = l_column_6 - l_column_5 + column_width;
 	}
 	// Maintenance tab:
 	{
 		y_pos = D_MARGIN_TOP;
 
-		bt_upgrade_im.set_pos(scr_coord(column_3, y_pos));
+		bt_upgrade_im.set_pos(scr_coord(l_column_3, y_pos));
 		bt_upgrade_im.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 
 		y_pos += D_BUTTON_HEIGHT + 5;
 
-		bt_upgrade_ov.set_pos(scr_coord(column_3, y_pos));
+		bt_upgrade_ov.set_pos(scr_coord(l_column_3, y_pos));
 		bt_upgrade_ov.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 
 		y_pos = D_MARGIN_TOP;
 
-		bt_upgrade_to_from.set_pos(scr_coord(column_4, y_pos));
-		lb_upgrade_to_from.set_pos(scr_coord(column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
+		bt_upgrade_to_from.set_pos(scr_coord(l_column_4, y_pos));
+		lb_upgrade_to_from.set_pos(scr_coord(l_column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
 
 		y_pos += LINESPACE * 2;
 
 		// Upgrade list
 		//cont_upgrade.set_size(scr_size(UPGRADE_LIST_COLUMN_WIDTH, UPGRADE_LIST_COLUMN_HEIGHT));
-		scrolly_upgrade.set_pos(scr_coord(column_4, y_pos));
-		scrolly_upgrade.set_size(scr_size(column_6 - column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
+		scrolly_upgrade.set_pos(scr_coord(l_column_4, y_pos));
+		scrolly_upgrade.set_size(scr_size(l_column_6 - l_column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 		for (int i = 0; i < upgrade_info.get_count(); i++)
 		{
-			upgrade_info[i]->set_size(scr_size(column_6 - column_4 + column_width, upgrade_info[i]->get_size().h));
+			upgrade_info[i]->set_size(scr_size(l_column_6 - l_column_4 + column_width, upgrade_info[i]->get_size().h));
 		}
-		initial_upgrade_entry_width = column_6 - column_4 + column_width;
+		initial_upgrade_entry_width = l_column_6 - l_column_4 + column_width;
 	}
 
 

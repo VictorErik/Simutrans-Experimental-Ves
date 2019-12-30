@@ -187,8 +187,36 @@ private:
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;
 
 
+	// This section defines some sizes
+	// For some strange reason, having "extra_width = get_windowsize().w - MIN_WIDTH" directly generates strange results...
+	int minwidth;
+	int minheight;
+	int width;
+	int height;
 
+	// The added width and height to the window from default
+	int extra_width;
+	int extra_height;
+
+	// Define the columns for upper section
+	// Start by determining which of these translations is the longest, since the GUI depends upon it:
+	int label_length;
+	int combobox_width;
+
+	// Upper columns
+	int u_column_1;
+	int u_column_2;
+	int u_column_3;
 	
+	// Lower columns
+	int l_column_1;
+	int l_column_2;
+	int l_column_3;
+	int l_column_4;
+	int l_column_5;
+	int l_column_6;
+	int l_column_7; // Right hand edge of the window. Only things left from here!!
+
 	void display(scr_coord pos);
 
 	uint32 amount_desc;
