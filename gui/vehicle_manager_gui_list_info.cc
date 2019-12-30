@@ -364,9 +364,11 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			
 			if (!counting)
 			{
+				fillbox_height = max(h, fillbox_height);
+
 				if (selected)
 				{
-					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, max(h, fillbox_height), COL_DARK_BLUE, true);
+					display_fillbox_wh_clip(offset.x + pos.x, offset.y + pos.y + 1, width, fillbox_height, COL_DARK_BLUE, true);
 					text_color = COL_WHITE;
 				}
 
@@ -893,8 +895,8 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 
 
 		y_pos += LINESPACE * 2;
-		//entry_height = max(h, y_pos);
-		entry_height = fillbox_height+LINESPACE;
+		entry_height = max(h, fillbox_height) + LINESPACE;
+		//entry_height = fillbox_height+LINESPACE;
 
 	}
 }
