@@ -2240,7 +2240,8 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	bool no_desc_selected = true;
 
 	// Draw some layout
-	//display_ddd_box_clip(pos.x + column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
+	int middle_line = D_MARGIN_LEFT + RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	display_ddd_box_clip(pos.x + middle_line - 5, pos.y + header_section + upper_section, 0, height - lower_section + extra_height, MN_GREY0, MN_GREY4); // Vertical separator
 
 	// This handles the selection of the vehicles in the "desc" section
 	{
@@ -2540,8 +2541,6 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	bt_show_obsolete_vehicles.set_size(scr_size(width - h_column_3, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
-	upper_section = y_pos;
-
 	// Waytype tab panel
 	tabs_waytype.set_pos(scr_coord(u_column_1, y_pos));
 	tabs_waytype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width / 2), SCL_HEIGHT));
@@ -2551,6 +2550,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	tabs_vehicletype.set_pos(scr_coord(u_column_1, y_pos));
 	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width/2), SCL_HEIGHT));
 	y_pos += (D_BUTTON_HEIGHT*2) + 6;
+
+	upper_section = y_pos;
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_pos(scr_coord(u_column_1, y_pos));
