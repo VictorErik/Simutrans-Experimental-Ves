@@ -2585,9 +2585,6 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// ----------- Right hand side upper labels, buttons and comboboxes -----------------//
 	// Define the columns for use in the "Veh" section
 	y_pos = 5;
-	//u_column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
-	//u_column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
-	//u_column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
 
 	y_pos += D_BUTTON_HEIGHT;
 	y_pos += D_BUTTON_HEIGHT;
