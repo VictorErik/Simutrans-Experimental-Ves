@@ -112,7 +112,7 @@ private:
 	button_t bt_upgrade_im, bt_upgrade_ov;
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
-	button_t bt_append_livery;
+	button_t bt_append_livery, bt_show_obsolete_liveries;
 
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
@@ -136,6 +136,7 @@ private:
 	static bool show_available_vehicles;
 	static bool select_all;
 	static bool hide_veh_in_depot;
+	static bool show_obsolete_liveries;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;

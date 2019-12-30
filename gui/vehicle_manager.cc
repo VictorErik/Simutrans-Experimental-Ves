@@ -87,6 +87,7 @@ bool vehicle_manager_t::veh_sortreverse = false;
 bool vehicle_manager_t::show_available_vehicles = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
+bool vehicle_manager_t::show_obsolete_liveries = false;
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
 vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
@@ -379,14 +380,29 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// Economics tab:
 	{
 		// ---- Livery section ---- //
+		
+		cont_economics_info.add_component(&lb_available_liveries);
+
 		// Livery append button
 		bt_append_livery.init(button_t::roundbox, translator::translate("append_livery"), coord_dummy, D_BUTTON_SIZE);
 		bt_append_livery.add_listener(this);
 		bt_append_livery.set_tooltip(translator::translate("append_the_choosen_livery_on_all_vehicles"));
 		bt_append_livery.set_visible(true);
 		cont_economics_info.add_component(&bt_append_livery);
+
 		
-		cont_economics_info.add_component(&lb_available_liveries);
+		bt_show_obsolete_liveries.init(button_t::square_state, translator::translate("show_obsolete_liveries"), coord_dummy, scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
+		if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
+			bt_show_obsolete_liveries.add_listener(this);
+			bt_show_obsolete_liveries.set_tooltip(translator::translate("tick_to_show_obsolete_liveries"));
+			bt_show_obsolete_liveries.pressed = show_obsolete_liveries;
+			cont_economics_info.add_component(&bt_show_obsolete_liveries);
+		}
+		else {
+			show_obsolete_liveries = false;
+		}
+
+
 
 		// Livery list
 		cont_livery.set_size(size_dummy);
@@ -724,6 +740,11 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	}
 	if (comp == &bt_upgrade_ov) {
 		// Code that sends the convoy to the depot and upgrades the particular vehicle(s) when it is due to overhaul!
+	}
+	if (comp == &bt_show_obsolete_liveries) {
+		bt_show_obsolete_liveries.pressed = !bt_show_obsolete_liveries.pressed;
+		show_obsolete_liveries = bt_show_obsolete_liveries.pressed;
+		build_livery_list();
 	}
 	if (comp == &bt_append_livery) {
 		// Code that appends the chosen livery from "scrolly_livery" to the selected vehicles.
@@ -2598,7 +2619,11 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		bt_append_livery.set_pos(scr_coord(l_column_6, y_pos));
 		bt_append_livery.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 
-		y_pos += LINESPACE * 2;
+		y_pos += D_BUTTON_HEIGHT;
+
+		bt_show_obsolete_liveries.set_pos(scr_coord(l_column_6, y_pos));
+
+		y_pos += LINESPACE;
 
 		// Livery list
 		scrolly_livery.set_pos(scr_coord(l_column_5, y_pos));
