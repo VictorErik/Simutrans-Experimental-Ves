@@ -219,12 +219,14 @@ private:
 	int h_column_1;
 	int h_column_2;
 	int h_column_3;
-	int h_column_4;
 
 	// Upper columns
 	int u_column_1;
 	int u_column_2;
 	int u_column_3;
+	int u_column_4;
+	int u_column_5;
+	int u_column_6;
 
 	// (Middle section doesnt use columns)
 	

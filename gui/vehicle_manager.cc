@@ -2523,6 +2523,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	u_column_1 = D_MARGIN_LEFT;
 	u_column_2 = u_column_1 + label_length + 5 + (extra_width / 6);
 	u_column_3 = u_column_2 + combobox_width + 5 + (extra_width / 6);
+	u_column_4 = u_column_1 + RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
+	u_column_5 = u_column_2 + RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	u_column_6 = u_column_3 + RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
 
 	header_section = 5;
 	int y_pos = header_section;
@@ -2578,9 +2581,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// ----------- Right hand side upper labels, buttons and comboboxes -----------------//
 	// Define the columns for use in the "Veh" section
 	y_pos = 5;
-	u_column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
-	u_column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
-	u_column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	//u_column_1 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2); // D_MARGIN_LEFT is already added to column_1
+	//u_column_2 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
+	//u_column_3 += RIGHT_HAND_COLUMN - D_MARGIN_LEFT + (extra_width / 2);
 
 	y_pos += D_BUTTON_HEIGHT;
 	y_pos += D_BUTTON_HEIGHT;
@@ -2588,29 +2591,29 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Diverse buttons
-	bt_select_all.set_pos(scr_coord(u_column_1, y_pos));
-	bt_select_all.set_size(scr_size(u_column_2 - u_column_1, D_BUTTON_HEIGHT));
-	bt_hide_in_depot.set_pos(scr_coord(u_column_2, y_pos));
-	bt_hide_in_depot.set_size(scr_size(u_column_3 - u_column_2, D_BUTTON_HEIGHT));
+	bt_select_all.set_pos(scr_coord(u_column_4, y_pos));
+	bt_select_all.set_size(scr_size(u_column_5 - u_column_4, D_BUTTON_HEIGHT));
+	bt_hide_in_depot.set_pos(scr_coord(u_column_5, y_pos));
+	bt_hide_in_depot.set_size(scr_size(u_column_6- u_column_5, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT + 6;
 
 	// "Veh" sorting label, combobox and reverse sort button
-	lb_veh_sortby.set_pos(scr_coord(u_column_1, y_pos));
-	combo_sorter_veh.set_pos(scr_coord(u_column_2, y_pos));
+	lb_veh_sortby.set_pos(scr_coord(u_column_4, y_pos));
+	combo_sorter_veh.set_pos(scr_coord(u_column_5, y_pos));
 	combo_sorter_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_sorter_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
-	bt_veh_sortreverse.set_pos(scr_coord(u_column_3, y_pos));
+	bt_veh_sortreverse.set_pos(scr_coord(u_column_6, y_pos));
 	bt_veh_sortreverse.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// "Veh" display label, combobox and textfield/combobox
-	lb_display_veh.set_pos(scr_coord(u_column_1, y_pos));
-	combo_display_veh.set_pos(scr_coord(u_column_2, y_pos));
+	lb_display_veh.set_pos(scr_coord(u_column_4, y_pos));
+	combo_display_veh.set_pos(scr_coord(u_column_5, y_pos));
 	combo_display_veh.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_display_veh.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
-	ti_veh_display.set_pos(scr_coord(u_column_3, y_pos));
+	ti_veh_display.set_pos(scr_coord(u_column_6, y_pos));
 	ti_veh_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
-	combo_veh_display.set_pos(scr_coord(u_column_3, y_pos));
+	combo_veh_display.set_pos(scr_coord(u_column_6, y_pos));
 	combo_veh_display.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
 	combo_veh_display.set_max_size(scr_size(combobox_width, LINESPACE * 5 + 2 + 16));
 	y_pos += D_BUTTON_HEIGHT * 2;
