@@ -967,6 +967,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		const uint16 month_now = welt->get_timeline_year_month();
 		bool upgrades = false;
 		bool retired = false;
+		bool obsolete = false;
 		bool only_as_upgrade = false;
 		int window_height = 6 * LINESPACE; // minimum size of the entry
 		int width = get_client().get_width(); // Width of the scrolled list
@@ -989,9 +990,13 @@ void gui_desc_info_t::draw(scr_coord offset)
 				}
 			}
 		}
-
+		if (veh->is_obsolete(month_now, welt) || veh->get_running_cost(welt) > veh->get_running_cost())		{
+			obsolete = true;
+		}
 		if (veh->is_retired(month_now)) {
 			retired = true;
+		}
+		if (obsolete || retired) {
 			window_height += LINESPACE;
 		}
 
@@ -1145,8 +1150,8 @@ void gui_desc_info_t::draw(scr_coord offset)
 
 			}
 
-			if (retired) {
-				if (veh->get_running_cost(welt) > veh->get_running_cost())
+			if (retired || obsolete) {
+				if (obsolete)
 				{
 					sprintf(issues, "%s", translator::translate("obsolete"));
 					issue_color = selected ? text_color : COL_DARK_BLUE;
