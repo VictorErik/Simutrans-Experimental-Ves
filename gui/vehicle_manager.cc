@@ -541,6 +541,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	if (comp == &bt_show_out_of_production_vehicles) {
 		bt_show_out_of_production_vehicles.pressed = !bt_show_out_of_production_vehicles.pressed;
 		show_out_of_production_vehicles = bt_show_out_of_production_vehicles.pressed;
+		if (!show_out_of_production_vehicles) { // Assume that vehicles still in production are not yet obsolete...
+			bt_show_obsolete_vehicles.pressed = false;
+			show_obsolete_vehicles = false;
+		}
 		update_tabs();
 		save_previously_selected_desc();
 		page_turn_desc = false;
@@ -549,6 +553,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	if (comp == &bt_show_obsolete_vehicles) {
 		bt_show_obsolete_vehicles.pressed = !bt_show_obsolete_vehicles.pressed;
 		show_obsolete_vehicles = bt_show_obsolete_vehicles.pressed;
+		if (show_obsolete_vehicles)	{ // Assume that obsolete vehicles is also out of production
+			bt_show_out_of_production_vehicles.pressed = true;
+			show_out_of_production_vehicles = true;
+		}
 		update_tabs();
 		save_previously_selected_desc();
 		page_turn_desc = false;
