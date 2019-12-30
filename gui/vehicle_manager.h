@@ -291,6 +291,7 @@ public:
 	void build_livery_list();
 
 	void draw_general_information(const scr_coord& pos);
+	void draw_economics_information(const scr_coord& pos);
 	void draw_maintenance_information(const scr_coord& pos);
 
 	void vehicle_manager_t::display_tab_objects();

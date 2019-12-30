@@ -1580,6 +1580,39 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 	return display;
 }
 
+void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
+{
+	char buf[1024];
+	char tmp[50];
+	const vehicle_desc_t* desc_info_text = NULL;
+	desc_info_text = desc_for_display;
+	int pos_y = 0;
+	int pos_x = 0;
+	int width = get_windowsize().w;
+	const uint16 month_now_absolute = welt->get_current_month();
+	const uint16 month_now = welt->get_timeline_year_month();
+	player_nr = welt->get_active_player_nr();
+
+	int column_1 = D_MARGIN_LEFT;
+	int column_2 = (width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6;
+	int column_3 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 2;
+	int column_4 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 3;
+	int column_5 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 4;
+	int column_6 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 5;
+	int column_7 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 6; // Right hand edge of the window. Only things left from here!!
+		
+	buf[0] = '\0';
+	if (desc_info_text) {
+	}
+
+
+	display_ddd_box_clip(pos.x + column_3 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4);
+
+	display_ddd_box_clip(pos.x + column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4);
+
+
+}
+
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 {
 	char buf[1024];
@@ -2285,6 +2318,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 		{
 			build_livery_list();
 		}
+		draw_economics_information(pos + desc_info_text_pos);
 	}
 	else if (info_display == infotab_maintenance)
 	{
