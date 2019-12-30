@@ -112,6 +112,7 @@ private:
 	button_t bt_upgrade_im, bt_upgrade_ov;
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
+	button_t bt_append_livery;
 
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;

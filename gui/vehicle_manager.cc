@@ -379,7 +379,12 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// Economics tab:
 	{
 		// ---- Livery section ---- //
-
+		// Livery append button
+		bt_append_livery.init(button_t::roundbox, translator::translate("append_livery"), coord_dummy, D_BUTTON_SIZE);
+		bt_append_livery.add_listener(this);
+		bt_append_livery.set_tooltip(translator::translate("append_the_choosen_livery_on_all_vehicles"));
+		bt_append_livery.set_visible(true);
+		cont_economics_info.add_component(&bt_append_livery);
 		
 		cont_economics_info.add_component(&lb_available_liveries);
 
@@ -719,6 +724,9 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	}
 	if (comp == &bt_upgrade_ov) {
 		// Code that sends the convoy to the depot and upgrades the particular vehicle(s) when it is due to overhaul!
+	}
+	if (comp == &bt_append_livery) {
+		// Code that appends the chosen livery from "scrolly_livery" to the selected vehicles.
 	}
 	return true;
 }
@@ -2393,6 +2401,7 @@ void vehicle_manager_t::display(scr_coord pos)
 
 	bt_upgrade_im.disable();
 	bt_upgrade_ov.disable();
+	bt_append_livery.disable();
 
 	if (desc_for_display)
 	{
@@ -2410,6 +2419,8 @@ void vehicle_manager_t::display(scr_coord pos)
 				bt_upgrade_ov.enable();
 			}
 		}
+		// This button needs more logic as to when it shall enable (multiple liveries to choose from etc)
+		bt_append_livery.enable();
 	}
 
 }
@@ -2583,6 +2594,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		y_pos = D_MARGIN_TOP;
 
 		lb_available_liveries.set_pos(scr_coord(l_column_5, y_pos));
+
+		bt_append_livery.set_pos(scr_coord(l_column_6, y_pos));
+		bt_append_livery.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 
 		y_pos += LINESPACE * 2;
 
