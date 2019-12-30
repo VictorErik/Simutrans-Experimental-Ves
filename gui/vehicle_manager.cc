@@ -2555,17 +2555,18 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	{
 		y_pos = D_MARGIN_TOP;
 
-		lb_available_liveries.set_pos(scr_coord(column_4, y_pos));
+		lb_available_liveries.set_pos(scr_coord(column_5, y_pos));
 
 		y_pos += LINESPACE * 2;
 
-		// Upgrade list
-		scrolly_livery.set_pos(scr_coord(column_4, y_pos));
-		scrolly_livery.set_size(scr_size(column_6 - column_4 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
+		// Livery list
+		scrolly_livery.set_pos(scr_coord(column_5, y_pos));
+		scrolly_livery.set_size(scr_size(column_6 - column_5 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 		for (int i = 0; i < livery_info.get_count(); i++)
 		{
-			livery_info[i]->set_size(scr_size(column_6 - column_4 + column_width, livery_info[i]->get_size().h));
+			livery_info[i]->set_size(scr_size(column_6 - column_5 + column_width, livery_info[i]->get_size().h));
 		}
+		initial_livery_entry_width = column_6 - column_5 + column_width;
 	}
 	// Maintenance tab:
 	{
@@ -2594,10 +2595,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		{
 			upgrade_info[i]->set_size(scr_size(column_6 - column_4 + column_width, upgrade_info[i]->get_size().h));
 		}
-
+		initial_upgrade_entry_width = column_6 - column_4 + column_width;
 	}
 
-	initial_lower_section_entry_width = column_6 - column_4 + column_width;
 
 
 
@@ -3803,14 +3803,14 @@ void vehicle_manager_t::build_livery_list()
 		{
 			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
 			linfo->set_pos(scr_coord(0, ypos));
-			linfo->set_size(scr_size(initial_lower_section_entry_width, max(linfo->get_entry_height(), box_height)));
+			linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
 			livery_info.append(linfo);
 			cont_livery.add_component(linfo);
 			ypos += max(linfo->get_entry_height(), box_height);
 			amount_of_liveries++;
 		}
 		livery_info.resize(amount_of_liveries);
-		cont_livery.set_size(scr_size(initial_lower_section_entry_width - 12, ypos));
+		cont_livery.set_size(scr_size(initial_livery_entry_width - 12, ypos));
 	}
 	display(scr_coord(0, 0));
 }
@@ -3849,7 +3849,7 @@ void vehicle_manager_t::build_upgrade_list()
 						{
 							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
 							uinfo->set_pos(scr_coord(0, ypos));
-							uinfo->set_size(scr_size(initial_lower_section_entry_width, max(uinfo->get_entry_height(), box_height)));
+							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 							upgrade_info.append(uinfo);
 							cont_upgrade.add_component(uinfo);
 							ypos += max(uinfo->get_entry_height(), box_height);
@@ -3887,7 +3887,7 @@ void vehicle_manager_t::build_upgrade_list()
 				{
 					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
 					uinfo->set_pos(scr_coord(0, ypos));
-					uinfo->set_size(scr_size(initial_lower_section_entry_width, max(uinfo->get_entry_height(), box_height)));
+					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 					upgrade_info.append(uinfo);
 					cont_upgrade.add_component(uinfo);
 					ypos += max(uinfo->get_entry_height(), box_height);
@@ -3913,11 +3913,11 @@ void vehicle_manager_t::build_upgrade_list()
 			int box_height = LINESPACE * 3;
 			gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
 			sinfo->set_pos(scr_coord(0, ypos));
-			sinfo->set_size(scr_size(initial_lower_section_entry_width, max(sinfo->get_entry_height(), box_height)));
+			sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
 			cont_upgrade.add_component(sinfo);
 			ypos += max(sinfo->get_entry_height(), box_height);
 		}
-		cont_upgrade.set_size(scr_size(initial_lower_section_entry_width - 12, ypos));
+		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
 	}
 	display(scr_coord(0,0));
 }

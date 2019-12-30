@@ -128,7 +128,8 @@ private:
 	int amount_of_upgrades;
 	int amount_of_liveries;
 
-	int initial_lower_section_entry_width;
+	int initial_upgrade_entry_width;
+	int initial_livery_entry_width;
 
 
 	static bool show_available_vehicles;
