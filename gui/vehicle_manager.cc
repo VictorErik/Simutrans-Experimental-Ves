@@ -1606,9 +1606,9 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	}
 
 
-	display_ddd_box_clip(pos.x + column_3 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4);
+	display_ddd_box_clip(pos.x + column_3 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
-	display_ddd_box_clip(pos.x + column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4);
+	display_ddd_box_clip(pos.x + column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
 
 }
