@@ -214,6 +214,10 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_show_obsolete_vehicles.pressed = show_obsolete_vehicles;
 		add_component(&bt_show_obsolete_vehicles);
 	}
+	else { // untic both buttons when false
+		show_out_of_production_vehicles = false;
+		show_obsolete_vehicles = false;
+	}
 
 	// Waytype tab panel
 	tabs_waytype.add_listener(this);
