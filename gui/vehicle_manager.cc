@@ -485,7 +485,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	selected_desc_index = -1;
 	selected_upgrade_index = -1;
 	display_upgrade_into = true;
-	veh_is_selected = false;
+	count_veh_selection = 0;
 	goto_this_desc = desc_for_display;
 	sortby_desc = (sort_mode_desc_t)selected_sortby_desc;
 	display_desc = (display_mode_desc_t)selected_displ_desc;
@@ -526,7 +526,7 @@ vehicle_manager_t::~vehicle_manager_t()
 	for (int i = 0; i < livery_info.get_count(); i++)	{
 		delete[] livery_info.get_element(i);
 	}
-	if (veh_is_selected)	{
+	if (count_veh_selection > 0)	{
 		delete[] veh_selection;
 	}
 }
@@ -600,13 +600,13 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			old_count_veh_selection = veh_list.get_count();
 			if (veh_list.get_count() > 0)
 			{
-				veh_is_selected = true;
+				count_veh_selection = veh_list.get_count();
 			}
 		}
 		else
 		{
 			old_count_veh_selection = 0;
-			veh_is_selected = false;
+			count_veh_selection = 0;
 		}
 		display(scr_coord(0, 0));
 	}
@@ -1618,7 +1618,7 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 		{
 		case displ_veh_age:
 			value_to_compare = (welt->get_current_month() / 12) - (veh->get_purchase_time() / 12);
-			break;
+break;
 		case displ_veh_odometer:
 			//value_to_compare = ODOMETER VALUE
 			break;
@@ -1673,17 +1673,77 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	const uint16 month_now_absolute = welt->get_current_month();
 	const uint16 month_now = welt->get_timeline_year_month();
 	player_nr = welt->get_active_player_nr();
-		
-	buf[0] = '\0';
-	if (desc_info_text) {
-	}
+	COLOR_VAL veh_selected_color = SYSCOL_TEXT;
 
+	COLOR_VAL doing_great = COL_DARK_GREEN;	// 75% - 100% good
+	COLOR_VAL doing_good = SYSCOL_TEXT;			// 50% - 75%  good
+	COLOR_VAL doing_bad = COL_YELLOW;			// 25% - 50%  good
+	COLOR_VAL doing_terrible = COL_RED;			// 0%  - 25%  good
+	COLOR_VAL doing_good_color = doing_terrible;
+
+	int percentage = 0;
 
 	display_ddd_box_clip(pos.x + l_column_3 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
 	display_ddd_box_clip(pos.x + l_column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
+	buf[0] = '\0';
+	if (count_veh_selection == 0)
+	{
+		veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
+	}
+	int n = 0;
 
+	sprintf(buf, translator::translate("vehicle_haulage_information:"));
+	display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+	pos_y += LINESPACE * 2;
+
+	if (count_veh_selection > 0)
+	{
+		// Current load
+		uint64 cargo_carried = 0;
+		uint64 cargo_max = 0;
+		int empty_vehicles = 0;
+		for (int i = 0; i < veh_list.get_count(); i++)
+		{
+			if (veh_selection[i])
+			{
+				if (veh_list[i]->get_desc()->get_total_capacity() > 0)
+				{
+					cargo_carried += veh_list[i]->get_cargo_carried();
+					cargo_max += veh_list[i]->get_cargo_max();
+					if (veh_list[i]->get_cargo_carried() == 0)
+					{
+						empty_vehicles++;
+					}
+				}
+			}
+		}
+		if (cargo_max > 0)
+		{
+			percentage = (cargo_carried * 100) / cargo_max;
+			doing_good_color = percentage >= 75 ? doing_great : percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
+			n = 0;
+			sprintf(buf, "%s ", translator::translate("current_load_percentage:"));
+			n += display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+			sprintf(buf,"%i%%", percentage);
+			n += display_proportional_clip(pos.x + l_column_1 + n, pos.y + pos_y, buf, ALIGN_LEFT, doing_good_color, true);
+
+			if (empty_vehicles > 0)
+			{
+				percentage = (cargo_carried * 100) / cargo_max;
+				doing_good_color = percentage >= 75 ? doing_great : percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
+				sprintf(buf, "%s ", translator::translate("current_load_percentage:"));
+				n += display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+			}
+		}
+	}
+	pos_y += LINESPACE;
+
+
+	if (count_veh_selection > 0)
+	{
+	}
 }
 
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
@@ -1702,7 +1762,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	if (desc_info_text) {
 
 		COLOR_VAL veh_selected_color = SYSCOL_TEXT;
-		if (!veh_is_selected)
+		if (count_veh_selection == 0)
 		{
 			veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
 		}
@@ -1713,7 +1773,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 
 		pos_y += LINESPACE * 3;
 		// Age
-		if (veh_is_selected)
+		if (count_veh_selection > 0 )
 		{
 			int max_age = 0;
 			int min_age = month_now_absolute;
@@ -1815,7 +1875,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// If any SELECTED vehicles, find out what their resale values are. If different resale values, then show the range
 		double max_resale_value = -1;
 		double min_resale_value = desc_info_text->get_value();
-		if (veh_is_selected)
+		if (count_veh_selection > 0)
 		{
 		/*	for (uint8 j = 0; j < veh_selection.get_count(); j++)
 			{
@@ -2054,7 +2114,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 						n += sprintf(buf + n, "%s: %3d %s %s ", class_name, desc_info_text->get_capacity(i), translator::translate(desc_info_text->get_freight_type()->get_mass()), translator::translate(desc_info_text->get_freight_type()->get_name()));
 						
 						// if the classes in any of the SELECTED vehicles are reassigned, display that here
-						if (veh_is_selected)
+						if (count_veh_selection > 0)
 						{
 							bool multiple_classes = false;
 							int old_reassigned_class = -1;
@@ -2438,16 +2498,9 @@ void vehicle_manager_t::display(scr_coord pos)
 	lb_amount_desc.set_text_pointer(buf_vehicle_descs);
 
 	static cbuffer_t buf_vehicle;
-	int selected_vehicles_amount = 0;
-	for (int j = 0; j < veh_list.get_count(); j++)
-	{
-		if (veh_selection[j] == true)
-		{
-			selected_vehicles_amount++;
-		}
-	}
+
 	buf_vehicle.clear();
-	buf_vehicle.printf(translator::translate("amount_of_vehicles: %u (%u selected)"), veh_list.get_count(), selected_vehicles_amount);
+	buf_vehicle.printf(translator::translate("amount_of_vehicles: %u (%u selected)"), veh_list.get_count(), count_veh_selection);
 	lb_amount_veh.set_text_pointer(buf_vehicle);
 
 	static cbuffer_t buf_desc_page_select;
@@ -2482,7 +2535,7 @@ void vehicle_manager_t::display(scr_coord pos)
 
 	}
 
-	if (veh_is_selected)
+	if (count_veh_selection > 0)
 	{
 		// Maintenance tab buttons:
 		if (amount_of_upgrades > 0)
@@ -4328,7 +4381,7 @@ void vehicle_manager_t::build_veh_list()
 	amount_veh = veh_list.get_count();
 
 	// create a bunch of bool's to keep track of which "veh" is selected
-	veh_is_selected = false;
+	count_veh_selection = 0;
 	veh_selection = new (std::nothrow) bool[veh_list.get_count()];
 	for (int i = 0; i < veh_list.get_count(); i++)
 	{
@@ -4336,7 +4389,7 @@ void vehicle_manager_t::build_veh_list()
 	}
 	if (veh_list.get_count() > 0)
 	{
-		veh_is_selected = select_all;
+		count_veh_selection = select_all ? veh_list.get_count() : 0;
 	}
 	bool_veh_selection_exists = true;
 
@@ -4417,16 +4470,12 @@ void vehicle_manager_t::display_veh_list()
 void vehicle_manager_t::update_veh_selection()
 {
 	// This builds the actual array of selected vehicles that we will show info about
-
-	veh_is_selected = false;
-
 	int offset_index = (page_display_veh * veh_pr_page) - veh_pr_page;
 	for (int i = 0; i < veh_info.get_count(); i++)
 	{
 		if (veh_info.get_element(i)->is_selected())
 		{
 			veh_selection[i + offset_index] = true;
-			veh_is_selected = true;
 		}
 		else
 		{
@@ -4434,17 +4483,16 @@ void vehicle_manager_t::update_veh_selection()
 		}
 	}
 
-	if (!veh_is_selected) // any vehicles from other places selected?
+	// Get the total amount of selected vehicles
+	count_veh_selection = 0;
+	for (int j = 0; j < veh_list.get_count(); j++)
 	{
-		for (int i = 0; i < veh_list.get_count(); i++)
+		if (veh_selection[j] == true)
 		{
-			if (veh_selection[i] == true)
-			{
-				veh_is_selected = true;
-				break;
-			}
+			count_veh_selection++;
 		}
 	}
+
 	display(scr_coord(0, 0));
 }
 

@@ -188,8 +188,8 @@ private:
 	// If true, remember to delete "veh_selection"
 	bool bool_veh_selection_exists = false;
 
-	// True if any 'veh' is selected, false if none are selected
-	bool veh_is_selected;
+	// The amount of selected vehicles
+	int count_veh_selection;
 
 	// vector of convoy info objects that are being displayed
 	//vector_tpl<gui_convoiinfo_t *> cnv_info;
