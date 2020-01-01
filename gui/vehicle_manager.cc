@@ -1664,6 +1664,7 @@ break;
 void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 {
 	char buf[1024];
+	char cargo_buf[1024];
 	char tmp[50];
 	const vehicle_desc_t* desc_info_text = NULL;
 	desc_info_text = desc_for_display;
@@ -1708,12 +1709,22 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 		{
 			if (veh_selection[i])
 			{
-				if (veh_list[i]->get_desc()->get_total_capacity() > 0)
+				const vehicle_desc_t* veh_type = veh_list[i]->get_desc();
+				if (veh_type->get_total_capacity() > 0)
 				{
 					cargo_carried += veh_list[i]->get_cargo_carried();
 					cargo_max += veh_list[i]->get_cargo_max();
-					if (veh_list[i]->get_cargo_carried() == 0)
+
+					if (veh_list[i]->get_cargo_carried() > 0)
 					{
+
+
+
+
+
+						sprintf(buf, "%s ", translator::translate("current_load_percentage:"));
+					}
+					else					{
 						empty_vehicles++;
 					}
 				}
@@ -1721,6 +1732,7 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 		}
 		if (cargo_max > 0)
 		{
+			// Current load percent, and number of empty vehicles
 			percentage = (cargo_carried * 100) / cargo_max;
 			doing_good_color = percentage >= 75 ? doing_great : percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
 			n = 0;
@@ -1731,11 +1743,15 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 
 			if (empty_vehicles > 0)
 			{
-				percentage = 100 - ((empty_vehicles * 100) / count_veh_selection);
-				doing_good_color = percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
 				sprintf(buf, " (%i/%i %s)", empty_vehicles, count_veh_selection, translator::translate("empty"));
 				n += display_proportional_clip(pos.x + l_column_1 + n, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 			}
+
+			// Display what is loaded
+			//display_multiline_text(pos.x + 335/*370*/, pos.y + tabs.get_pos().y + tabs.get_size().h + 31 + LINESPACE * 2 + 4 + 16, buf, SYSCOL_TEXT);
+
+
+			pos_y += LINESPACE;
 		}
 	}
 	pos_y += LINESPACE;
