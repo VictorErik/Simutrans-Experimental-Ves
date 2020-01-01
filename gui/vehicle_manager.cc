@@ -1731,10 +1731,10 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 
 			if (empty_vehicles > 0)
 			{
-				percentage = (cargo_carried * 100) / cargo_max;
-				doing_good_color = percentage >= 75 ? doing_great : percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
-				sprintf(buf, "%s ", translator::translate("current_load_percentage:"));
-				n += display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+				percentage = 100 - ((empty_vehicles * 100) / count_veh_selection);
+				doing_good_color = percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
+				sprintf(buf, " (%i/%i %s)", empty_vehicles, count_veh_selection, translator::translate("empty"));
+				n += display_proportional_clip(pos.x + l_column_1 + n, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 			}
 		}
 	}
