@@ -2059,7 +2059,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 							bool multiple_classes = false;
 							int old_reassigned_class = -1;
 							uint8 display_class = i;
-							for (uint8 j = 0; j < veh_list.get_count(); j++)
+							for (int j = 0; j < veh_list.get_count(); j++)
 							{
 								if (veh_selection[j] == true)
 								{
