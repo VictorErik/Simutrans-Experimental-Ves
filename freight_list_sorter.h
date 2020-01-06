@@ -40,7 +40,7 @@ private:
 
 	static bool compare_ware(ware_t const& w1, ware_t const& w2);
 
-	static void add_ware_heading( cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class = all_classes, uint32 total_pass_mail = 0, bool show_empty = false);
+	static void add_ware_heading( cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class = all_classes, uint32 total_pass_mail = 0, bool show_empty = false, bool show_simple_display = false);
 
 
 //	vector_tpl<transferring_cargo_t> *transferring_cargoes;

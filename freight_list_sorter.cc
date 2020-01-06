@@ -192,7 +192,7 @@ bool freight_list_sorter_t::compare_ware(ware_t const& w1, ware_t const& w2)
 
 
 
-void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class, uint32 class_total, bool show_empty)
+void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 max, const ware_t *ware, const char *what_doing, uint8 g_class, uint32 class_total, bool show_empty, bool show_simple_display)
 {
 	goods_desc_t const& desc = *ware->get_desc();
 	char const*  const  name = translator::translate(ware->get_catg() != 0 ? desc.get_catg_name() : desc.get_name()); // special freight (catg == 0) needs own name
@@ -210,7 +210,9 @@ void freight_list_sorter_t::add_ware_heading(cbuffer_t &buf, uint32 sum, uint32 
 		//If given a class total, we want to display that
 		sum=class_total;
 	}
-	
+
+	buf.printf(show_simple_display ? "   " : "");
+
 	buf.printf("%u", sum);
 	if (max != 0) {
 		// convois
@@ -406,12 +408,24 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 		{
 			for (int i = 0; i < pos; i++)
 			{
-				if (wlist[i].get_index() == wlist[pos].get_index() &&
-					wlist[i].get_zwischenziel() == wlist[pos].get_zwischenziel() &&
-					wlist[i].get_class() == wlist[pos].get_class())
+				if (sort_mode == by_wealth_via && pos > 0) // Used by the Vehicle Manager overview
 				{
-					wlist[i].menge += wlist[pos--].menge;
-					break;
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].get_class() == wlist[pos].get_class() &&
+						wlist[i].is_commuting_trip == wlist[pos].is_commuting_trip)
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
+				}
+				if ((sort_mode == by_destination_detail || sort_mode == by_accommodation_detail) && pos > 0) // Used by the Vehicle Manager's vehicle list
+				{
+					if (wlist[i].get_index() == wlist[pos].get_index() &&
+						wlist[i].is_commuting_trip == wlist[pos].is_commuting_trip)
+					{
+						wlist[i].menge += wlist[pos--].menge;
+						break;
+					}
 				}
 			}
 		}
@@ -517,7 +531,7 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 					}
 					class_total += sumware.menge;
 				}
-				add_ware_heading(buf, sum, 0, &ware, what_doing, last_ware_class, class_total, show_empty);
+				add_ware_heading(buf, sum, 0, &ware, what_doing, last_ware_class, class_total, show_empty, show_simple_display);
 			}
 			// Classes preparations.
 			// Only show the wealth if we are not already sorting by wealth
@@ -538,73 +552,77 @@ void freight_list_sorter_t::sort_freight(vector_tpl<ware_t> const& warray, cbuff
 			}
 			// detail amount
 			goods_desc_t const& desc = *ware.get_desc();
-			buf.printf("%5u%s", ware.menge, translator::translate(desc.get_mass()));
-
-			switch (sortby) {
-			case by_origin:
-			case by_destination_detail:
-			case by_wealth_detail:
-			case by_accommodation_detail:
-				if (ware.is_passenger()) {
-					if (ware.menge == 1) {
-						buf.printf(" %s", ware.is_commuting_trip ? translator::translate("commuter") : translator::translate("visitor"));
-					}
-					else {
-						buf.printf(" %s", ware.is_commuting_trip ? translator::translate("commuters") : translator::translate("visitors"));
-					}
-				}
-				else if (ware.is_mail()) {
-					if (sortby == by_wealth_detail) {
-						break; // no need to display
-					}
-					buf.printf(" (%s)", g_class_text);
-				}
-				else {
-					buf.printf(" %s", translator::translate(desc.get_name()));
-				}
-				buf.append(" > ");
-				break;
-			case by_via_sum:
-			case by_wealth_via:
-				if (ware.is_freight()) {
-					buf.printf(" %s", translator::translate(desc.get_name()));
-				}
-				break;
-			default:
-				if (ware.is_freight()) {
-					buf.printf(" %s", translator::translate(desc.get_name()));
-				}
-				buf.printf(" %c ", ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
-				break;
-			}
-
-			{
-				/*	const sint64 current_time = welt->get_ticks();
-					char transfer_time_left[32] = "";
-					if (halt->get_transferring_cargoes_count() > 0)
-					{
-						transferring_cargo_t tc;
-						uint32 rt_i = wlist[j] == tc.ware ? tc.ready_time : NULL;
-						const uint32 tc_ready_time = tc.ware == ware ? world()->ticks_to_seconds(tc.ready_time - current_time) : NULL;
-						const uint32 ready_seconds = world()->ticks_to_seconds(tc.ready_time - current_time);
-						welt->sprintf_ticks(transfer_time_left, sizeof(transfer_time_left), tc_ready_time);
-					}*/
-
-			}
 			if (show_simple_display)
 			{
-				if (!is_class_cargo || ware.get_catg() != 0) // For passenger, mail and special cargo, we dont need to show again how many units when using "simple display"
+				//if (!is_class_cargo || ware.get_catg() != 0) // For passenger, mail and special cargo, we dont need to show again how many units when using "simple display"
+				if (ware.is_passenger()) // For Passengers, display "commuters" and "visitors" subcategory
 				{
-					// detail amount without >
-					goods_desc_t const& desc = *ware.get_desc();
-					buf.printf("   %u%s %s", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()));
+					buf.printf("      %u %s\n", ware.menge, ware.is_commuting_trip ? translator::translate("commuters") : translator::translate("visitors"));
+				}
+				else if (ware.get_catg() != 0 && !ware.is_mail()) // Since special cargo and mail can only ever hold one type of good, dont display a sub category
+				{
+					buf.printf("   %u%s %s\n", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()));
 				}
 			}
 			else
 			{
+				buf.printf("%5u%s", ware.menge, translator::translate(desc.get_mass()));
+				switch (sortby) {
+				case by_origin:
+				case by_destination_detail:
+				case by_wealth_detail:
+				case by_accommodation_detail:
+					if (ware.is_passenger()) {
+						if (ware.menge == 1) {
+							buf.printf(" %s", ware.is_commuting_trip ? translator::translate("commuter") : translator::translate("visitor"));
+						}
+						else {
+							buf.printf(" %s", ware.is_commuting_trip ? translator::translate("commuters") : translator::translate("visitors"));
+						}
+					}
+					else if (ware.is_mail()) {
+						if (sortby == by_wealth_detail) {
+							break; // no need to display
+						}
+						buf.printf(" (%s)", g_class_text);
+					}
+					else {
+						buf.printf(" %s", translator::translate(desc.get_name()));
+					}
+					buf.append(" > ");
+					break;
+				case by_via_sum:
+				case by_wealth_via:
+					if (ware.is_freight()) {
+						buf.printf(" %s", translator::translate(desc.get_name()));
+					}
+					break;
+				default:
+					if (ware.is_freight()) {
+						buf.printf(" %s", translator::translate(desc.get_name()));
+					}
+					buf.printf(" %c ", ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
+					break;
+				}
+
+				{
+					/*	const sint64 current_time = welt->get_ticks();
+						char transfer_time_left[32] = "";
+						if (halt->get_transferring_cargoes_count() > 0)
+						{
+							transferring_cargo_t tc;
+							uint32 rt_i = wlist[j] == tc.ware ? tc.ready_time : NULL;
+							const uint32 tc_ready_time = tc.ware == ware ? world()->ticks_to_seconds(tc.ready_time - current_time) : NULL;
+							const uint32 ready_seconds = world()->ticks_to_seconds(tc.ready_time - current_time);
+							welt->sprintf_ticks(transfer_time_left, sizeof(transfer_time_left), tc_ready_time);
+						}*/
+
+				}
+
 				// detail amount with >
-				goods_desc_t const& desc = *ware.get_desc();
-				buf.printf("   %u%s %s %c ", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()), ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
+				//goods_desc_t const& desc = *ware.get_desc();
+				//buf.printf("   %u%s %s %c ", ware.menge, translator::translate(desc.get_mass()), translator::translate(desc.get_name()), ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
+				//buf.printf(" %c ", ">>>>><>>>>>"[sortby]); // one ">" per sort mode..
 
 				// the target name is not correct for the via sort
 				if (sortby != by_via_sum && sortby != by_origin_amount && sortby != by_wealth_via && sortby != by_accommodation_via)
