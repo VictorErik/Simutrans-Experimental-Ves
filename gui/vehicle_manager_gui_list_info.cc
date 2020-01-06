@@ -474,8 +474,10 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 			}
 
 			// Following section compares different values between the old and the new vehicle, to see what is upgraded
-
-			COLOR_VAL difference_color = COL_DARK_GREEN;
+			
+			COLOR_VAL improvement_color = selected ? COL_LIGHT_GREEN : COL_DARK_GREEN;;
+			COLOR_VAL deterioration_color = selected ? COL_LIGHT_RED : COL_RED;
+			COLOR_VAL difference_color = improvement_color;
 			char tmp[50];
 
 			// Load
@@ -494,12 +496,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i", difference);
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i", difference);
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
@@ -547,12 +549,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("km/h"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("km/h"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("top_speed: %ikm/h "), upgrade->get_topspeed());
@@ -573,12 +575,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("tonnen"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("tonnen"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("weight: %it "), upgrade->get_weight() / 1000);
@@ -600,12 +602,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("kn"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("kn"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("brake_force: %ikn "), upgrade->get_brake_force());
@@ -627,12 +629,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("kw"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("kw"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("power: %ikw "), upgrade->get_power());
@@ -653,12 +655,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("kn"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("kn"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("tractive_effort: %ikn "), upgrade->get_tractive_effort());
@@ -678,12 +680,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (upgrade->get_running_cost() - existing->get_running_cost() > 0)
 					{
 						sprintf(tmp, "+%1.2f$%s", (upgrade->get_running_cost() / 100.0) - (existing->get_running_cost() / 100.0), translator::translate("/km"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					else
 					{
 						sprintf(tmp, "%1.2f$%s", (upgrade->get_running_cost() / 100.0) - (existing->get_running_cost() / 100.0), translator::translate("/km"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("running_cost: %1.2f$/km "), upgrade->get_running_cost() / 100.0);
@@ -703,12 +705,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (upgrade->get_adjusted_monthly_fixed_cost(welt) > existing->get_adjusted_monthly_fixed_cost(welt))
 					{
 						sprintf(tmp, "+%1.2f$%s", (upgrade->get_adjusted_monthly_fixed_cost(welt) / 100.0) - (existing->get_adjusted_monthly_fixed_cost(welt) / 100.0), translator::translate("/month"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					else
 					{
 						sprintf(tmp, "%1.2f$%s", (upgrade->get_adjusted_monthly_fixed_cost(welt) / 100.0) - (existing->get_adjusted_monthly_fixed_cost(welt) / 100.0), translator::translate("/month"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("maintenance: %1.2f$/month "), upgrade->get_adjusted_monthly_fixed_cost(welt) / 100.0);
@@ -726,11 +728,11 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 				else
 				{
 					sprintf(tmp, "(%s)", translator::translate(translator::translate(engine_type_names[existing->get_engine_type() + 1])));
-					difference_color = COL_RED;
+					difference_color = deterioration_color;
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 
 					sprintf(tmp, "%s ", translator::translate(translator::translate(engine_type_names[upgrade->get_engine_type() + 1])));
-					difference_color = COL_DARK_GREEN;
+					difference_color = improvement_color;
 					entry += display_proportional_clip(pos.x + offset.x + x_pos - entry, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 
 					sprintf(tmp, translator::translate("engine_type: "));
@@ -750,11 +752,11 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					sprintf(tmp, "%s", translator::translate(translator::translate("tilting_vehicle_equipment")));
 					if (upgrade->get_tilting())
 					{
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					y_pos += LINESPACE;
@@ -774,12 +776,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("m"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("m"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("minimum_runway_length: %im "), upgrade->get_minimum_runway_length());
@@ -800,12 +802,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i%s", difference, translator::translate("km"));
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i%s", difference, translator::translate("km"));
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("range: %i "), upgrade->get_range());
@@ -826,12 +828,12 @@ void gui_upgrade_info_t::draw(scr_coord offset)
 					if (difference > 0)
 					{
 						sprintf(tmp, "+%i", difference);
-						difference_color = COL_RED;
+						difference_color = deterioration_color;
 					}
 					else
 					{
 						sprintf(tmp, "%i", difference);
-						difference_color = COL_DARK_GREEN;
+						difference_color = improvement_color;
 					}
 					int entry = display_proportional_clip(pos.x + offset.x + x_pos, pos.y + offset.y + y_pos, tmp, ALIGN_RIGHT, difference_color, true);
 					sprintf(tmp, translator::translate("Way wear factor: %i "), upgrade->get_tractive_effort());
