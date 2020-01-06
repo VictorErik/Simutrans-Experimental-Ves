@@ -252,6 +252,8 @@ private:
 	int old_count_veh_selection = -1;
 	int new_count_owned_veh;
 	int old_count_owned_veh = -1;
+	int new_count_cargo_carried;
+	int old_count_cargo_carried = -1;
 	bool show_all_individual_vehicles;
 
 	int page_display_desc = 1;
@@ -363,6 +365,9 @@ public:
 	void update_tabs();
 	void update_vehicle_type_tabs();
 	void update_veh_selection();
+	void update_cargo_manifest(cbuffer_t& buf);
+
+	bool freight_info_resort;
 
 	void save_previously_selected_desc();
 

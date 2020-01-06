@@ -51,6 +51,7 @@
 #include "../boden/wege/strasse.h"
 
 #include "../descriptor/intro_dates.h"
+#include "../freight_list_sorter.h"
 
 
 #include "karte.h"
@@ -1664,7 +1665,7 @@ break;
 void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 {
 	char buf[1024];
-	char cargo_buf[1024];
+	static cbuffer_t cargo_buf;
 	char tmp[50];
 	const vehicle_desc_t* desc_info_text = NULL;
 	desc_info_text = desc_for_display;
@@ -1674,6 +1675,8 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	const uint16 month_now_absolute = welt->get_current_month();
 	const uint16 month_now = welt->get_timeline_year_month();
 	player_nr = welt->get_active_player_nr();
+	new_count_cargo_carried = 0;
+	uint64 cargo_max = 0;
 	COLOR_VAL veh_selected_color = SYSCOL_TEXT;
 
 	COLOR_VAL doing_great = COL_DARK_GREEN;	// 75% - 100% good
@@ -1702,8 +1705,6 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	if (count_veh_selection > 0)
 	{
 		// Current load
-		uint64 cargo_carried = 0;
-		uint64 cargo_max = 0;
 		int empty_vehicles = 0;
 		for (int i = 0; i < veh_list.get_count(); i++)
 		{
@@ -1712,16 +1713,11 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 				const vehicle_desc_t* veh_type = veh_list[i]->get_desc();
 				if (veh_type->get_total_capacity() > 0)
 				{
-					cargo_carried += veh_list[i]->get_cargo_carried();
+					new_count_cargo_carried += veh_list[i]->get_cargo_carried();
 					cargo_max += veh_list[i]->get_cargo_max();
 
 					if (veh_list[i]->get_cargo_carried() > 0)
 					{
-
-
-
-
-
 						sprintf(buf, "%s ", translator::translate("current_load_percentage:"));
 					}
 					else					{
@@ -1733,7 +1729,7 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 		if (cargo_max > 0)
 		{
 			// Current load percent, and number of empty vehicles
-			percentage = (cargo_carried * 100) / cargo_max;
+			percentage = (new_count_cargo_carried * 100) / cargo_max;
 			doing_good_color = percentage >= 75 ? doing_great : percentage >= 50 ? doing_good : percentage >= 25 ? doing_bad : doing_terrible;
 			n = 0;
 			sprintf(buf, "%s ", translator::translate("current_load_percentage:"));
@@ -1746,20 +1742,27 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 				sprintf(buf, " (%i/%i %s)", empty_vehicles, count_veh_selection, translator::translate("empty"));
 				n += display_proportional_clip(pos.x + l_column_1 + n, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 			}
-
-			// Display what is loaded
-			//display_multiline_text(pos.x + 335/*370*/, pos.y + tabs.get_pos().y + tabs.get_size().h + 31 + LINESPACE * 2 + 4 + 16, buf, SYSCOL_TEXT);
-
-
+					   
 			pos_y += LINESPACE;
 		}
 	}
 	pos_y += LINESPACE;
 
 
-	if (count_veh_selection > 0)
+
+
+	// If the cargo count is different, update the cargo manifest
+	if (old_count_cargo_carried != new_count_cargo_carried)
 	{
+		old_count_cargo_carried = new_count_cargo_carried;
+		{
+			update_cargo_manifest(cargo_buf);
+		}
 	}
+	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, ALIGN_LEFT, veh_selected_color, true);
+
+	// Second column:
+	pos_y = 0;
 }
 
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
@@ -4508,8 +4511,76 @@ void vehicle_manager_t::update_veh_selection()
 			count_veh_selection++;
 		}
 	}
-
 	display(scr_coord(0, 0));
+}
+
+
+void vehicle_manager_t::update_cargo_manifest(cbuffer_t& buf)
+{
+	// rebuilt the list with goods ...
+	vector_tpl<ware_t> total_fracht;
+
+	size_t const n = goods_manager_t::get_count();
+	ALLOCA(uint32, max_loaded_waren, n);
+	MEMZERON(max_loaded_waren, n);
+
+	for (int i = 0; i < veh_list.get_count(); i++)
+	{
+		if (veh_selection[i] == true)
+		{
+			const vehicle_t* v = veh_list.get_element(i);
+			bool pass_veh = v->get_cargo_type() == goods_manager_t::passengers;
+			bool mail_veh = v->get_cargo_type() == goods_manager_t::mail;
+			const goods_desc_t* ware_desc = v->get_desc()->get_freight_type();
+			const uint16 menge = v->get_desc()->get_total_capacity();
+			const uint8 classes_to_check = v->get_desc()->get_number_of_classes();
+
+			if (menge > 0 && ware_desc != goods_manager_t::none) {
+				max_loaded_waren[ware_desc->get_index()] += menge;
+			}
+			
+			for (uint8 j = 0; j < classes_to_check; j++)
+			{
+				// then add the actual load
+				FOR(slist_tpl<ware_t>, ware, v->get_cargo(j))
+				{
+					// if != 0 we could not join it to existing => load it
+					if (ware.menge != 0)
+					{
+						{
+							total_fracht.append(ware);
+						}
+					}
+				}
+			}
+		}
+	}
+	buf.clear();
+
+	// apend info on total capacity
+	slist_tpl <ware_t>capacity;
+
+	for (size_t i = 0; i != n; ++i) {
+		if (max_loaded_waren[i] > 0 && i != goods_manager_t::INDEX_NONE) {
+			ware_t ware(goods_manager_t::get_info(i));
+			ware.menge = max_loaded_waren[i];
+			// append to category?
+			slist_tpl<ware_t>::iterator j = capacity.begin();
+			slist_tpl<ware_t>::iterator end = capacity.end();
+			while (j != end && j->get_desc()->get_catg_index() < ware.get_desc()->get_catg_index()) ++j;
+			if (j != end && j->get_desc()->get_catg_index() == ware.get_desc()->get_catg_index()) {
+				j->menge += max_loaded_waren[i];
+			}
+			else {
+				// not yet there
+				capacity.insert(j, ware);
+			}
+		}
+	}
+	// show new info		
+	uint8 freight_info_order = 8; // = by_wealth_via,
+
+	freight_list_sorter_t::sort_freight(total_fracht, buf, (freight_list_sorter_t::sort_mode_t)freight_info_order, &capacity, "loaded", NULL, NULL, NULL, false, true);
 }
 
 
