@@ -138,7 +138,6 @@ private:
 	int initial_upgrade_entry_width;
 	int initial_livery_entry_width;
 
-
 	static bool show_available_vehicles;
 	static bool show_out_of_production_vehicles;
 	static bool show_obsolete_vehicles;
@@ -160,41 +159,17 @@ private:
 		
 	waytype_t way_type;
 	
-	// Total list of desc's.
-	vector_tpl<vehicle_desc_t*> desc_list;
-
-	// List of desc's that is actually displayed
-	vector_tpl<gui_desc_info_t *> desc_info;
-
-	// For some sort modes, when "desc_list" is being sorted, this keeps track of old index numbers
-	vector_tpl<vehicle_desc_t*> desc_list_old_index;
-
-	// Total list of veh's.
-	vector_tpl<vehicle_t*> veh_list;
-
-	// List of veh's that is actually displayed
-	vector_tpl<gui_veh_info_t *> veh_info;
-
-	// All vehicles we own for a given waytype
-	vector_tpl<vehicle_t*> vehicle_we_own;
-
-	// List of upgrades that is displayed
-	vector_tpl<gui_upgrade_info_t *> upgrade_info;
-
-	// List of liveries that is displayed
-	vector_tpl<gui_livery_info_t*> livery_info;
-
-	// Array of bool's to keep track of which veh's is selected
-	bool* veh_selection;
-
-	// If true, remember to delete "veh_selection"
-	bool bool_veh_selection_exists = false;
-
-	// The amount of selected vehicles
-	int count_veh_selection;
-
-	// vector of convoy info objects that are being displayed
-	//vector_tpl<gui_convoiinfo_t *> cnv_info;
+	vector_tpl<vehicle_desc_t*> desc_list;			// Total list of desc's.	
+	vector_tpl<gui_desc_info_t *> desc_info;		// List of desc's that is actually displayed	
+	vector_tpl<vehicle_desc_t*> desc_list_old_index;// For some sort modes, when "desc_list" is being sorted, this keeps track of old index numbers	
+	vector_tpl<vehicle_t*> veh_list;				// Total list of veh's.	
+	vector_tpl<gui_veh_info_t *> veh_info;			// List of veh's that is actually displayed	
+	vector_tpl<vehicle_t*> vehicle_we_own;			// All vehicles we own for a given waytype	
+	vector_tpl<gui_upgrade_info_t *> upgrade_info;	// List of upgrades that is displayed	
+	vector_tpl<gui_livery_info_t*> livery_info;		// List of liveries that is displayed	
+	bool* veh_selection;							// Array of bool's to keep track of which veh's is selected	
+	bool bool_veh_selection_exists = false;			// If true, remember to delete "veh_selection"
+	int count_veh_selection;						// The amount of selected vehicles
 
 
 	// This section defines some sizes
@@ -258,7 +233,6 @@ private:
 	int old_count_owned_veh = -1;
 	int new_count_cargo_carried;
 	int old_count_cargo_carried = -1;
-	bool show_all_individual_vehicles;
 
 	int page_display_desc = 1;
 	int page_display_veh = 1;
