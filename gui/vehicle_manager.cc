@@ -1665,7 +1665,6 @@ break;
 void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 {
 	char buf[1024];
-	static cbuffer_t cargo_buf;
 	char tmp[50];
 	const vehicle_desc_t* desc_info_text = NULL;
 	desc_info_text = desc_for_display;
@@ -1750,7 +1749,6 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 
 
 
-
 	// If the cargo count is different, update the cargo manifest
 	if (old_count_cargo_carried != new_count_cargo_carried)
 	{
@@ -1759,7 +1757,8 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 			update_cargo_manifest(cargo_buf);
 		}
 	}
-	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, ALIGN_LEFT, veh_selected_color, true);
+	
+	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, ALIGN_LEFT, veh_selected_color);
 
 	// Second column:
 	pos_y = 0;
@@ -2449,10 +2448,12 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	if (update_desc_list)
 	{
 		build_desc_list();
+		update_cargo_manifest(cargo_buf);
 	}
 	else if (update_veh_list)
 	{
 		build_veh_list();
+		update_cargo_manifest(cargo_buf);
 	}
 
 	// The "draw" information in the info tabs are fetched here

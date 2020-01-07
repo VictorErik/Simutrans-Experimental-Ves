@@ -245,6 +245,8 @@ private:
 	uint32 amount_veh;
 	uint32 amount_veh_owned;
 
+	cbuffer_t cargo_buf; // Freight text
+
 	vehicle_desc_t* old_desc_for_display;
 	vehicle_desc_t* goto_this_desc = NULL;
 	int selected_desc_index;
