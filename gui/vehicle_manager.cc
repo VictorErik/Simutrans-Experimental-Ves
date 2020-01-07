@@ -1757,8 +1757,7 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 			update_cargo_manifest(cargo_buf);
 		}
 	}
-	
-	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, ALIGN_LEFT, veh_selected_color);
+	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, veh_selected_color);
 
 	// Second column:
 	pos_y = 0;
