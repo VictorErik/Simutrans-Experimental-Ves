@@ -1691,15 +1691,13 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	display_ddd_box_clip(pos.x + l_column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
 	buf[0] = '\0';
+	pos_y += LINESPACE;
+
 	if (count_veh_selection == 0)
 	{
 		veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
 	}
 	int n = 0;
-
-	sprintf(buf, translator::translate("vehicle_haulage_information:"));
-	display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
-	pos_y += LINESPACE * 2;
 
 	if (count_veh_selection > 0)
 	{
@@ -1743,6 +1741,12 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 			}
 					   
 			pos_y += LINESPACE;
+		}
+		else
+		{
+
+			sprintf(buf, "%s", translator::translate("this_vehicle_carries_no_good"));
+			display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 		}
 	}
 	pos_y += LINESPACE;
