@@ -117,7 +117,7 @@ private:
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
-	gui_label_t lb_upgrade_to_from, lb_available_liveries;
+	gui_label_t lb_available_liveries;
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
@@ -125,6 +125,8 @@ private:
 	char text_show_all_vehicles[50];
 	char text_show_out_of_production_vehicles[50];
 	char text_show_obsolete_vehicles[50];
+	char text_upgrade_to[50];
+	char text_upgrade_from[50];
 
 	char sortby_text[50];
 	char displayby_text[50];

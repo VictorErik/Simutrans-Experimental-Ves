@@ -176,7 +176,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_veh_sortby(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_display_desc(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_display_veh(NULL, SYSCOL_TEXT, gui_label_t::left),
-	lb_upgrade_to_from(NULL, SYSCOL_TEXT, gui_label_t::left),
 	lb_available_liveries(translator::translate("available_liveries:"), SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
@@ -460,15 +459,14 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_maintenance_info.add_component(&bt_upgrade_ov);
 
 		// Display upgrades / downgrades button and label
-		bt_upgrade_to_from.init(button_t::roundbox, NULL, coord_dummy, scr_size(D_BUTTON_HEIGHT,D_BUTTON_HEIGHT));
+		sprintf(text_upgrade_to, translator::translate("this_vehicle_can_upgrade_to:"));
+		sprintf(text_upgrade_from, translator::translate("this_vehicle_can_upgrade_from:"));
+		bt_upgrade_to_from.init(button_t::roundbox, text_upgrade_to, coord_dummy, D_BUTTON_SIZE);
 		bt_upgrade_to_from.add_listener(this);
-		bt_upgrade_to_from.set_tooltip(translator::translate("press_to_switch_between_upgrade_to_or_upgrade_from"));
+		bt_upgrade_to_from.set_tooltip(translator::translate("upgrade_the_vehicle_when_vehicle_is_next_due_to_overhaul"));
 		bt_upgrade_to_from.set_visible(true);
 		cont_maintenance_info.add_component(&bt_upgrade_to_from);
 
-		cont_maintenance_info.add_component(&lb_upgrade_to_from);
-
-		
 		// Upgrade list
 		cont_upgrade.set_size(size_dummy);
 		scrolly_upgrade.set_show_scroll_y(true);
@@ -781,13 +779,14 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		display_upgrade_into = !display_upgrade_into;
 		if (display_upgrade_into)
 		{
+			bt_upgrade_to_from.set_text(text_upgrade_to);
 		}
 		else
 		{
+			bt_upgrade_to_from.set_text(text_upgrade_from);
 		}
 		build_upgrade_list();
 	}
-
 	if (comp == &bt_upgrade_im) {
 		// Code that directly sends the convoy to the depot and upgrades the particular vehicle(s)!
 	}
@@ -1738,13 +1737,11 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 			{
 				sprintf(buf, " (%i/%i %s)", empty_vehicles, count_veh_selection, translator::translate("empty"));
 				n += display_proportional_clip(pos.x + l_column_1 + n, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
-			}
-					   
+			}					   
 			pos_y += LINESPACE;
 		}
 		else
 		{
-
 			sprintf(buf, "%s", translator::translate("this_vehicle_carries_no_good"));
 			display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 		}
@@ -2795,8 +2792,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 		y_pos = D_MARGIN_TOP;
 
+		label_length = max(display_calc_proportional_string_len_width(text_upgrade_to, -1), display_calc_proportional_string_len_width(text_upgrade_from, -1));
 		bt_upgrade_to_from.set_pos(scr_coord(l_column_4, y_pos));
-		lb_upgrade_to_from.set_pos(scr_coord(l_column_4 + bt_upgrade_to_from.get_size().w + 5, y_pos));
+		bt_upgrade_to_from.set_size(scr_size(label_length + 10, D_BUTTON_HEIGHT));
 
 		y_pos += LINESPACE * 2;
 
@@ -4056,15 +4054,6 @@ void vehicle_manager_t::build_upgrade_list()
 	int ypos = 10;
 	amount_of_upgrades = 0;
 	int box_height = LINESPACE * 3;
-
-	if (display_upgrade_into)
-	{
-		lb_upgrade_to_from.set_text(translator::translate("this_vehicle_can_upgrade_to"));
-	}
-	else
-	{
-		lb_upgrade_to_from.set_text(translator::translate("this_vehicle_can_upgrade_from"));
-	}
 
 	if (desc_for_display)
 	{
