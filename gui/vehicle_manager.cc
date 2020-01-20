@@ -872,12 +872,17 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			int good_type = 0; // 0 = Passenger, 1 = Mail,
 			int reset = 0; // 0 = reset only single class, 1 = reset all classes
 			cbuffer_t buf;
+			// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc"
 			buf.printf("%i,%i,%i,%i", i, new_class, good_type, reset);
-			/*for (unsigned convoy = 0; convoy < line->count_convoys(); convoy++)
+			for (int j = 0; j < veh_list.get_count(); j++)
 			{
-				convoihandle_t cnv = line->get_convoy(convoy);
-				cnv->call_convoi_tool('c', buf);
-			}*/
+				if (veh_selection[j])
+				{
+					//convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
+					//cnv->call_convoi_tool('c', buf);
+				}
+			}
+
 			build_class_entries();
 			if (i < 0)
 			{
@@ -904,12 +909,16 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			int good_type = 1; // 0 = Passenger, 1 = Mail,
 			int reset = 0; // 0 = reset only single class, 1 = reset all classes
 			cbuffer_t buf;
+			// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc"
 			buf.printf("%i,%i,%i,%i", i, new_class, good_type, reset);
-			//for (unsigned convoy = 0; convoy < line->count_convoys(); convoy++)
-			//{
-			//	convoihandle_t cnv = line->get_convoy(convoy);
-			//	cnv->call_convoi_tool('c', buf);
-			//}
+			for (int j = 0; j < veh_list.get_count(); j++)
+			{
+				if (veh_selection[j])
+				{
+					//convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
+					//cnv->call_convoi_tool('c', buf);
+				}
+			}
 			build_class_entries();
 			if (i < 0)
 			{
@@ -2736,7 +2745,6 @@ void vehicle_manager_t::display(scr_coord pos)
 		// Economics tab buttons:
 		// This button needs more logic as to when it shall enable (multiple liveries to choose from etc)
 		bt_append_livery.enable();
-
 		bt_reset_all_classes.enable();
 	}
 }
@@ -4831,11 +4839,11 @@ void vehicle_manager_t::build_class_entries()
 		int old_reassigned_class = -1;
 		uint8 display_class = i;
 
-		for (int i = 0; i < veh_list.get_count(); i++)
+		for (int j = 0; j < veh_list.get_count(); j++)
 		{
-			if (veh_selection[i] == true)
+			if (veh_selection[j] == true)
 			{
-				vehicle_t* v = veh_list[i];
+				vehicle_t* v = veh_list[j];
 				if (v->get_accommodation_capacity(i) > 0 && v->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
 				{
 					if (old_reassigned_class != v->get_reassigned_class(i))
@@ -4880,11 +4888,11 @@ void vehicle_manager_t::build_class_entries()
 		int old_reassigned_class = -1;
 		uint8 display_class = i;
 
-		for (int i = 0; i < veh_list.get_count(); i++)
+		for (int j = 0; j < veh_list.get_count(); j++)
 		{
-			if (veh_selection[i] == true)
+			if (veh_selection[j] == true)
 			{
-				vehicle_t* v = veh_list[i];
+				vehicle_t* v = veh_list[j];
 				if (v->get_accommodation_capacity(i) > 0 && v->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
 				{
 					if (old_reassigned_class != v->get_reassigned_class(i))
