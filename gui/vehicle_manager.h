@@ -112,7 +112,7 @@ private:
 	button_t bt_upgrade_im, bt_upgrade_ov;
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
-	button_t bt_append_livery, bt_show_obsolete_liveries;
+	button_t bt_append_livery, bt_show_obsolete_liveries, bt_reset_all_classes;
 
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
@@ -121,6 +121,16 @@ private:
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
+
+	uint8 pass_classes = goods_manager_t::passengers->get_number_of_classes();
+	uint8 mail_classes = goods_manager_t::mail->get_number_of_classes();
+	slist_tpl<gui_combobox_t*> pass_class_sel;
+	slist_tpl<gui_combobox_t*> mail_class_sel;
+	char* pass_class_name_untranslated[32];
+	char* mail_class_name_untranslated[32];
+	uint32 pass_capacity_at_accommodation[255] = { 0 };
+	uint32 mail_capacity_at_accommodation[255] = { 0 };
+	bool need_to_update_classes = false;
 
 	char text_show_all_vehicles[50];
 	char text_show_out_of_production_vehicles[50];
@@ -344,6 +354,7 @@ public:
 	void update_vehicle_type_tabs();
 	void update_veh_selection();
 	void update_cargo_manifest(cbuffer_t& buf);
+	void build_class_entries();
 
 	bool freight_info_resort;
 
