@@ -1841,6 +1841,7 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 
 	display_ddd_box_clip(pos.x + l_column_5 - 5, pos.y + pos_y, 0, UPGRADE_LIST_COLUMN_HEIGHT, MN_GREY0, MN_GREY4); // Vertical separator
 
+	// Column 1-2
 	buf[0] = '\0';
 	pos_y += LINESPACE;
 
@@ -1914,9 +1915,35 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	}
 	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, veh_selected_color);
 
-	// Second column:
+	// Column 3-4
+	pos_y = D_BUTTON_HEIGHT * 2;
 
-	pos_y = 0;
+	for (int i = 0; i < pass_classes; i++)
+	{
+		if (pass_capacity_at_accommodation[i] > 0)
+		{
+			sprintf(buf, "%s: %u %s", translator::translate(pass_class_name_untranslated[i]), pass_capacity_at_accommodation[i], translator::translate("passengers"));
+			display_proportional_clip(pos.x + l_column_3, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+			pos_y += D_BUTTON_HEIGHT;
+		}
+	}
+	if (any_mail_cargo && any_pass_cargo)
+	{
+		pos_y += D_BUTTON_HEIGHT;
+	}
+
+	for (int i = 0; i < mail_classes; i++)
+	{
+		if (mail_capacity_at_accommodation[i] > 0)
+		{
+			sprintf(buf, "%s (%u %s)", translator::translate(mail_class_name_untranslated[i]), mail_capacity_at_accommodation[i], translator::translate("mail"));
+			display_proportional_clip(pos.x + l_column_3, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
+			pos_y += D_BUTTON_HEIGHT;
+		}
+	}
+
+	pos_y += D_BUTTON_HEIGHT * 2;
+
 }
 
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
@@ -2916,7 +2943,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	int column_width = l_column_2 - l_column_1 - 5;
 	// Economics tab:
 	{ 
-		y_pos = 0;
+		// Column 3-4
+		y_pos = D_BUTTON_HEIGHT * 2;
 
 		for (int i = 0; i < pass_class_sel.get_count(); i++)
 		{
@@ -2927,6 +2955,10 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 				pass_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 				y_pos += D_BUTTON_HEIGHT;
 			}
+		}		
+		if (any_mail_cargo && any_pass_cargo)
+		{
+			y_pos += D_BUTTON_HEIGHT;
 		}
 
 		for (int i = 0; i < mail_class_sel.get_count(); i++)
@@ -2940,11 +2972,16 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 			}
 		}
 
+		y_pos += D_BUTTON_HEIGHT;
+
 		bt_reset_all_classes.set_pos(scr_coord(l_column_4, y_pos));
 		bt_reset_all_classes.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
 
 
 
+
+
+		// Column 5-6
 		y_pos = D_MARGIN_TOP;
 
 		lb_available_liveries.set_pos(scr_coord(l_column_5, y_pos));
@@ -4778,6 +4815,8 @@ void vehicle_manager_t::build_class_entries()
 	{
 		mail_capacity_at_accommodation[i] = 0;
 	}
+	any_mail_cargo = false;
+	any_pass_cargo = false;
 
 	// Determine what accommodations the veh_list contains
 	for (int i = 0; i < veh_list.get_count(); i++)
@@ -4811,6 +4850,7 @@ void vehicle_manager_t::build_class_entries()
 		if (pass_capacity_at_accommodation[i] > 0)
 		{
 			pass_class_sel.at(i)->set_visible(true);
+			any_pass_cargo = true;
 			for (int j = 0; j < pass_classes; j++) // j = the entries of this combobox
 			{
 				pass_class_sel.at(i)->append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(pass_class_name_untranslated[j]), SYSCOL_TEXT));
@@ -4859,6 +4899,7 @@ void vehicle_manager_t::build_class_entries()
 		mail_class_sel.at(i)->set_visible(false);
 		if (mail_capacity_at_accommodation[i] > 0)
 		{
+			any_mail_cargo = true;
 			mail_class_sel.at(i)->set_visible(true);
 			for (int j = 0; j < mail_classes; j++)
 			{
