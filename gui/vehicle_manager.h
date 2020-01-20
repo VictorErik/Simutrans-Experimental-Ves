@@ -117,7 +117,7 @@ private:
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
-	gui_label_t lb_available_liveries;
+	gui_label_t lb_available_liveries, lb_available_classes, lb_reassign_class_to;
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
@@ -126,6 +126,8 @@ private:
 	uint8 mail_classes = goods_manager_t::mail->get_number_of_classes();
 	slist_tpl<gui_combobox_t*> pass_class_sel;
 	slist_tpl<gui_combobox_t*> mail_class_sel;
+	slist_tpl<gui_label_t*> lb_pass_class;
+	slist_tpl<gui_label_t*> lb_mail_class;
 	char* pass_class_name_untranslated[32];
 	char* mail_class_name_untranslated[32];
 	uint32 pass_capacity_at_accommodation[255] = { 0 };
