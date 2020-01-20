@@ -535,7 +535,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	display_desc = (display_mode_desc_t)selected_displ_desc;
 	sortby_veh = (sort_mode_veh_t)selected_sortby_veh;
 	display_veh = (display_mode_veh_t)selected_displ_veh;
-	need_to_update_classes = true;
 	
 	if (desc_for_display)
 	{
@@ -888,10 +887,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			{
 				break;
 			}
-			if (pass_class_sel.at(i)->count_elements() > goods_manager_t::passengers->get_number_of_classes())
-			{
-				need_to_update_classes = true;
-			}
 			return false;
 		}
 	}
@@ -924,10 +919,6 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			{
 				break;
 			}
-			if (mail_class_sel.at(i)->count_elements() > goods_manager_t::mail->get_number_of_classes())
-			{
-				need_to_update_classes = true;
-			}
 			return false;
 		}
 	}
@@ -946,18 +937,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		for (int i = 0; i < pass_class_sel.get_count(); i++)
 		{
 			pass_class_sel.at(i)->set_selection(i);
-			if (pass_class_sel.at(i)->count_elements() > goods_manager_t::passengers->get_number_of_classes())
-			{
-				need_to_update_classes = true;
-			}
 		}
 		for (int i = 0; i < mail_class_sel.get_count(); i++)
 		{
 			mail_class_sel.at(i)->set_selection(i);
-			if (mail_class_sel.at(i)->count_elements() > goods_manager_t::mail->get_number_of_classes())
-			{
-				need_to_update_classes = true;
-			}
 		}
 		build_class_entries();
 

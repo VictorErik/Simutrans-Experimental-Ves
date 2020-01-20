@@ -130,7 +130,6 @@ private:
 	char* mail_class_name_untranslated[32];
 	uint32 pass_capacity_at_accommodation[255] = { 0 };
 	uint32 mail_capacity_at_accommodation[255] = { 0 };
-	bool need_to_update_classes = false;
 
 	char text_show_all_vehicles[50];
 	char text_show_out_of_production_vehicles[50];
