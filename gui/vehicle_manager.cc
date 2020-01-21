@@ -2748,6 +2748,14 @@ void vehicle_manager_t::display(scr_coord pos)
 		lb_mail_class.at(i)->set_text_pointer(buf_mail_class[i]);
 		lb_mail_class.at(i)->set_color(SYSCOL_EDIT_TEXT_DISABLED);
 	}
+	if (no_class_vehicle)
+	{
+		// Display "none" if desc/vehicle doesnt support classes
+		buf_pass_class[0].clear();
+		buf_pass_class[0].printf("%s", translator::translate("none"));
+		lb_pass_class.at(0)->set_text_pointer(buf_pass_class[0]);
+		lb_pass_class.at(0)->set_color(SYSCOL_EDIT_TEXT_DISABLED);
+	}
 
 
 
@@ -2762,7 +2770,11 @@ void vehicle_manager_t::display(scr_coord pos)
 
 	if (desc_for_display)
 	{
-
+		if (no_class_vehicle)
+		{
+			// Display "none" if desc/vehicle doesnt support classes
+			lb_pass_class.at(0)->set_color(SYSCOL_TEXT);
+		}
 	}
 
 	if (count_veh_selection > 0)
@@ -2780,8 +2792,11 @@ void vehicle_manager_t::display(scr_coord pos)
 		// Economics tab buttons:
 		// This button needs more logic as to when it shall enable (multiple liveries to choose from etc)
 		bt_append_livery.enable();
-		bt_reset_all_classes.enable();
 
+		if (!no_class_vehicle)
+		{
+			bt_reset_all_classes.enable();
+		}
 		lb_reassign_class_to.set_color(SYSCOL_TEXT);
 		for (int i = 0; i < pass_classes; i++)
 		{
@@ -2986,37 +3001,48 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 		y_pos += D_BUTTON_HEIGHT;
 
-		for (int i = 0; i < pass_class_sel.get_count(); i++)
+		if (no_class_vehicle)
 		{
-			if (pass_capacity_at_accommodation[i] > 0)
+			// Display "none" if desc/vehicle doesnt support classes
+			y_pos += D_BUTTON_HEIGHT;
+			lb_pass_class.at(0)->set_pos(scr_coord(l_column_3, y_pos));
+			lb_pass_class.at(0)->set_width(column_width);
+		}
+		else
+		{
+
+			for (int i = 0; i < pass_class_sel.get_count(); i++)
 			{
-				lb_pass_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
-				lb_pass_class.at(i)->set_width(column_width);
-				pass_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
-				pass_class_sel.at(i)->set_highlight_color(1);
-				pass_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
+				if (pass_capacity_at_accommodation[i] > 0)
+				{
+					lb_pass_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
+					lb_pass_class.at(i)->set_width(column_width);
+					pass_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
+					pass_class_sel.at(i)->set_highlight_color(1);
+					pass_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
+					y_pos += D_BUTTON_HEIGHT;
+				}
+			}
+			if (any_mail_cargo && any_pass_cargo)
+			{
 				y_pos += D_BUTTON_HEIGHT;
 			}
-		}		
-		if (any_mail_cargo && any_pass_cargo)
-		{
+
+			for (int i = 0; i < mail_class_sel.get_count(); i++)
+			{
+				if (mail_capacity_at_accommodation[i] > 0)
+				{
+					lb_mail_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
+					lb_mail_class.at(i)->set_width(column_width);
+					mail_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
+					mail_class_sel.at(i)->set_highlight_color(1);
+					mail_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
+					y_pos += D_BUTTON_HEIGHT;
+				}
+			}
 			y_pos += D_BUTTON_HEIGHT;
 		}
 
-		for (int i = 0; i < mail_class_sel.get_count(); i++)
-		{
-			if (mail_capacity_at_accommodation[i] > 0)
-			{
-				lb_mail_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
-				lb_mail_class.at(i)->set_width(column_width);
-				mail_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
-				mail_class_sel.at(i)->set_highlight_color(1);
-				mail_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
-				y_pos += D_BUTTON_HEIGHT;
-			}
-		}
-
-		y_pos += D_BUTTON_HEIGHT;
 
 		bt_reset_all_classes.set_pos(scr_coord(l_column_4, y_pos));
 		bt_reset_all_classes.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
@@ -4861,6 +4887,7 @@ void vehicle_manager_t::build_class_entries()
 	}
 	any_mail_cargo = false;
 	any_pass_cargo = false;
+	no_class_vehicle = false;
 
 	// Determine what accommodations the veh_list contains
 	for (int i = 0; i < veh_list.get_count(); i++)
@@ -5022,9 +5049,23 @@ void vehicle_manager_t::build_class_entries()
 						any_mail_cargo = true;
 					}
 				}
+			}					
+			else
+			{
+				// Display "none" if desc/vehicle doesnt support classes: Turn the firstmost passenger label visible
+				lb_pass_class.at(0)->set_visible(true);
+				no_class_vehicle = true;
 			}
+		}			
+		else
+		{
+			// Display "none" if desc/vehicle doesnt support classes: Turn the firstmost passenger label visible
+			lb_pass_class.at(0)->set_visible(true);
+			no_class_vehicle = true;
 		}
+
 	}
+
 
 	resize(scr_coord(0, 0)); // Because we need to build the positions of the comboboxes again now when we know which comboboxes to activate
 }
