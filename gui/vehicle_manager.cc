@@ -179,6 +179,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_available_liveries(translator::translate("available_liveries:"), SYSCOL_TEXT, gui_label_t::left),
 	lb_available_classes(translator::translate("available_classes:"), SYSCOL_TEXT, gui_label_t::left),
 	lb_reassign_class_to(translator::translate("reassign_class_to:"), SYSCOL_TEXT, gui_label_t::left),
+	lb_current_cargo_information(translator::translate("current_cargo_information:"), SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade),
@@ -409,9 +410,10 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	
 	// Economics tab:
 	{
-		// ---- Vehicle class section ---- //
+		// ---- Vehicle cargo section ---- //
+		cont_economics_info.add_component(&lb_current_cargo_information);
 
-		
+		// ---- Vehicle class section ---- //	
 		cont_economics_info.add_component(&lb_available_classes);
 		cont_economics_info.add_component(&lb_reassign_class_to);
 
@@ -1870,7 +1872,7 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 
 	// Column 1-2
 	buf[0] = '\0';
-	pos_y += LINESPACE;
+	pos_y = D_BUTTON_HEIGHT * 2;
 
 	if (count_veh_selection == 0)
 	{
@@ -1929,7 +1931,6 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 		}
 	}
 	pos_y += LINESPACE;
-
 
 
 	// If the cargo count is different, update the cargo manifest
@@ -2796,8 +2797,8 @@ void vehicle_manager_t::display(scr_coord pos)
 		if (!no_class_vehicle)
 		{
 			bt_reset_all_classes.enable();
+			lb_reassign_class_to.set_color(SYSCOL_TEXT);
 		}
-		lb_reassign_class_to.set_color(SYSCOL_TEXT);
 		for (int i = 0; i < pass_classes; i++)
 		{
 			lb_pass_class.at(i)->set_color(SYSCOL_TEXT);
@@ -2992,7 +2993,10 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 	int column_width = l_column_2 - l_column_1 - 5;
 	// Economics tab:
-	{ 
+	{ 		// Column 1-2
+		y_pos = D_MARGIN_TOP;
+		lb_current_cargo_information.set_pos(scr_coord(l_column_1, y_pos));
+
 		// Column 3-4
 		y_pos = D_MARGIN_TOP;
 		
