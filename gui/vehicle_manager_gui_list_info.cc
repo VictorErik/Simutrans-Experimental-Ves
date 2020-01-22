@@ -971,7 +971,7 @@ void gui_desc_info_t::draw(scr_coord offset)
 		bool retired = false;
 		bool obsolete = false;
 		bool only_as_upgrade = false;
-		int window_height = 6 * LINESPACE; // minimum size of the entry
+		int window_height = 4 * LINESPACE; // minimum size of the entry
 		int width = get_client().get_width(); // Width of the scrolled list
 
 		sprintf(name, translator::translate(veh->get_name()));

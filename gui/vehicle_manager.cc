@@ -4607,10 +4607,10 @@ void vehicle_manager_t::display_desc_list()
 	for (i = 0; i < icnv; i++) {
 		gui_desc_info_t* const dinfo = new gui_desc_info_t(desc_list.get_element(i + offset_index), desc_amounts[i + offset_index], sortby_desc, display_desc);
 		dinfo->set_pos(scr_coord(0, ypos));
-		dinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, max(dinfo->get_entry_height(), 40)));
+		dinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, dinfo->get_entry_height()));
 		desc_info.append(dinfo);
 		cont_desc.add_component(dinfo);
-		ypos += max(dinfo->get_entry_height(), 40);
+		ypos += dinfo->get_entry_height();
 		if (old_desc_for_display == desc_list.get_element(i + offset_index))
 		{
 			selected_desc_index = i + offset_index;
