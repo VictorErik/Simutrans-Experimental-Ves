@@ -89,6 +89,7 @@ bool vehicle_manager_t::veh_sortreverse = false;
 bool vehicle_manager_t::show_available_vehicles = false;
 bool vehicle_manager_t::show_out_of_production_vehicles = false;
 bool vehicle_manager_t::show_obsolete_vehicles = false;
+bool vehicle_manager_t::select_multiple_desc = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
 bool vehicle_manager_t::show_obsolete_liveries = false;
@@ -222,6 +223,15 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		show_out_of_production_vehicles = false;
 		show_obsolete_vehicles = false;
 	}
+
+	// Select multiple desc's button
+	sprintf(text_select_multiple_desc, translator::translate("select_multiple_desc"));
+	bt_select_multiple_desc.init(button_t::square_state, text_select_multiple_desc, coord_dummy, size_dummy);
+	bt_select_multiple_desc.add_listener(this);
+	bt_select_multiple_desc.set_tooltip(translator::translate("tick_to_select_multiple_desc's"));
+	bt_select_multiple_desc.pressed = select_multiple_desc;
+	add_component(&bt_select_multiple_desc);
+	
 
 	// Waytype tab panel
 	tabs_waytype.add_listener(this);
@@ -667,6 +677,16 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		page_turn_desc = false;
 		build_desc_list();
 	}
+
+	if (comp == &bt_select_multiple_desc) {
+		bt_select_multiple_desc.pressed = !bt_select_multiple_desc.pressed;
+		select_multiple_desc = bt_select_multiple_desc.pressed;
+		//update_tabs();
+		//save_previously_selected_desc();
+		//page_turn_desc = false;
+		//build_desc_list();
+	}
+
 	if (comp == &tabs_waytype) {
 		int const tab = tabs_waytype.get_active_tab_index();
 		uint8 old_selected_tab = selected_tab_waytype;
@@ -2863,6 +2883,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	h_column_1 = D_MARGIN_LEFT;
 	h_column_2 = h_column_1 + display_calc_proportional_string_len_width(text_show_all_vehicles, -1) + 30;
 	h_column_3 = h_column_2 + display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1) + 30;
+	h_column_4 = h_column_3 + display_calc_proportional_string_len_width(text_show_obsolete_vehicles, -1) + 30;
 
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
@@ -2889,7 +2910,11 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 	// Show obsolete vehicles button
 	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_3, y_pos));
-	bt_show_obsolete_vehicles.set_size(scr_size(width - h_column_3, D_BUTTON_HEIGHT));
+	bt_show_obsolete_vehicles.set_size(scr_size(h_column_4 - h_column_3, D_BUTTON_HEIGHT));
+
+	// Select multiple desc button
+	bt_select_multiple_desc.set_pos(scr_coord(h_column_4, y_pos));
+	bt_select_multiple_desc.set_size(scr_size(width - h_column_4, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Waytype tab panel
