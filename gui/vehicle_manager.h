@@ -118,7 +118,7 @@ private:
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
-	gui_label_t lb_available_liveries, lb_available_classes, lb_reassign_class_to, lb_current_cargo_information;
+	gui_label_t lb_available_liveries, lb_available_classes, lb_reassign_class_to, lb_current_payload_information;
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
@@ -334,8 +334,7 @@ public:
 
 	static int display_desc_by_good;
 	static int display_desc_by_class;
-
-	static int display_veh_by_cargo;
+	static int display_veh_by_payload;
 
 	void build_desc_list();
 	void build_veh_list();

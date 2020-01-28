@@ -101,7 +101,7 @@ vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh
 
 int vehicle_manager_t::display_desc_by_good = 0;
 int vehicle_manager_t::display_desc_by_class = 0;
-int vehicle_manager_t::display_veh_by_cargo = 0;
+int vehicle_manager_t::display_veh_by_payload = 0;
 
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
@@ -149,7 +149,7 @@ const char *vehicle_manager_t::display_text_veh[DISPLAY_MODES_VEH] =
 	"age",
 	"odometer",
 	"location",
-	"cargo"
+	"payload"
 };
 
 static const char * engine_type_names[11] =
@@ -181,7 +181,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_available_liveries(translator::translate("available_liveries:"), SYSCOL_TEXT, gui_label_t::left),
 	lb_available_classes(translator::translate("available_classes:"), SYSCOL_TEXT, gui_label_t::left),
 	lb_reassign_class_to(translator::translate("reassign_class_to:"), SYSCOL_TEXT, gui_label_t::left),
-	lb_current_cargo_information(translator::translate("current_cargo_information:"), SYSCOL_TEXT, gui_label_t::left),
+	lb_current_payload_information(translator::translate("current_payload_information:"), SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade),
@@ -422,7 +422,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// Economics tab:
 	{
 		// ---- Vehicle cargo section ---- //
-		cont_economics_info.add_component(&lb_current_cargo_information);
+		cont_economics_info.add_component(&lb_current_payload_information);
 
 		// ---- Vehicle class section ---- //	
 		cont_economics_info.add_component(&lb_available_classes);
@@ -823,7 +823,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			display_mode = 0;
 		}
 		if (display_veh == displ_veh_cargo)	{
-			display_veh_by_cargo = display_mode;
+			display_veh_by_payload = display_mode;
 		}
 		build_veh_list();
 	}
@@ -1433,16 +1433,16 @@ void vehicle_manager_t::reset_veh_text_input_display()
 					else // Carries no good
 					{
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
-						display_veh_by_cargo = 0;
+						display_veh_by_payload = 0;
 					}
 				}
 				else // No vehicles selected
 				{
 					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
-					display_veh_by_cargo = 0;
+					display_veh_by_payload = 0;
 				}
 
-				combo_veh_display.set_selection(display_veh_by_cargo);
+				combo_veh_display.set_selection(display_veh_by_payload);
 				tooltip_syntax_display.printf(translator::translate("select_a_cargo_from_the_right_drop_down_list"));
 				break;
 
@@ -1789,18 +1789,18 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 	// First, go through the different display categories to see if this vehicle fit
 	if (display_veh == displ_veh_cargo)
 	{
-		if (display_veh_by_cargo == 0) // Show all vehicles
+		if (display_veh_by_payload == 0) // Show all vehicles
 		{
 			display = true;
 		}
-		else if (display_veh_by_cargo == 1) // Show only empty vehicles
+		else if (display_veh_by_payload == 1) // Show only empty vehicles
 		{
 			if (veh->get_cargo_carried() <= 0)
 			{
 				display = true;
 			}
 		}
-		else if (display_veh_by_cargo == 2 && display_show_any)
+		else if (display_veh_by_payload == 2 && display_show_any)
 		{
 			if (veh->get_cargo_carried() > 0)
 			{
@@ -1833,7 +1833,7 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 				if (veh_display_combobox_indexes.get_count() > 0)
 				{
 					int freight_index = fracht_array.get_element(i).get_index();
-					int freight_index_vehicle = veh_display_combobox_indexes[display_veh_by_cargo];
+					int freight_index_vehicle = veh_display_combobox_indexes[display_veh_by_payload];
 					if (freight_index == freight_index_vehicle)
 					{
 						display = true;
@@ -3121,7 +3121,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Economics tab:
 	{ 		// Column 1-2
 		y_pos = D_MARGIN_TOP;
-		lb_current_cargo_information.set_pos(scr_coord(l_column_1, y_pos));
+		lb_current_payload_information.set_pos(scr_coord(l_column_1, y_pos));
 
 		// Column 3-4
 		y_pos = D_MARGIN_TOP;
