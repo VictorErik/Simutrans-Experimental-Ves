@@ -81,7 +81,7 @@ static uint8 selected_sortby_desc = 0;
 static uint8 selected_sortby_veh = 0;
 static uint8 selected_displ_desc = 0;
 static uint8 selected_displ_veh = 0;
-static vector_tpl<vehicle_desc_t*> desc_for_display;
+vector_tpl<vehicle_desc_t*> desc_for_display;
 static bool desc_for_display_reset = true;
 
 bool vehicle_manager_t::desc_sortreverse = false;
@@ -681,9 +681,9 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	if (comp == &bt_select_multiple_desc) {
 		bt_select_multiple_desc.pressed = !bt_select_multiple_desc.pressed;
 		select_multiple_desc = bt_select_multiple_desc.pressed;
-		//update_tabs();
-		//save_previously_selected_desc();
-		//page_turn_desc = false;
+		//update_tabs(); // To display a tab with only multiple units?
+		save_previously_selected_desc();
+		page_turn_desc = false;
 		//build_desc_list();
 	}
 
@@ -1307,46 +1307,75 @@ void vehicle_manager_t::reset_veh_text_input_display()
 			case displ_veh_cargo:
 			{
 				vector_tpl<const goods_desc_t*> desc_goods_list;// The complete list of goods that the selected desc's can carry
-				bool desc_includes_pass = false;
-				bool desc_includes_mail = false;
-				bool desc_includes_special = false;
-				bool desc_includes_normal = false;
+				desc_includes_pass = false;
+				desc_includes_mail = false;
+				desc_includes_special = false;
+				desc_includes_normal = false;
+				desc_count_special_freight = 0;
 				combo_veh_display.clear_elements();
 				combo_veh_display.set_visible(true);
 				veh_display_combobox_indexes.clear();
 				display_show_any = false;
 				desc_goods_list.clear();
-				if (desc_for_display.get_count()>0)
+				if (desc_for_display.get_count() > 0)
 				{
 					desc_goods_list.resize(welt->get_goods_list().get_count());
-					for (int i = 0; i < desc_for_display.get_count(); i++)
+					int counter = 0;
+					int category_counter = 0;
+					// Determine wether the selected vehicle(s) can carry any payload at all
+					FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list())
 					{
-						vehicle_desc_t* desc = desc_for_display.get_element(i);
-						FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list()) {
-							if (g->get_catg_index() == desc->get_freight_type()->get_catg_index())
+						for (int i = 0; i < desc_for_display.get_count(); i++)
+						{
+							vehicle_desc_t* desc = desc_for_display.get_element(i);
+							if (desc->get_total_capacity()>0 && g->get_catg_index() == desc->get_freight_type()->get_catg_index())
 							{
-								desc_goods_list.append(g);
-								for (int j = 0; j< desc_goods_list.get_count();j++)
+								if (g->get_catg() == 0)
 								{
-									if (g == desc_goods_list.get_element(j))
-									{
-										desc_goods_list.remove(g); // If element already exists in desc_goods_list, remove it again
+									if (g->get_catg_index() == goods_manager_t::INDEX_PAS) {
+										desc_goods_list.append(g);
+										category_counter = !desc_includes_pass ? category_counter +1 : category_counter;
+										desc_includes_pass = true;
+									}
+									else if (g->get_catg_index() == goods_manager_t::INDEX_MAIL) {
+										desc_goods_list.append(g);
+										category_counter = !desc_includes_mail ? category_counter +1 : category_counter;
+										desc_includes_mail = true;
+									}
+									else { // Special freight
+										desc_goods_list.append(g);
+										desc_count_special_freight++;
+										category_counter = !desc_includes_special ? category_counter +1 : category_counter;
+										desc_includes_special = true;
 									}
 								}
-								desc_includes_pass = g->get_catg_index() == goods_manager_t::INDEX_PAS	? true : desc_includes_pass;
-								desc_includes_mail = g->get_catg_index() == goods_manager_t::INDEX_MAIL	? true : desc_includes_mail;
-								desc_includes_special = g->get_catg()	== 0							? true : desc_includes_special; // Special freight
-								desc_includes_normal = (g->get_catg_index() != goods_manager_t::INDEX_PAS) && (g->get_catg_index() != goods_manager_t::INDEX_MAIL) && (g->get_catg() != 0) ? true : desc_includes_normal;
+								else // Normal freight
+								{
+									desc_goods_list.append(g);
+									desc_includes_normal = true;
+								}
+
+								counter++;
+								break;
 							}
 						}
 					}
-					veh_display_combobox_indexes.resize(desc_goods_list.get_count());
+
+					desc_goods_list.resize(counter);
+					veh_display_combobox_indexes.resize(counter);
+
+					// Build the combobox with the given entries
 					if (desc_goods_list.get_count() > 0)
 					{
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("show_all"), SYSCOL_TEXT));
-						veh_display_combobox_indexes.append(0);				
+						veh_display_combobox_indexes.append(254);
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
-						veh_display_combobox_indexes.append(0);
+						veh_display_combobox_indexes.append(252);
+						if (desc_includes_normal || category_counter > 1) {
+							display_show_any = true;
+							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("any_payload"), SYSCOL_TEXT));
+							veh_display_combobox_indexes.append(253);
+						}
 
 						// Passenger and mail vehicles display by class here perhaps?
 						if (desc_includes_pass)
@@ -1361,29 +1390,42 @@ void vehicle_manager_t::reset_veh_text_input_display()
 						}
 						if (desc_includes_special)
 						{
-							for (int i = 0; i < desc_goods_list.get_count(); i++)
+							counter = 0;
+							// In order to get a consistent order (haha), we apply the goods in the order they come out from this loop
+							FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list())
 							{
-								if (desc_goods_list.get_element(i)->get_catg() == 0)
+								if (g->get_catg() == 0) // Special freight
 								{
-									combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
-									//veh_display_combobox_indexes.append(desc_for_display->get_freight_type()->get_catg());
-									veh_display_combobox_indexes.append(desc_goods_list.get_element(i)->get_index()); // This might need some fixing as the special cargo has its own requirements...									
+									for (int i = 0; i < desc_goods_list.get_count(); i++)
+									{
+										if (desc_goods_list.get_element(i)->get_catg() == 0)
+										{
+											combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
+											veh_display_combobox_indexes.append(2 + desc_goods_list.get_element(i)->get_index()); // Special freight = n + 2	
+											counter++;
+										}
+									}
 								}
 							}
-
 						}
-						 // Normal good car
+						// Normal good car
 						if (desc_includes_normal)
 						{
-							display_show_any = true;
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("any_load"), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(0);
-							for (int i = 0; i < desc_goods_list.get_count(); i++)							
+							counter = 0;
+							// In order to get a consistent order, we apply the goods in the order they come out from this loop
+							FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list())
 							{
-								if ((desc_goods_list.get_element(i)->get_catg_index() != goods_manager_t::INDEX_PAS) && (desc_goods_list.get_element(i)->get_catg_index() != goods_manager_t::INDEX_MAIL) && (desc_goods_list.get_element(i)->get_catg() != 0))
+								if (g->get_catg() != 0) // Not special freight
 								{
-									combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
-									veh_display_combobox_indexes.append(desc_goods_list.get_element(i)->get_index());
+									for (int i = 0; i < desc_goods_list.get_count(); i++)
+									{
+										if (desc_goods_list.get_element(i)->get_catg() == 0)
+										{
+											combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
+											veh_display_combobox_indexes.append(desc_count_special_freight + 2 + desc_goods_list.get_element(i)->get_index()); // Normal freight = n + 2 + desc_count_special_freight
+											counter++;
+										}
+									}
 								}
 							}
 						}
@@ -2570,10 +2612,12 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 
 	if (!select_multiple_desc)
 	{
+		old_count_desc_selection = 0;
 		for (int i = 0; i < desc_info.get_count(); i++)
 		{
 			if (desc_info.get_element(i)->is_selected())
 			{
+				old_count_desc_selection = 1;
 				no_desc_selected = false;
 				int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
 				int actual_index = i + offset_index;
@@ -2593,6 +2637,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 								desc_info.get_element(j)->set_selection(false);
 							}
 						}
+						update_desc_selection();
 						update_veh_list = true;
 						break;
 					}
@@ -2602,30 +2647,22 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	}
 	else
 	{
-		int counter = 0;
+		new_count_desc_selection = 0;
 		for (int i = 0; i < desc_info.get_count(); i++)
 		{
 			if (desc_info.get_element(i)->is_selected())
 			{
 				no_desc_selected = false;
-				counter++;
+				new_count_desc_selection++;
 			}
 		}
-		if (counter != desc_for_display.get_count())
+		if (old_count_desc_selection != new_count_desc_selection)
 		{
-			desc_for_display.clear();
-			desc_for_display.resize(counter);
-			for (int i = 0; i < desc_info.get_count(); i++)
+			old_count_desc_selection = new_count_desc_selection;
 			{
-				if (desc_info.get_element(i)->is_selected())
-				{
-					int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
-					int actual_index = i + offset_index;
-					desc_for_display.append(desc_list.get_element(actual_index));
-				}
+				update_desc_selection();
 			}
 		}
-		update_veh_list = true;
 	}
 	if (no_desc_selected && !page_turn_desc && selected_desc_index != -1)
 	{
@@ -4853,7 +4890,7 @@ void vehicle_manager_t::display_veh_list()
 	for (i = 0; i < icnv; i++) {
 		if (veh_list.get_element(i) != NULL)
 		{
-			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index), sortby_veh, display_veh);
+			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i + offset_index), sortby_veh, display_veh);
 			vinfo->set_pos(scr_coord(0, ypos));
 			vinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, vinfo->get_entry_height()));
 			vinfo->set_selection(veh_selection[i + offset_index]);
@@ -4879,6 +4916,24 @@ void vehicle_manager_t::display_veh_list()
 	veh_info.set_count(icnv);
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	display(scr_coord(0, 0));
+}
+
+void vehicle_manager_t::update_desc_selection()
+{
+	// This builds the actual array of selected desc's that we will show info about
+	int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
+	desc_for_display.clear();
+	desc_for_display.resize(old_count_desc_selection);
+	for (int i = 0; i < desc_info.get_count(); i++)
+	{
+		if (desc_info.get_element(i)->is_selected())
+		{
+			int actual_index = i + offset_index;
+			desc_for_display.append(desc_list.get_element(actual_index));
+		}
+	}
+	// Build the vehicle list again
+	build_veh_list();
 }
 
 void vehicle_manager_t::update_veh_selection()
@@ -4909,7 +4964,6 @@ void vehicle_manager_t::update_veh_selection()
 	//build_class_entries();
 	display(scr_coord(0, 0));
 }
-
 
 void vehicle_manager_t::update_cargo_manifest(cbuffer_t& buf)
 {

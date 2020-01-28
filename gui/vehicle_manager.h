@@ -243,6 +243,8 @@ private:
 	vehicle_desc_t* old_desc_for_display;
 	vehicle_desc_t* goto_this_desc = NULL;
 	int selected_desc_index;
+	int new_count_desc_selection;
+	int old_count_desc_selection = -1;
 	int new_count_veh_selection;
 	int old_count_veh_selection = -1;
 	int new_count_owned_veh;
@@ -315,7 +317,14 @@ private:
 	int letters_to_compare;
 
 	bool display_show_any;
-	vector_tpl<uint8> veh_display_combobox_indexes;
+
+	vector_tpl<uint8> veh_display_combobox_indexes; // 254 = show all, 253 = any load, 252 = only empty load; 0 = Pass, 1 = Mail, 2 + n = Special freight, "desc_count_special_freight" + n = Normal freight, 
+	int desc_count_special_freight;
+	bool desc_includes_pass = false;
+	bool desc_includes_mail = false;
+	bool desc_includes_special = false;
+	bool desc_includes_normal = false;
+
 
 public:
 	vehicle_manager_t(player_t* player);
@@ -357,7 +366,8 @@ public:
 	uint8 return_desc_category(vehicle_desc_t *desc);
 
 	void update_tabs();
-	void update_vehicle_type_tabs();
+	void update_vehicle_type_tabs(); 
+	void update_desc_selection();
 	void update_veh_selection();
 	void update_cargo_manifest(cbuffer_t& buf);
 	void build_class_entries();
