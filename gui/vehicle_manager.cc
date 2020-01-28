@@ -573,7 +573,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	sortby_veh = (sort_mode_veh_t)selected_sortby_veh;
 	display_veh = (display_mode_veh_t)selected_displ_veh;
 	
-	if (desc_for_display.get_element(0))
+	if (desc_for_display.get_count() > 0)
 	{
 		selected_tab_waytype_index = 0;
 	}
@@ -2567,6 +2567,8 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	display_ddd_box_clip(pos.x + middle_line - 5, pos.y + header_section + upper_section, 0, height - lower_section + extra_height, MN_GREY0, MN_GREY4); // Vertical separator
 
 	// This handles the selection of the vehicles in the "desc" section
+
+	if (!select_multiple_desc)
 	{
 		for (int i = 0; i < desc_info.get_count(); i++)
 		{
@@ -2579,7 +2581,9 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 				{
 					if (actual_index < desc_list.get_count())
 					{
-						desc_for_display = desc_list.get_element(actual_index);
+						desc_for_display.clear();
+						desc_for_display.resize(1);
+						desc_for_display.append(desc_list.get_element(actual_index));
 						selected_desc_index = actual_index;
 
 						for (int j = 0; j < desc_info.get_count(); j++)
@@ -2596,9 +2600,36 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 			}
 		}
 	}
+	else
+	{
+		int counter = 0;
+		for (int i = 0; i < desc_info.get_count(); i++)
+		{
+			if (desc_info.get_element(i)->is_selected())
+			{
+				no_desc_selected = false;
+				counter++;
+			}
+		}
+		if (counter != desc_for_display.get_count())
+		{
+			desc_for_display.clear();
+			desc_for_display.resize(counter);
+			for (int i = 0; i < desc_info.get_count(); i++)
+			{
+				if (desc_info.get_element(i)->is_selected())
+				{
+					int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
+					int actual_index = i + offset_index;
+					desc_for_display.append(desc_list.get_element(actual_index));
+				}
+			}
+		}
+		update_veh_list = true;
+	}
 	if (no_desc_selected && !page_turn_desc && selected_desc_index != -1)
 	{
-		desc_for_display = NULL;
+		desc_for_display.clear();
 		update_veh_list = true;
 		selected_desc_index = -1;
 	}
@@ -2822,7 +2853,7 @@ void vehicle_manager_t::display(scr_coord pos)
 	bt_reset_all_classes.disable();
 	lb_reassign_class_to.set_color(SYSCOL_EDIT_TEXT_DISABLED);
 
-	if (desc_for_display)
+	if (desc_for_display.get_count()>0)
 	{
 		if (no_class_vehicle)
 		{
@@ -3199,9 +3230,9 @@ void vehicle_manager_t::update_tabs()
 			}
 		}
 	}
-	else if (desc_for_display)
+	else if (desc_for_display.get_count()>0)
 	{ // Should only come in here when window is just opened and no tabs have been created yet
-		old_selected_tab = (waytype_t*)desc_for_display->get_waytype();
+		old_selected_tab = (waytype_t*)desc_for_display.get_element(0)->get_waytype();
 	}
 
 	tabs_waytype.clear();
@@ -4330,180 +4361,180 @@ bool vehicle_manager_t::compare_desc_amount(char* veh1, char* veh2)
 
 void vehicle_manager_t::build_livery_list()
 {
-	cont_livery.remove_all();
-	livery_info.clear();
-	int ypos = 10;
-	amount_of_liveries = 0;
-	int box_height = LINESPACE * 3;
+	//cont_livery.remove_all();
+	//livery_info.clear();
+	//int ypos = 10;
+	//amount_of_liveries = 0;
+	//int box_height = LINESPACE * 3;
 
-	if (desc_for_display)
-	{
-		// Resize the livery_info vector
-		uint32 n = 0;
-		for (auto scheme : *welt->get_settings().get_livery_schemes())
-		{
-			if (scheme->is_available(welt->get_timeline_year_month()))
-			{
-				n++;
-			}
-		}
-		livery_info.resize(n);
+	//if (desc_for_display)
+	//{
+	//	// Resize the livery_info vector
+	//	uint32 n = 0;
+	//	for (auto scheme : *welt->get_settings().get_livery_schemes())
+	//	{
+	//		if (scheme->is_available(welt->get_timeline_year_month()))
+	//		{
+	//			n++;
+	//		}
+	//	}
+	//	livery_info.resize(n);
 
-		// Fill the vector with actual entries
+	//	// Fill the vector with actual entries
 
-		// The following code is in pieces and does not work. "scheme" appears to not know its children schemes, and getting the available schemes out of the vehicle is cumbersome
-		//int i = 0;
-		//for (auto scheme : *welt->get_settings().get_livery_schemes())
-		//{
-		//	if (scheme->is_available(welt->get_timeline_year_month()))
-		//	{
-		//		if (desc_for_display->check_livery(scheme[i].name.c_str()))
-		//		{
+	//	// The following code is in pieces and does not work. "scheme" appears to not know its children schemes, and getting the available schemes out of the vehicle is cumbersome
+	//	//int i = 0;
+	//	//for (auto scheme : *welt->get_settings().get_livery_schemes())
+	//	//{
+	//	//	if (scheme->is_available(welt->get_timeline_year_month()))
+	//	//	{
+	//	//		if (desc_for_display->check_livery(scheme[i].name.c_str()))
+	//	//		{
 
-		//			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
-		//			linfo->set_pos(scr_coord(0, ypos));
-		//			linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
-		//			livery_info.append(linfo);
-		//			cont_livery.add_component(linfo);
-		//			ypos += max(linfo->get_entry_height(), box_height);
-		//			amount_of_liveries++;
+	//	//			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
+	//	//			linfo->set_pos(scr_coord(0, ypos));
+	//	//			linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
+	//	//			livery_info.append(linfo);
+	//	//			cont_livery.add_component(linfo);
+	//	//			ypos += max(linfo->get_entry_height(), box_height);
+	//	//			amount_of_liveries++;
 
-		//		}
-		//	}
-		//}
+	//	//		}
+	//	//	}
+	//	//}
 
-		//// This code is from livery_scheme.cc
-		//const char* livery_name = NULL;
-		//uint16 latest_valid_intro_date = 0;
-		////for (uint32 i = 0; i < liveries.get_count(); i++)
-		//for (auto scheme : *welt->get_settings().get_livery_schemes())
-		//{
-		//	if (date >= liveries[i].intro_date && desc->check_livery(liveries[i].name.c_str()) && liveries[i].intro_date > latest_valid_intro_date)
-		//	{
-		//		// This returns the most recent livery available for this vehicle that is not in the future.
-		//		latest_valid_intro_date = liveries[i].intro_date;
-		//		livery_name = liveries[i].name.c_str();
-		//	}
-		//}
-		//return livery_name;
-		
+	//	//// This code is from livery_scheme.cc
+	//	//const char* livery_name = NULL;
+	//	//uint16 latest_valid_intro_date = 0;
+	//	////for (uint32 i = 0; i < liveries.get_count(); i++)
+	//	//for (auto scheme : *welt->get_settings().get_livery_schemes())
+	//	//{
+	//	//	if (date >= liveries[i].intro_date && desc->check_livery(liveries[i].name.c_str()) && liveries[i].intro_date > latest_valid_intro_date)
+	//	//	{
+	//	//		// This returns the most recent livery available for this vehicle that is not in the future.
+	//	//		latest_valid_intro_date = liveries[i].intro_date;
+	//	//		livery_name = liveries[i].name.c_str();
+	//	//	}
+	//	//}
+	//	//return livery_name;
+	//	
 
-		// If no liveries available, display just the one it has
-		if (amount_of_liveries <= 0)
-		{
-			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
-			linfo->set_pos(scr_coord(0, ypos));
-			linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
-			livery_info.append(linfo);
-			cont_livery.add_component(linfo);
-			ypos += max(linfo->get_entry_height(), box_height);
-			amount_of_liveries++;
-		}
-		livery_info.resize(amount_of_liveries);
-		cont_livery.set_size(scr_size(initial_livery_entry_width - 12, ypos));
-	}
-	display(scr_coord(0, 0));
+	//	// If no liveries available, display just the one it has
+	//	if (amount_of_liveries <= 0)
+	//	{
+	//		gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
+	//		linfo->set_pos(scr_coord(0, ypos));
+	//		linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
+	//		livery_info.append(linfo);
+	//		cont_livery.add_component(linfo);
+	//		ypos += max(linfo->get_entry_height(), box_height);
+	//		amount_of_liveries++;
+	//	}
+	//	livery_info.resize(amount_of_liveries);
+	//	cont_livery.set_size(scr_size(initial_livery_entry_width - 12, ypos));
+	//}
+	//display(scr_coord(0, 0));
 }
 
 void vehicle_manager_t::build_upgrade_list()
 {
-	cont_upgrade.remove_all();
-	upgrade_info.clear();
-	int ypos = 10;
-	amount_of_upgrades = 0;
-	int box_height = LINESPACE * 3;
+	//cont_upgrade.remove_all();
+	//upgrade_info.clear();
+	//int ypos = 10;
+	//amount_of_upgrades = 0;
+	//int box_height = LINESPACE * 3;
 
-	if (desc_for_display)
-	{
-		if (display_upgrade_into) // Build the list of upgrades to this vehicle		
-		{
-			if (desc_for_display->get_upgrades_count() > 0)
-			{
-				const uint16 month_now = welt->get_timeline_year_month();
-				upgrade_info.resize(desc_for_display->get_upgrades_count());
-				for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
-				{
-					vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
-					if (upgrade)
-					{
-						//if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
-						if ((!upgrade->is_future(month_now) && !upgrade->is_retired(month_now))
-							|| (show_out_of_production_vehicles && upgrade->is_retired(month_now) && !upgrade->is_obsolete(month_now, welt))
-							|| (show_obsolete_vehicles && upgrade->is_obsolete(month_now, welt)))
-						{
-							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
-							uinfo->set_pos(scr_coord(0, ypos));
-							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
-							upgrade_info.append(uinfo);
-							cont_upgrade.add_component(uinfo);
-							ypos += max(uinfo->get_entry_height(), box_height);
-							amount_of_upgrades++;
-						}
-					}
-				}
-			}
-		}
-		else // Build the list of vehicles that can upgrade into this vehicle
-		{
-			bool upgrades_from_this;
-			int counter = 0;
-			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-			{
-				counter++;
-			}
-			upgrade_info.resize(counter);
-			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-			{
-				upgrades_from_this = false;
-				if (info->get_upgrades_count() > 0)
-				{
-					for (int i = 0; i < info->get_upgrades_count(); i++)
-					{
-						vehicle_desc_t* upgrade = (vehicle_desc_t*)info->get_upgrades(i);
-						if (upgrade == desc_for_display)
-						{
-							upgrades_from_this = true;
-							break;
-						}
-					}
-				}
-				if (upgrades_from_this)
-				{
-					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
-					uinfo->set_pos(scr_coord(0, ypos));
-					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
-					upgrade_info.append(uinfo);
-					cont_upgrade.add_component(uinfo);
-					ypos += max(uinfo->get_entry_height(), box_height);
-					amount_of_upgrades++;
-				}
-			}
-		}
-		upgrade_info.resize(amount_of_upgrades);
+	//if (desc_for_display)
+	//{
+	//	if (display_upgrade_into) // Build the list of upgrades to this vehicle		
+	//	{
+	//		if (desc_for_display->get_upgrades_count() > 0)
+	//		{
+	//			const uint16 month_now = welt->get_timeline_year_month();
+	//			upgrade_info.resize(desc_for_display->get_upgrades_count());
+	//			for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
+	//			{
+	//				vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
+	//				if (upgrade)
+	//				{
+	//					//if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+	//					if ((!upgrade->is_future(month_now) && !upgrade->is_retired(month_now))
+	//						|| (show_out_of_production_vehicles && upgrade->is_retired(month_now) && !upgrade->is_obsolete(month_now, welt))
+	//						|| (show_obsolete_vehicles && upgrade->is_obsolete(month_now, welt)))
+	//					{
+	//						gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
+	//						uinfo->set_pos(scr_coord(0, ypos));
+	//						uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
+	//						upgrade_info.append(uinfo);
+	//						cont_upgrade.add_component(uinfo);
+	//						ypos += max(uinfo->get_entry_height(), box_height);
+	//						amount_of_upgrades++;
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//	else // Build the list of vehicles that can upgrade into this vehicle
+	//	{
+	//		bool upgrades_from_this;
+	//		int counter = 0;
+	//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+	//		{
+	//			counter++;
+	//		}
+	//		upgrade_info.resize(counter);
+	//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+	//		{
+	//			upgrades_from_this = false;
+	//			if (info->get_upgrades_count() > 0)
+	//			{
+	//				for (int i = 0; i < info->get_upgrades_count(); i++)
+	//				{
+	//					vehicle_desc_t* upgrade = (vehicle_desc_t*)info->get_upgrades(i);
+	//					if (upgrade == desc_for_display)
+	//					{
+	//						upgrades_from_this = true;
+	//						break;
+	//					}
+	//				}
+	//			}
+	//			if (upgrades_from_this)
+	//			{
+	//				gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
+	//				uinfo->set_pos(scr_coord(0, ypos));
+	//				uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
+	//				upgrade_info.append(uinfo);
+	//				cont_upgrade.add_component(uinfo);
+	//				ypos += max(uinfo->get_entry_height(), box_height);
+	//				amount_of_upgrades++;
+	//			}
+	//		}
+	//	}
+	//	upgrade_info.resize(amount_of_upgrades);
 
-		// Display "no_vehicles_available" when list is empty
-		if (amount_of_upgrades <= 0)
-		{
-			cbuffer_t buf;
-			buf.clear();
-			if (display_upgrade_into)
-			{
-				buf.append(translator::translate("no_upgrades_available"));
-			}
-			else
-			{
-				buf.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
-			}
-			int box_height = LINESPACE * 3;
-			gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
-			sinfo->set_pos(scr_coord(0, ypos));
-			sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
-			cont_upgrade.add_component(sinfo);
-			ypos += max(sinfo->get_entry_height(), box_height);
-		}
-		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
-	}
-	display(scr_coord(0,0));
+	//	// Display "no_vehicles_available" when list is empty
+	//	if (amount_of_upgrades <= 0)
+	//	{
+	//		cbuffer_t buf;
+	//		buf.clear();
+	//		if (display_upgrade_into)
+	//		{
+	//			buf.append(translator::translate("no_upgrades_available"));
+	//		}
+	//		else
+	//		{
+	//			buf.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
+	//		}
+	//		int box_height = LINESPACE * 3;
+	//		gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
+	//		sinfo->set_pos(scr_coord(0, ypos));
+	//		sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
+	//		cont_upgrade.add_component(sinfo);
+	//		ypos += max(sinfo->get_entry_height(), box_height);
+	//	}
+	//	cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
+	//}
+	//display(scr_coord(0,0));
 }
 
 void vehicle_manager_t::build_desc_list()
@@ -4594,7 +4625,9 @@ void vehicle_manager_t::build_desc_list()
 	}
 	if (goto_this_desc)
 	{
-		desc_for_display = goto_this_desc;
+		desc_for_display.clear();
+		desc_for_display.resize(1);
+		desc_for_display.append(goto_this_desc);
 		save_previously_selected_desc();
 		goto_this_desc = NULL;
 	}
@@ -4604,7 +4637,14 @@ void vehicle_manager_t::build_desc_list()
 void vehicle_manager_t::save_previously_selected_desc()
 {
 	// When we need to remember what vehicle was selected, for instance due to resorting, this will remember it.
-	old_desc_for_display = desc_for_display;
+	if (desc_for_display.get_count() > 0)
+	{
+		old_desc_for_display = desc_for_display.get_element(0);
+	}
+	else
+	{
+		old_desc_for_display = NULL;
+	}
 }
 
 void vehicle_manager_t::display_desc_list()
@@ -4697,7 +4737,7 @@ void vehicle_manager_t::display_desc_list()
 	{
 		if (!old_desc_for_display)
 		{
-			desc_for_display = NULL;
+			desc_for_display.clear();
 		}
 		old_desc_for_display = NULL;
 	}
@@ -4721,14 +4761,16 @@ void vehicle_manager_t::build_veh_list()
 	int counter = 0;
 	way_type = (waytype_t)selected_tab_waytype;
 	veh_list.clear();
-	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-			{
-				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == desc_for_display && is_veh_displayable((vehicle_t*)v))
+	for (int i = 0; i < desc_for_display.get_count(); i++){
+		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 				{
-					counter++;
+					vehicle_t* v = cnv->get_vehicle(veh);
+					if (v->get_desc() == desc_for_display.get_element(i) && is_veh_displayable((vehicle_t*)v))
+					{
+						counter++;
+					}
 				}
 			}
 		}
@@ -4736,14 +4778,16 @@ void vehicle_manager_t::build_veh_list()
 	veh_list.resize(counter);
 
 	// Populate the vector with the vehicles we own that is also "for display"
-	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-			{
-				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == desc_for_display && is_veh_displayable((vehicle_t*)v))
+	for (int i = 0; i < desc_for_display.get_count(); i++) {
+		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 				{
-					veh_list.append(v);
+					vehicle_t* v = cnv->get_vehicle(veh);
+					if (v->get_desc() == desc_for_display.get_element(i) && is_veh_displayable((vehicle_t*)v))
+					{
+						veh_list.append(v);
+					}
 				}
 			}
 		}
@@ -5082,50 +5126,47 @@ void vehicle_manager_t::build_class_entries()
 	// if no vehicle is selected, only the desc, then display the class labels
 	// TODO: Make this take into consideration multiple desc's at the same time
 
-	if (!any_mail_cargo && !any_pass_cargo && desc_for_display)
+	if (!any_mail_cargo && !any_pass_cargo && desc_for_display.get_count()>0)
 	{
-		if (desc_for_display->get_total_capacity() > 0)
+		for (int j = 0; j < desc_for_display.get_count(); j++)
 		{
-			if (desc_for_display->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+			vehicle_desc_t* desc = desc_for_display.get_element(j);
+			if (desc && desc->get_total_capacity() > 0)
 			{
-				for (int i = 0; i < pass_classes; i++)
+				if (desc->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
 				{
-					if (desc_for_display->get_capacity(i) > 0)
+					for (int i = 0; i < pass_classes; i++)
 					{
-						pass_class_sel.at(i)->set_visible(true);
-						lb_pass_class.at(i)->set_visible(true);
-						pass_capacity_at_accommodation[i] = desc_for_display->get_capacity(i);
-						any_pass_cargo = true;
+						if (desc->get_capacity(i) > 0)
+						{
+							pass_class_sel.at(i)->set_visible(true);
+							lb_pass_class.at(i)->set_visible(true);
+							pass_capacity_at_accommodation[i] = desc->get_capacity(i);
+							any_pass_cargo = true;
+						}
+					}
+				}
+				else if (desc->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+				{
+					for (int i = 0; i < mail_classes; i++)
+					{
+						if (desc->get_capacity(i) > 0)
+						{
+							mail_class_sel.at(i)->set_visible(true);
+							lb_mail_class.at(i)->set_visible(true);
+							mail_capacity_at_accommodation[i] = desc->get_capacity(i);
+							any_mail_cargo = true;
+						}
 					}
 				}
 			}
-			else if (desc_for_display->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
-			{
-				for (int i = 0; i < mail_classes; i++)
-				{
-					if (desc_for_display->get_capacity(i) > 0)
-					{
-						mail_class_sel.at(i)->set_visible(true);
-						lb_mail_class.at(i)->set_visible(true);
-						mail_capacity_at_accommodation[i] = desc_for_display->get_capacity(i);
-						any_mail_cargo = true;
-					}
-				}
-			}					
-			else
-			{
-				// Display "none" if desc/vehicle doesnt support classes: Turn the firstmost passenger label visible
-				lb_pass_class.at(0)->set_visible(true);
-				no_class_vehicle = true;
-			}
-		}			
-		else
+		}
+		if (!any_pass_cargo && !any_mail_cargo)
 		{
 			// Display "none" if desc/vehicle doesnt support classes: Turn the firstmost passenger label visible
 			lb_pass_class.at(0)->set_visible(true);
 			no_class_vehicle = true;
 		}
-
 	}
 
 
