@@ -101,7 +101,7 @@ vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh
 
 int vehicle_manager_t::display_desc_by_good = 0;
 int vehicle_manager_t::display_desc_by_class = 0;
-int vehicle_manager_t::display_veh_by_payload = 0;
+int vehicle_manager_t::display_veh_by_payload = 0;  // 254 = show all, 253 = any load, 252 = only empty load; 0 = Pass, 1 = Mail, 2 + n = Special freight, "desc_count_special_freight" + n = Normal freight
 
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
@@ -683,7 +683,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		select_multiple_desc = bt_select_multiple_desc.pressed;
 		//update_tabs(); // To display a tab with only multiple units?
 		save_previously_selected_desc();
-		page_turn_desc = false;
+		page_turn_desc = false; 
 		//build_desc_list();
 	}
 
@@ -1315,7 +1315,7 @@ void vehicle_manager_t::reset_veh_text_input_display()
 				combo_veh_display.clear_elements();
 				combo_veh_display.set_visible(true);
 				veh_display_combobox_indexes.clear();
-				display_show_any = false;
+				display_show_any_payload = false;
 				desc_goods_list.clear();
 				if (desc_for_display.get_count() > 0)
 				{
@@ -1369,13 +1369,14 @@ void vehicle_manager_t::reset_veh_text_input_display()
 					{
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("show_all"), SYSCOL_TEXT));
 						veh_display_combobox_indexes.append(254);
-						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
-						veh_display_combobox_indexes.append(252);
 						if (desc_includes_normal || category_counter > 1) {
-							display_show_any = true;
+							display_show_any_payload = true;
 							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("any_payload"), SYSCOL_TEXT));
 							veh_display_combobox_indexes.append(253);
 						}
+						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
+						veh_display_combobox_indexes.append(252);
+
 
 						// Passenger and mail vehicles display by class here perhaps?
 						if (desc_includes_pass)
@@ -1398,10 +1399,11 @@ void vehicle_manager_t::reset_veh_text_input_display()
 								{
 									for (int i = 0; i < desc_goods_list.get_count(); i++)
 									{
-										if (desc_goods_list.get_element(i)->get_catg() == 0)
+										if (desc_goods_list.get_element(i) == g)
 										{
 											combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
-											veh_display_combobox_indexes.append(2 + desc_goods_list.get_element(i)->get_index()); // Special freight = n + 2	
+											veh_display_combobox_indexes.append(desc_goods_list.get_element(i)->get_index()); // Special freight = n + 2	
+											//veh_display_combobox_indexes.append(2 + desc_goods_list.get_element(i)->get_index()); // Special freight = n + 2	
 											counter++;
 										}
 									}
@@ -1419,10 +1421,11 @@ void vehicle_manager_t::reset_veh_text_input_display()
 								{
 									for (int i = 0; i < desc_goods_list.get_count(); i++)
 									{
-										if (desc_goods_list.get_element(i)->get_catg() == 0)
+										if (desc_goods_list.get_element(i) == g)
 										{
 											combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
-											veh_display_combobox_indexes.append(desc_count_special_freight + 2 + desc_goods_list.get_element(i)->get_index()); // Normal freight = n + 2 + desc_count_special_freight
+											veh_display_combobox_indexes.append(desc_goods_list.get_element(i)->get_index()); // Normal freight = n + 2 + desc_count_special_freight
+											//veh_display_combobox_indexes.append(desc_count_special_freight + 2 + desc_goods_list.get_element(i)->get_index()); // Normal freight = n + 2 + desc_count_special_freight
 											counter++;
 										}
 									}
@@ -1789,20 +1792,20 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 	// First, go through the different display categories to see if this vehicle fit
 	if (display_veh == displ_veh_cargo)
 	{
-		if (display_veh_by_payload == 0) // Show all vehicles
+		if (display_veh_by_payload == 0) // Show all vehicles.
 		{
 			display = true;
 		}
-		else if (display_veh_by_payload == 1) // Show only empty vehicles
+		else if (display_veh_by_payload == 1 && display_show_any_payload)
 		{
-			if (veh->get_cargo_carried() <= 0)
+			if (veh->get_cargo_carried() > 0)
 			{
 				display = true;
 			}
 		}
-		else if (display_veh_by_payload == 2 && display_show_any)
+		else if ((display_veh_by_payload == 1 && !display_show_any_payload) || (display_veh_by_payload == 2 && display_show_any_payload)) // Show only empty vehicles
 		{
-			if (veh->get_cargo_carried() > 0)
+			if (veh->get_cargo_carried() <= 0)
 			{
 				display = true;
 			}
@@ -1832,6 +1835,10 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 			{
 				if (veh_display_combobox_indexes.get_count() > 0)
 				{
+					if (display_veh_by_payload >= veh_display_combobox_indexes.get_count())
+					{
+						display_veh_by_payload = 1;
+					}
 					int freight_index = fracht_array.get_element(i).get_index();
 					int freight_index_vehicle = veh_display_combobox_indexes[display_veh_by_payload];
 					if (freight_index == freight_index_vehicle)
@@ -1843,6 +1850,7 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 
 		}
 	}
+	
 
 	else if (display_veh == displ_veh_location) // free text input
 	{
@@ -2761,6 +2769,10 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	}
 	else if (update_veh_list)
 	{
+		if (display_veh==display_veh_by_payload) // Because some sort- and display modes requires to be reset when new vehicles are added
+		{
+			reset_veh_text_input_display();
+		}
 		build_veh_list();
 		update_cargo_manifest(cargo_buf);
 	}

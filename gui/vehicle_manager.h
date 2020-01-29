@@ -316,14 +316,14 @@ private:
 	char veh_display_location[64];
 	int letters_to_compare;
 
-	bool display_show_any;
 
-	vector_tpl<uint8> veh_display_combobox_indexes; // 254 = show all, 253 = any load, 252 = only empty load; 0 = Pass, 1 = Mail, 2 + n = Special freight, "desc_count_special_freight" + n = Normal freight, 
+	vector_tpl<uint8> veh_display_combobox_indexes; // 254 = show all, 253 = any load, 252 = only empty load; 0 = Pass, 1 = Mail, 2 + n = Special freight, "desc_count_special_freight" + n = Normal freight
 	int desc_count_special_freight;
 	bool desc_includes_pass = false;
 	bool desc_includes_mail = false;
 	bool desc_includes_special = false;
 	bool desc_includes_normal = false;
+	bool display_show_any_payload;
 
 
 public:
