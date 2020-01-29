@@ -2293,7 +2293,9 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		mon_nominal += welt->calc_adjusted_monthly_figure(desc_info_text->get_fixed_cost());
 		mon_actual += welt->calc_adjusted_monthly_figure(desc_info_text->get_fixed_cost(welt));
 		bool increased_cost = false;
-	
+		
+		// Following outcommented section requires a rework to function with multiple desc's
+		/*
 		if (run_nominal) run_percent = ((run_actual - run_nominal) * 100) / run_nominal;
 		if (mon_nominal) mon_percent = ((mon_actual - mon_nominal) * 100) / mon_nominal;
 		if (run_percent)
@@ -2321,6 +2323,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		{
 			display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, COL_DARK_BLUE, true);
 		}
+		*/
 
 		pos_y += LINESPACE*2;
 		n = 0;
