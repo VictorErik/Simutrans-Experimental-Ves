@@ -2962,8 +2962,9 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Header columns:
 	h_column_1 = D_MARGIN_LEFT;
 	h_column_2 = h_column_1 + display_calc_proportional_string_len_width(text_show_all_vehicles, -1) + 30;
-	h_column_3 = h_column_2 + display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1) + 30;
-	h_column_4 = h_column_3 + display_calc_proportional_string_len_width(text_show_obsolete_vehicles, -1) + 30;
+	h_column_3 = h_column_2 + display_calc_proportional_string_len_width(text_select_multiple_desc, -1) + 30;
+	h_column_4 = h_column_3 + display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1) + 30;
+	h_column_5 = h_column_4 + display_calc_proportional_string_len_width(text_show_obsolete_vehicles, -1) + 30;
 
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
@@ -2984,17 +2985,18 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	bt_show_available_vehicles.set_pos(scr_coord(h_column_1, y_pos));
 	bt_show_available_vehicles.set_size(scr_size(h_column_2 - h_column_1, D_BUTTON_HEIGHT));
 
+	// Select multiple desc button
+	bt_select_multiple_desc.set_pos(scr_coord(h_column_2, y_pos));
+	bt_select_multiple_desc.set_size(scr_size(h_column_3 - h_column_2, D_BUTTON_HEIGHT));
+
 	// Show vehicles out of production button
-	bt_show_out_of_production_vehicles.set_pos(scr_coord(h_column_2, y_pos));
-	bt_show_out_of_production_vehicles.set_size(scr_size(h_column_3 - h_column_2, D_BUTTON_HEIGHT));
+	bt_show_out_of_production_vehicles.set_pos(scr_coord(h_column_3, y_pos));
+	bt_show_out_of_production_vehicles.set_size(scr_size(h_column_4 - h_column_3, D_BUTTON_HEIGHT));
 
 	// Show obsolete vehicles button
-	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_3, y_pos));
-	bt_show_obsolete_vehicles.set_size(scr_size(h_column_4 - h_column_3, D_BUTTON_HEIGHT));
+	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_4, y_pos));
+	bt_show_obsolete_vehicles.set_size(scr_size(h_column_5 - h_column_4, D_BUTTON_HEIGHT));
 
-	// Select multiple desc button
-	bt_select_multiple_desc.set_pos(scr_coord(h_column_4, y_pos));
-	bt_select_multiple_desc.set_size(scr_size(width - h_column_4, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Waytype tab panel

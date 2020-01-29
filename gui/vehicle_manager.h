@@ -212,6 +212,7 @@ private:
 	int h_column_2;
 	int h_column_3;
 	int h_column_4;
+	int h_column_5;
 
 	// Upper columns
 	int u_column_1;
