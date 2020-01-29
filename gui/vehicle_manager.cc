@@ -2192,30 +2192,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		pos_y += LINESPACE;
 
-		// Cost information:
-		// If any SELECTED vehicles, find out what their resale values are. If different resale values, then show the range
-		double max_resale_value = -1;
-		double min_resale_value = desc_info_text->get_value();
-		if (count_veh_selection > 0)
-		{
-			for (uint8 j = 0; j < veh_list.get_count(); j++)
-			{
-				if (veh_selection[j] == true)
-				{
-					vehicle_t* veh = veh_list.get_element(j);
-					if (veh->calc_sale_value() > max_resale_value)
-					{
-						max_resale_value = veh->calc_sale_value();
-					}
-					if (veh->calc_sale_value() < min_resale_value)
-					{
-						min_resale_value = veh->calc_sale_value();
-					}
-				}
-			}
-		}
-
-		// Cost
+		// Cost information:		
 		hightest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
 		combined_value = 0;
@@ -2233,26 +2210,39 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		money_to_string(tmp_2, hightest_value / 100.0, false);
 		n = sprintf(buf, translator::translate("Cost: %8s"), tmp_1);
 		if (!combine_values && !lowest_equal_highest_value) {
-			sprintf(buf + n, " - %s", tmp_2);
+			n += sprintf(buf + n, " - %s", tmp_2);
+		}
+
+		if (count_veh_selection > 0) {
+			n += sprintf(buf + n, "; "); // If vehicles are selected, their resale price will be shown in another color, needing a black semicolon to separate it from the cost
 		}
 		int extra_x = display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		extra_x += 5;
-		char resale_entry[128] = "\0";
-		if (max_resale_value != -1)
+
+		// Resale value, calculated by the selected veh_list. This is scheduled to be changed, when the new second hand market is introduced
+		hightest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
+		combined_value = 0;
+		if (count_veh_selection > 0)
 		{
-
-			money_to_string(tmp_1, max_resale_value / 100.0, false);
-			money_to_string(tmp_2, min_resale_value / 100.0, false);
-
-			if (max_resale_value != min_resale_value)
+			for (uint8 j = 0; j < veh_list.get_count(); j++)
 			{
-				sprintf(resale_entry, "(%s %s - %s)", translator::translate("Restwert:"), tmp_1, tmp_2);
+				if (veh_selection[j] == true)
+				{
+					vehicle_t* veh = veh_list.get_element(j);
+					hightest_value = veh->calc_sale_value() > hightest_value ? veh->calc_sale_value() : hightest_value;
+					lowest_value = veh->calc_sale_value() < lowest_value ? veh->calc_sale_value() : lowest_value;
+					combined_value += veh->calc_sale_value();
+				}
 			}
-			else
-			{
-				sprintf(resale_entry, "(%s %s)", translator::translate("Restwert:"), tmp_1);
+			lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
+			lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+			money_to_string(tmp_1, lowest_value / 100.0, false);
+			money_to_string(tmp_2, hightest_value / 100.0, false);
+			n = sprintf(buf, "%s %s", translator::translate("Restwert:"), tmp_1);
+			if (!combine_values && !lowest_equal_highest_value) {
+				sprintf(buf + n, " - %s", tmp_2);
 			}
-			sprintf(buf, "%s", resale_entry);
 			display_proportional_clip(pos.x + extra_x, pos.y + pos_y, buf, ALIGN_LEFT, COL_DARK_GREEN, true);
 		}
 		pos_y += LINESPACE;
