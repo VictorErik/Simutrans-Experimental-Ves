@@ -2327,10 +2327,25 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 		pos_y += LINESPACE*2;
 		n = 0;
-
 		// Physics information:
-		n += sprintf(buf + n, "%s %3d km/h\n", translator::translate("Max. speed:"), desc_info_text->get_topspeed());
-		n += sprintf(buf + n, "%s %4.1ft\n", translator::translate("Weight:"), desc_info_text->get_weight() / 1000.0); // Convert kg to tonnes
+		// Max speed
+		hightest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_topspeed();
+		for (int i = 0; i < desc_for_display.get_count(); i++)
+		{
+			hightest_value = desc_for_display.get_element(i)->get_topspeed() > hightest_value ? desc_for_display.get_element(i)->get_topspeed() : hightest_value;
+			lowest_value = desc_for_display.get_element(i)->get_topspeed() < lowest_value ? desc_for_display.get_element(i)->get_topspeed() : lowest_value;
+		}
+		lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
+		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+
+		n = sprintf(buf, "%s %3d %s", translator::translate("Max. speed:"), lowest_value, translator::translate("km/h"));
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %3d %s", hightest_value, translator::translate("km/h"));
+		}
+
+	   
+		n += sprintf(buf + n, "\n%s %4.1ft\n", translator::translate("Weight:"), desc_info_text->get_weight() / 1000.0); // Convert kg to tonnes
 		if (desc_info_text->get_waytype() != water_wt)
 		{
 			n += sprintf(buf + n, "%s %it\n", translator::translate("Axle load:"), desc_info_text->get_axle_load());
