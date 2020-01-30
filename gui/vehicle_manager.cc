@@ -2178,7 +2178,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 	const vehicle_desc_t *desc_info_text = NULL;
 	int pos_y;
 	sint64 lowest_value = 0;
-	sint64 hightest_value = 0;
+	sint64 highest_value = 0;
 	sint64 combined_value = 0;
 	bool lowest_equal_highest_value = false;
 	bool combine_values = display_combined_info; // Display the combined value or the "ranged values"
@@ -2209,21 +2209,21 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		pos_y += LINESPACE;
 
 		// Cost information:		
-		hightest_value = 0;
+		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
 		combined_value = 0;
 		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			hightest_value = desc_for_display.get_element(i)->get_value() > hightest_value ? desc_for_display.get_element(i)->get_value() : hightest_value;
+			highest_value = desc_for_display.get_element(i)->get_value() > highest_value ? desc_for_display.get_element(i)->get_value() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_value() < lowest_value ? desc_for_display.get_element(i)->get_value() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_value();
 		}
-		lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
+		lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
 		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
 		char tmp_1[128];
 		char tmp_2[128];
 		money_to_string(tmp_1, lowest_value / 100.0, false);
-		money_to_string(tmp_2, hightest_value / 100.0, false);
+		money_to_string(tmp_2, highest_value / 100.0, false);
 		n = sprintf(buf, translator::translate("Cost: %8s"), tmp_1);
 		if (!combine_values && !lowest_equal_highest_value) {
 			n += sprintf(buf + n, " - %s", tmp_2);
@@ -2236,7 +2236,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		extra_x += 5;
 
 		// Resale value, calculated by the selected veh_list. This is scheduled to be changed, when the new second hand market is introduced
-		hightest_value = 0;
+		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
 		combined_value = 0;
 		if (count_veh_selection > 0)
@@ -2246,15 +2246,15 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				if (veh_selection[j] == true)
 				{
 					vehicle_t* veh = veh_list.get_element(j);
-					hightest_value = veh->calc_sale_value() > hightest_value ? veh->calc_sale_value() : hightest_value;
+					highest_value = veh->calc_sale_value() > highest_value ? veh->calc_sale_value() : highest_value;
 					lowest_value = veh->calc_sale_value() < lowest_value ? veh->calc_sale_value() : lowest_value;
 					combined_value += veh->calc_sale_value();
 				}
 			}
-			lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
+			lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
 			lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
 			money_to_string(tmp_1, lowest_value / 100.0, false);
-			money_to_string(tmp_2, hightest_value / 100.0, false);
+			money_to_string(tmp_2, highest_value / 100.0, false);
 			n = sprintf(buf, "%s %s", translator::translate("Restwert:"), tmp_1);
 			if (!combine_values && !lowest_equal_highest_value) {
 				sprintf(buf + n, " - %s", tmp_2);
@@ -2264,38 +2264,38 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		pos_y += LINESPACE;
 
 		// Maintenance 1/2: Per km
-		hightest_value = 0;
+		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_running_cost(); // Load default value
 		combined_value = 0;
 		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			hightest_value = desc_for_display.get_element(i)->get_running_cost() > hightest_value ? desc_for_display.get_element(i)->get_running_cost() : hightest_value;
+			highest_value = desc_for_display.get_element(i)->get_running_cost() > highest_value ? desc_for_display.get_element(i)->get_running_cost() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_running_cost() < lowest_value ? desc_for_display.get_element(i)->get_running_cost() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_running_cost();
 		}
-		lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
+		lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
 		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
 		n = sprintf(buf, "%s %1.2f$", translator::translate("Maintenance:"), lowest_value / 100.0);
 		if (!combine_values && !lowest_equal_highest_value) {
-			n += sprintf(buf + n, " - %1.2f$", hightest_value / 100.0);
+			n += sprintf(buf + n, " - %1.2f$", highest_value / 100.0);
 		}
 		n += sprintf(buf + n, "/%s", translator::translate("km"));
 		// Maintenance 2/2: Per Month
-		hightest_value = 0;
+		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_adjusted_monthly_fixed_cost(welt); // Load default value
 		combined_value = 0;
 		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			hightest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) > hightest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : hightest_value;
+			highest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) > highest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) < lowest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt);
 		}
-		lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
+		lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
 		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
 
 		n += sprintf(buf + n, ", %1.2f$", lowest_value / 100.0);
 		if (!combine_values && !lowest_equal_highest_value) {
-			n += sprintf(buf + n, " - %1.2f$", hightest_value / 100.0);
+			n += sprintf(buf + n, " - %1.2f$", highest_value / 100.0);
 		}
 		n += sprintf(buf + n, "/%s", translator::translate("month"));
 		display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
@@ -2345,35 +2345,35 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		n = 0;
 		// Physics information:
 		// Max speed
-		hightest_value = 0;
+		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_topspeed();
 		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			hightest_value = desc_for_display.get_element(i)->get_topspeed() > hightest_value ? desc_for_display.get_element(i)->get_topspeed() : hightest_value;
+			highest_value = desc_for_display.get_element(i)->get_topspeed() > highest_value ? desc_for_display.get_element(i)->get_topspeed() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_topspeed() < lowest_value ? desc_for_display.get_element(i)->get_topspeed() : lowest_value;
 		}
-		lowest_equal_highest_value = hightest_value == lowest_value;
+		lowest_equal_highest_value = highest_value == lowest_value;
 
 		n = sprintf(buf, "%s %3d %s", translator::translate("Max. speed:"), (sint32)lowest_value, translator::translate("km/h"));
 		if (!combine_values && !lowest_equal_highest_value) {
-			n += sprintf(buf + n, " - %3d %s", (sint32)hightest_value, translator::translate("km/h"));
+			n += sprintf(buf + n, " - %3d %s", (sint32)highest_value, translator::translate("km/h"));
 		}
 		// Weight
-		hightest_value = 0;
+		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_weight();
 		combined_value = 0;
 		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			hightest_value = desc_for_display.get_element(i)->get_weight() > hightest_value ? desc_for_display.get_element(i)->get_weight() : hightest_value;
+			highest_value = desc_for_display.get_element(i)->get_weight() > highest_value ? desc_for_display.get_element(i)->get_weight() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_weight() < lowest_value ? desc_for_display.get_element(i)->get_weight() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_weight();
 		}
-		lowest_equal_highest_value = hightest_value == lowest_value;
+		lowest_equal_highest_value = highest_value == lowest_value;
 		lowest_value = combine_values ? combined_value : lowest_value;
 
 		n += sprintf(buf + n, "\n%s %4.1ft", translator::translate("Weight:"), (uint32)lowest_value / 1000.0);// Convert kg to tonnes
 		if (!combine_values && !lowest_equal_highest_value) {
-			n += sprintf(buf + n, " - %4.1ft", (uint32)hightest_value / 1000.0);// Convert kg to tonnes
+			n += sprintf(buf + n, " - %4.1ft", (uint32)highest_value / 1000.0);// Convert kg to tonnes
 		}
 
 
