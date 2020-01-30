@@ -93,6 +93,7 @@ bool vehicle_manager_t::select_multiple_desc = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
 bool vehicle_manager_t::show_obsolete_liveries = false;
+bool vehicle_manager_t::display_combined_info = false;
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
 vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
@@ -398,7 +399,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// ----------- Lower section info box with tab panels, buttons, labels and whatnot -----------------//
 	// Lower section tab panels
 	max_idx_information = 0;
-	tabs_info.add_tab(&dummy, translator::translate("infotab_general_information"));
+	tabs_info.add_tab(&cont_general_info, translator::translate("infotab_general_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_general;
 	tabs_info.add_tab(&cont_economics_info, translator::translate("infotab_economics_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_economics;
@@ -418,6 +419,16 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	}
 	tabs_info.add_listener(this);
 	add_component(&tabs_info);
+
+	// General information tab:
+	{
+		sprintf(text_display_combined_info, translator::translate("display_combined_info:"));
+		bt_display_combined_info.init(button_t::square_state, text_display_combined_info, coord_dummy, scr_size((display_calc_proportional_string_len_width(text_display_combined_info, -1) + 30) , D_BUTTON_HEIGHT));
+		bt_display_combined_info.add_listener(this);
+		bt_display_combined_info.set_tooltip(translator::translate("display_info_either_as_either_min_to_max_or_summed_up_as_if_it_was_a_convoy"));
+		bt_display_combined_info.pressed = display_combined_info;
+		cont_general_info.add_component(&bt_display_combined_info);
+	}
 	
 	// Economics tab:
 	{
@@ -896,6 +907,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		uint8 old_selected_tab = selected_tab_information;
 		selected_tab_information = tabs_to_index_information[tab];
 		display_tab_objects();
+	}
+	if (comp == &bt_display_combined_info) {
+		bt_display_combined_info.pressed = !bt_display_combined_info.pressed;
+		display_combined_info = bt_display_combined_info.pressed;
 	}
 	if (comp == &bt_upgrade_to_from) {
 		display_upgrade_into = !display_upgrade_into;
@@ -2161,14 +2176,15 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 {
 	char buf[1024];
 	const vehicle_desc_t *desc_info_text = NULL;
-	int pos_y = 0;
+	int pos_y;
 	sint64 lowest_value = 0;
 	sint64 hightest_value = 0;
 	sint64 combined_value = 0;
 	bool lowest_equal_highest_value = false;
-	bool combine_values = false; // Display the combined value or the "ranged values"
+	bool combine_values = display_combined_info; // Display the combined value or the "ranged values"
 
 	// This section is originally fetched from the gui_convoy_assembler_t, however is modified to display colors for different entries, such as reassigned classes, increased maintenance etc.
+	pos_y = D_MARGIN_TOP + (D_BUTTON_HEIGHT); 
 	buf[0] = '\0';
 	if (desc_for_display.get_count() > 0) {
 		desc_info_text = desc_for_display.get_element(0);
@@ -2430,7 +2446,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 		// column 2
 		// Vehicle intro and retire information:
-		pos_y = 0;
+		pos_y = LINESPACE;
 		n = 0;
 		linespace_skips = 0;
 		n += sprintf(buf + n, "%s %s %04d\n",
@@ -2968,7 +2984,7 @@ void vehicle_manager_t::display(scr_coord pos)
 
 	// Lower section stuff:
 
-
+	bt_display_combined_info.set_visible(false);
 	bt_upgrade_im.disable();
 	bt_upgrade_ov.disable();
 	bt_append_livery.disable();
@@ -2981,6 +2997,9 @@ void vehicle_manager_t::display(scr_coord pos)
 		{
 			// Display "none" if desc/vehicle doesnt support classes
 			lb_pass_class.at(0)->set_color(SYSCOL_TEXT);
+		}
+		if (desc_for_display.get_count() > 1) {
+			bt_display_combined_info.set_visible(true);
 		}
 	}
 
@@ -3205,6 +3224,12 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	l_column_7 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 6;
 
 	int column_width = l_column_2 - l_column_1 - 5;
+	// General information tab:
+	{
+		y_pos = D_MARGIN_TOP;
+		bt_display_combined_info.set_pos(scr_coord(l_column_1, y_pos));
+		bt_display_combined_info.set_width(column_width);
+	}
 	// Economics tab:
 	{ 		// Column 1-2
 		y_pos = D_MARGIN_TOP;

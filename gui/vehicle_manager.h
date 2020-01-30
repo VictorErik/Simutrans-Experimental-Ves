@@ -97,7 +97,7 @@ private:
 	player_t *player;
 	uint8 player_nr;
 
-	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_maintenance_info, cont_economics_info, dummy;
+	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_general_info, cont_maintenance_info, cont_economics_info, dummy;
 	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade, scrolly_livery;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_vehicletype;
@@ -113,7 +113,7 @@ private:
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
 	button_t bt_append_livery, bt_show_obsolete_liveries, bt_reset_all_classes;
-	button_t bt_select_multiple_desc;
+	button_t bt_select_multiple_desc, bt_display_combined_info;
 
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
@@ -141,6 +141,7 @@ private:
 	char text_show_obsolete_vehicles[50];
 	char text_upgrade_to[50];
 	char text_upgrade_from[50];
+	char text_display_combined_info[50];
 
 	char sortby_text[50];
 	char displayby_text[50];
@@ -159,6 +160,7 @@ private:
 	static bool select_all;
 	static bool hide_veh_in_depot;
 	static bool show_obsolete_liveries;
+	static bool display_combined_info;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;
