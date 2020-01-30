@@ -2352,19 +2352,34 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			hightest_value = desc_for_display.get_element(i)->get_topspeed() > hightest_value ? desc_for_display.get_element(i)->get_topspeed() : hightest_value;
 			lowest_value = desc_for_display.get_element(i)->get_topspeed() < lowest_value ? desc_for_display.get_element(i)->get_topspeed() : lowest_value;
 		}
-		lowest_equal_highest_value = hightest_value == lowest_value; // Are all the values equal?
-		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+		lowest_equal_highest_value = hightest_value == lowest_value;
 
-		n = sprintf(buf, "%s %3d %s", translator::translate("Max. speed:"), lowest_value, translator::translate("km/h"));
+		n = sprintf(buf, "%s %3d %s", translator::translate("Max. speed:"), (sint32)lowest_value, translator::translate("km/h"));
 		if (!combine_values && !lowest_equal_highest_value) {
-			n += sprintf(buf + n, " - %3d %s", hightest_value, translator::translate("km/h"));
+			n += sprintf(buf + n, " - %3d %s", (sint32)hightest_value, translator::translate("km/h"));
+		}
+		// Weight
+		hightest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_weight();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++)
+		{
+			hightest_value = desc_for_display.get_element(i)->get_weight() > hightest_value ? desc_for_display.get_element(i)->get_weight() : hightest_value;
+			lowest_value = desc_for_display.get_element(i)->get_weight() < lowest_value ? desc_for_display.get_element(i)->get_weight() : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_weight();
+		}
+		lowest_equal_highest_value = hightest_value == lowest_value;
+		lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s %4.1ft", translator::translate("Weight:"), (uint32)lowest_value / 1000.0);// Convert kg to tonnes
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %4.1ft", (uint32)hightest_value / 1000.0);// Convert kg to tonnes
 		}
 
-	   
-		n += sprintf(buf + n, "\n%s %4.1ft\n", translator::translate("Weight:"), desc_info_text->get_weight() / 1000.0); // Convert kg to tonnes
+
 		if (desc_info_text->get_waytype() != water_wt)
 		{
-			n += sprintf(buf + n, "%s %it\n", translator::translate("Axle load:"), desc_info_text->get_axle_load());
+			n += sprintf(buf + n, "\n%s %it\n", translator::translate("Axle load:"), desc_info_text->get_axle_load());
 			char tmpbuf[16];
 			const double reduced_way_wear_factor = desc_info_text->get_way_wear_factor() / 10000.0;
 			number_to_string(tmpbuf, reduced_way_wear_factor, 4);
