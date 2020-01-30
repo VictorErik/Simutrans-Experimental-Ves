@@ -695,7 +695,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		//update_tabs(); // To display a tab with only multiple units?
 		save_previously_selected_desc();
 		page_turn_desc = false; 
-		//build_desc_list();
+		display(scr_coord(0, 0));
 	}
 
 	if (comp == &tabs_waytype) {
@@ -3000,6 +3000,7 @@ void vehicle_manager_t::display(scr_coord pos)
 	// Lower section stuff:
 
 	bt_display_combined_info.set_visible(false);
+	bt_display_combined_info.disable();
 	bt_upgrade_im.disable();
 	bt_upgrade_ov.disable();
 	bt_append_livery.disable();
@@ -3013,10 +3014,17 @@ void vehicle_manager_t::display(scr_coord pos)
 			// Display "none" if desc/vehicle doesnt support classes
 			lb_pass_class.at(0)->set_color(SYSCOL_TEXT);
 		}
-		if (desc_for_display.get_count() > 1) {
-			bt_display_combined_info.set_visible(true);
+	}
+
+	if (select_multiple_desc || count_veh_selection > 0)
+	{
+		bt_display_combined_info.set_visible(true);	
+		if (desc_for_display.get_count() > 1 || count_veh_selection > 1)
+		{
+			bt_display_combined_info.enable();
 		}
 	}
+
 
 	if (count_veh_selection > 0)
 	{
