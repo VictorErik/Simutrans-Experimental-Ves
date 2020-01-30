@@ -2225,7 +2225,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		combined_value = 0;
 		if (count_veh_selection > 0)
 		{
-			for (uint8 j = 0; j < veh_list.get_count(); j++)
+			for (int j = 0; j < veh_list.get_count(); j++)
 			{
 				if (veh_selection[j] == true)
 				{
