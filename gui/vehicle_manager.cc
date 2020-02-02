@@ -2177,9 +2177,9 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 	char buf[1024];
 	const vehicle_desc_t *desc_info_text = NULL;
 	int pos_y;
-	sint64 lowest_value = 0;
-	sint64 highest_value = 0;
-	sint64 combined_value = 0;
+	uint64 lowest_value = 0;
+	uint64 highest_value = 0;
+	uint64 combined_value = 0;
 	bool lowest_equal_highest_value = false;
 	bool combine_values = display_combined_info; // Display the combined value or the "ranged values"
 
@@ -2309,7 +2309,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		mon_nominal += welt->calc_adjusted_monthly_figure(desc_info_text->get_fixed_cost());
 		mon_actual += welt->calc_adjusted_monthly_figure(desc_info_text->get_fixed_cost(welt));
 		bool increased_cost = false;
-		
+
 		// Following outcommented section requires a rework to function with multiple desc's
 		/*
 		if (run_nominal) run_percent = ((run_actual - run_nominal) * 100) / run_nominal;
@@ -2341,7 +2341,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		}
 		*/
 
-		pos_y += LINESPACE*2;
+		pos_y += LINESPACE * 2;
 		n = 0;
 		// Physics information:
 		// Max speed
@@ -2379,61 +2379,234 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 		if (desc_info_text->get_waytype() != water_wt)
 		{
-			n += sprintf(buf + n, "\n%s %it\n", translator::translate("Axle load:"), desc_info_text->get_axle_load());
-			char tmpbuf[16];
-			const double reduced_way_wear_factor = desc_info_text->get_way_wear_factor() / 10000.0;
-			number_to_string(tmpbuf, reduced_way_wear_factor, 4);
-			n += sprintf(buf + n, "%s: %s\n", translator::translate("Way wear factor"), tmpbuf);
-		}
-		n += sprintf(buf + n, "%s %4.1fkN\n", translator::translate("Max. brake force:"), convoy.get_braking_force().to_double() / 1000.0); // Extended only
-		n += sprintf(buf + n, "%s %4.3fkN\n", translator::translate("Rolling resistance:"), desc_info_text->get_rolling_resistance().to_double() * (double)desc_info_text->get_weight() / 1000.0); // Extended only
+			// Axle load
+			highest_value = 0;
+			lowest_value = desc_for_display.get_element(0)->get_axle_load();
+			for (int i = 0; i < desc_for_display.get_count(); i++)
+			{
+				highest_value = desc_for_display.get_element(i)->get_axle_load() > highest_value ? desc_for_display.get_element(i)->get_axle_load() : highest_value;
+				lowest_value = desc_for_display.get_element(i)->get_axle_load() < lowest_value ? desc_for_display.get_element(i)->get_axle_load() : lowest_value;
+			}
+			lowest_equal_highest_value = highest_value == lowest_value;
+			lowest_value = combine_values ? highest_value : lowest_value;
 
-		n += sprintf(buf + n, "%s: ", translator::translate("Range"));
-		if (desc_info_text->get_range() == 0)
-		{
-			n += sprintf(buf + n, translator::translate("unlimited"));
+			n += sprintf(buf + n, "\n%s %it", translator::translate("Axle load:"), (uint16)lowest_value);
+			if (!combine_values && !lowest_equal_highest_value) {
+				n += sprintf(buf + n, " - %it", (uint16)highest_value);
+			}
+
+			// Way wear factor
+			//if (desc_for_display.get_count() < 2) // TODO: Check how way wear factors adds up. Just add them together? display the highest?
+			{
+				char tmpbuf[16];
+				const double reduced_way_wear_factor = desc_info_text->get_way_wear_factor() / 10000.0;
+				number_to_string(tmpbuf, reduced_way_wear_factor, 4);
+				n += sprintf(buf + n, "\n%s: %s", translator::translate("Way wear factor"), tmpbuf);
+			}
+			//else
+			{
+				//n += sprintf(buf + n, "\n");
+			}
 		}
-		else
+		// Max. brake force
+		vehicle_as_potential_convoy_t convoy_defaults(*desc_for_display.get_element(0));
+		highest_value = 0;
+		lowest_value = convoy_defaults.get_braking_force().to_double();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			n += sprintf(buf + n, "%i km", desc_info_text->get_range());
+			vehicle_as_potential_convoy_t convoy(*desc_for_display.get_element(i));
+			highest_value = (sint64)convoy.get_braking_force().to_double() > highest_value ? (sint64)convoy.get_braking_force().to_double() : highest_value;
+			lowest_value = (sint64)convoy.get_braking_force().to_double() < lowest_value ? (sint64)convoy.get_braking_force().to_double() : lowest_value;
+			combined_value += (sint64)convoy.get_braking_force().to_double();
 		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s %4.1fkN", translator::translate("Max. brake force:"), (float)lowest_value / 1000.0);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %4.1fkN", (float)highest_value / 1000.0);
+		}
+
+
+
+		// Rolling distance		
+		highest_value = 0;
+		lowest_value = (double)desc_for_display.get_element(0)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(0)->get_weight();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++)
+		{
+			highest_value = (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() > highest_value ? (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() : highest_value;
+			lowest_value = (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() < lowest_value ? (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() : lowest_value;
+			combined_value += (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s %4.3fkN", translator::translate("Rolling resistance:"), (float)lowest_value / 1000.0);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %4.3fkN", (float)highest_value / 1000.0);
+		}
+		// Range
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_range();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++)
+		{
+			highest_value = desc_for_display.get_element(i)->get_range() > highest_value ? desc_for_display.get_element(i)->get_range() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_range() < lowest_value ? desc_for_display.get_element(i)->get_range() : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_range();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		//lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s: ", translator::translate("Range"));
+		bool unlimited = false;
+		if (combine_values || lowest_equal_highest_value) {
+			if (lowest_value == 0) {
+				n += sprintf(buf + n, translator::translate("unlimited"));
+			}
+			else {
+				n += sprintf(buf + n, "%i km", lowest_value);
+			}
+		}
+		else {
+			if (lowest_value == 0)
+			{
+				n += sprintf(buf + n, "%i km - %s", highest_value, translator::translate("unlimited"));
+			}
+			else {
+				n += sprintf(buf + n, "%i km - %i km", lowest_value, highest_value);
+			}
+		}
+
 		n += sprintf(buf + n, "\n");
 
+		// Minimum runway length
 		if (desc_info_text->get_waytype() == air_wt)
 		{
-			n += sprintf(buf + n, "%s: %i m \n", translator::translate("Minimum runway length"), desc_info_text->get_minimum_runway_length());
+			//n += sprintf(buf + n, "\n%s: %i m \n", translator::translate("Minimum runway length"), desc_info_text->get_minimum_runway_length());
+
+			highest_value = 0;
+			lowest_value = desc_for_display.get_element(0)->get_minimum_runway_length();
+			for (int i = 0; i < desc_for_display.get_count(); i++)
+			{
+				highest_value = desc_for_display.get_element(i)->get_minimum_runway_length() > highest_value ? desc_for_display.get_element(i)->get_minimum_runway_length() : highest_value;
+				lowest_value = desc_for_display.get_element(i)->get_minimum_runway_length() < lowest_value ? desc_for_display.get_element(i)->get_minimum_runway_length() : lowest_value;
+			}
+			lowest_equal_highest_value = highest_value == lowest_value;
+			lowest_value = combine_values ? highest_value : lowest_value;
+
+			n += sprintf(buf + n, "\n%s: %i m ", translator::translate("Minimum runway length"), (uint16)lowest_value);
+			if (!combine_values && !lowest_equal_highest_value) {
+				n += sprintf(buf + n, " - %i m", (uint16)highest_value);
+			}
 		}
-		n += sprintf(buf + n, "\n");
+		n += sprintf(buf + n, "\n\n");
 
 		linespace_skips = 0;
 
 		// Engine information:
 		linespace_skips = 0;
-		if (desc_info_text->get_power() > 0)
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++)
+		{
+			combined_value += desc_for_display.get_element(i)->get_power();
+		}
+		if (combined_value > 0)
 		{ // LOCO
-			sint32 friction = convoy.get_current_friction();
-			sint32 max_weight = convoy.calc_max_starting_weight(friction);
-			sint32 min_speed = convoy.calc_max_speed(weight_summary_t(max_weight, friction));
-			sint32 min_weight = convoy.calc_max_weight(friction);
-			sint32 max_speed = convoy.get_vehicle_summary().max_speed;
-			if (min_weight < convoy.get_vehicle_summary().weight)
+			// Pulls
+			if (desc_for_display.get_count() < 2) // This information is too complicated to split. Only display if we show one vehicle at a time. TODO: Assemble all descs we have selected into a convoy to display combined here
 			{
-				min_weight = convoy.get_vehicle_summary().weight;
-				max_speed = convoy.calc_max_speed(weight_summary_t(min_weight, friction));
+				sint32 friction = convoy.get_current_friction();
+				sint32 max_weight = convoy.calc_max_starting_weight(friction);
+				sint32 min_speed = convoy.calc_max_speed(weight_summary_t(max_weight, friction));
+				sint32 min_weight = convoy.calc_max_weight(friction);
+				sint32 max_speed = convoy.get_vehicle_summary().max_speed;
+				if (min_weight < convoy.get_vehicle_summary().weight)
+				{
+					min_weight = convoy.get_vehicle_summary().weight;
+					max_speed = convoy.calc_max_speed(weight_summary_t(min_weight, friction));
+				}
+				n += sprintf(buf + n, "%s:", translator::translate("Pulls"));
+				n += sprintf(buf + n,
+					min_speed == max_speed ? translator::translate(" %gt @ %d km/h ") : translator::translate(" %gt @ %dkm/h%s%gt @ %dkm/h")  /*" %g t @ %d km/h " : " %g t @ %d km/h %s %g t @ %d km/h"*/,
+					min_weight * 0.001f, max_speed, translator::translate("..."), max_weight * 0.001f, min_speed);
 			}
-			n += sprintf(buf + n, "%s:", translator::translate("Pulls"));
-			n += sprintf(buf + n,
-				min_speed == max_speed ? translator::translate(" %gt @ %d km/h ") : translator::translate(" %gt @ %dkm/h%s%gt @ %dkm/h")  /*" %g t @ %d km/h " : " %g t @ %d km/h %s %g t @ %d km/h"*/,
-				min_weight * 0.001f, max_speed, translator::translate("..."), max_weight * 0.001f, min_speed);
-			n += sprintf(buf + n, "\n");
-			n += sprintf(buf + n, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]), desc_info_text->get_power(), desc_info_text->get_tractive_effort());
-			if (desc_info_text->get_gear() != 64) // Do this entry really have to be here...??? If not, it should be skipped. Space is precious..
+
+			// Engine type (if multiple desc's are selected)
+			if (desc_for_display.get_count() > 1)
 			{
-				n += sprintf(buf + n, "%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
+				n += sprintf(buf + n, "%s ", translator::translate("types_of_engines:"));
+				bool multiple_engines = false;
+				for (int j = 0; j < 11; j++)
+				{
+					for (int i = 0; i < desc_for_display.get_count(); i++)
+					{
+						if (desc_for_display.get_element(i)->get_engine_type() == j)
+						{
+							if (multiple_engines)
+							{
+								n += sprintf(buf + n, ", ");
+							}
+							multiple_engines = true;
+							n += sprintf(buf + n, "%s", translator::translate(engine_type_names[j + 1]));
+							break;
+						}
+					}
+				}
+			}
+
+
+			n += sprintf(buf + n, "\n");
+
+			// Power/tractive effort force
+			if (desc_for_display.get_count() < 2) // Keep the old display when only single is selected
+			{
+				n += sprintf(buf + n, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]), desc_info_text->get_power(), desc_info_text->get_tractive_effort());
 			}
 			else
 			{
-				//linespace_skips++;
+				// Power
+				highest_value = 0;
+				lowest_value = desc_for_display.get_element(0)->get_tractive_effort();
+				combined_value = 0;
+				for (int i = 0; i < desc_for_display.get_count(); i++) {
+					highest_value = desc_for_display.get_element(i)->get_tractive_effort() > highest_value ? desc_for_display.get_element(i)->get_tractive_effort() : highest_value;
+					lowest_value = desc_for_display.get_element(i)->get_tractive_effort() < lowest_value ? desc_for_display.get_element(i)->get_tractive_effort() : lowest_value;
+					combined_value += desc_for_display.get_element(i)->get_tractive_effort();
+				}
+				lowest_equal_highest_value = highest_value == lowest_value;
+				lowest_value = combine_values ? combined_value : lowest_value;
+
+				n += sprintf(buf + n, "%s %4d %s", translator::translate("power/tractive_force:"), lowest_value, translator::translate("kW"));
+				if (!combine_values && !lowest_equal_highest_value) {
+					n += sprintf(buf + n, " - %d %s", highest_value, translator::translate("kW"));
+				}
+				// Tractive effort
+				highest_value = 0;
+				lowest_value = desc_for_display.get_element(0)->get_power();
+				combined_value = 0;
+				for (int i = 0; i < desc_for_display.get_count(); i++) {
+					highest_value = desc_for_display.get_element(i)->get_power() > highest_value ? desc_for_display.get_element(i)->get_power() : highest_value;
+					lowest_value = desc_for_display.get_element(i)->get_power() < lowest_value ? desc_for_display.get_element(i)->get_power() : lowest_value;
+					combined_value += desc_for_display.get_element(i)->get_power();
+				}
+				lowest_equal_highest_value = highest_value == lowest_value;
+				lowest_value = combine_values ? combined_value : lowest_value;
+
+				n += sprintf(buf + n, " / %d %s", lowest_value, translator::translate("kN"));
+				if (!combine_values && !lowest_equal_highest_value) {
+					n += sprintf(buf + n, " - %d %s", highest_value, translator::translate("kN"));
+				}		
+			}	
+			// Gear
+			if (desc_for_display.get_count() < 2)
+			{
+				if (desc_info_text->get_gear() != 64) // Do this entry really have to be here...??? If not, it should be skipped. Space is precious..
+				{
+					n += sprintf(buf + n, "\n%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
+				}
 			}
 			n += sprintf(buf + n, "\n");
 		}
@@ -2442,6 +2615,8 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			n += sprintf(buf + n, "%s ", translator::translate("unpowered"));
 			linespace_skips = +2;
 		}
+
+
 		if (linespace_skips > 0)
 		{
 			for (int i = 0; i < linespace_skips; i++)
@@ -2452,10 +2627,35 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		linespace_skips = 0;
 
 		// Copyright information:
-		if (char const* const copyright = desc_info_text->get_copyright())
+		bool new_author = true;
+		bool any_author = false;
+		int number_of_authors = 1;
+		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
-			n += sprintf(buf + n, translator::translate("Constructed by %s"), copyright);
+			new_author = true;
+
+			for (int j = 0; j < desc_for_display.get_count(); j++)
+			{
+				if (desc_for_display.get_element(i)->get_copyright() == desc_for_display.get_element(j)->get_copyright())
+				{
+					new_author = false;
+					break;
+				}
+			}
+			if (new_author)
+			{
+				if (number_of_authors < 2) {
+					n += sprintf(buf + n, translator::translate("Constructed by %s"), desc_for_display.get_element(i)->get_copyright()); // Translation kept for legacy issue
+					number_of_authors++;
+				}
+				else {
+					n += sprintf(buf + n, ", %s", desc_for_display.get_element(i)->get_copyright()); // Translation kept for legacy issue
+					number_of_authors++;
+				}
+			}
 		}
+
+
 		n += sprintf(buf + n, "\n");
 		display_multiline_text(pos.x, pos.y + pos_y, buf, SYSCOL_TEXT);
 
