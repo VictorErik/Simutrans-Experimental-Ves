@@ -2630,7 +2630,6 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// Copyright information:
 		bool first_author = true;
 		bool new_author = true;
-		bool any_author = false;
 		int number_of_authors = 1;
 		n += sprintf(buf + n, translator::translate("Constructed by %s"), ""); // Translation kept for legacy issue
 		for (int i = 0; i < desc_for_display.get_count(); i++)
