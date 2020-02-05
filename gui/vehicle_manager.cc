@@ -2627,30 +2627,30 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		linespace_skips = 0;
 
 		// Copyright information:
+		bool first_author = true;
 		bool new_author = true;
 		bool any_author = false;
 		int number_of_authors = 1;
+		n += sprintf(buf + n, translator::translate("Constructed by %s"), ""); // Translation kept for legacy issue
 		for (int i = 0; i < desc_for_display.get_count(); i++)
 		{
 			new_author = true;
 
-			for (int j = 0; j < desc_for_display.get_count(); j++)
+			for (int j = 0; j < i; j++)
 			{
-				if (desc_for_display.get_element(i)->get_copyright() == desc_for_display.get_element(j)->get_copyright())
-				{
+				if (strcmp(desc_for_display.get_element(i)->get_copyright(), desc_for_display.get_element(j)->get_copyright()) == 0) {
 					new_author = false;
 					break;
 				}
 			}
 			if (new_author)
 			{
-				if (number_of_authors < 2) {
-					n += sprintf(buf + n, translator::translate("Constructed by %s"), desc_for_display.get_element(i)->get_copyright()); // Translation kept for legacy issue
-					number_of_authors++;
+				if (first_author && desc_for_display.get_element(i)->get_copyright()) {
+					n += sprintf(buf + n, "%s", desc_for_display.get_element(i)->get_copyright());
+					first_author = false;
 				}
-				else {
-					n += sprintf(buf + n, ", %s", desc_for_display.get_element(i)->get_copyright()); // Translation kept for legacy issue
-					number_of_authors++;
+				else if (desc_for_display.get_element(i)->get_copyright()) {
+					n += sprintf(buf + n, ", %s", desc_for_display.get_element(i)->get_copyright());
 				}
 			}
 		}
