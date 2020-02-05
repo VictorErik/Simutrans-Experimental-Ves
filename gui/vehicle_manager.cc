@@ -2598,14 +2598,15 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				n += sprintf(buf + n, " / %d %s", lowest_value, translator::translate("kN"));
 				if (!combine_values && !lowest_equal_highest_value) {
 					n += sprintf(buf + n, " - %d %s", highest_value, translator::translate("kN"));
-				}		
+				}
+				n += sprintf(buf + n, "\n");
 			}	
 			// Gear
 			if (desc_for_display.get_count() < 2)
 			{
 				if (desc_info_text->get_gear() != 64) // Do this entry really have to be here...??? If not, it should be skipped. Space is precious..
 				{
-					n += sprintf(buf + n, "\n%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
+					n += sprintf(buf + n, "%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
 				}
 			}
 			n += sprintf(buf + n, "\n");
