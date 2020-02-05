@@ -2569,12 +2569,12 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			{
 				// Power
 				highest_value = 0;
-				lowest_value = desc_for_display.get_element(0)->get_tractive_effort();
+				lowest_value = desc_for_display.get_element(0)->get_power();
 				combined_value = 0;
 				for (int i = 0; i < desc_for_display.get_count(); i++) {
-					highest_value = desc_for_display.get_element(i)->get_tractive_effort() > highest_value ? desc_for_display.get_element(i)->get_tractive_effort() : highest_value;
-					lowest_value = desc_for_display.get_element(i)->get_tractive_effort() < lowest_value ? desc_for_display.get_element(i)->get_tractive_effort() : lowest_value;
-					combined_value += desc_for_display.get_element(i)->get_tractive_effort();
+					highest_value = desc_for_display.get_element(i)->get_power() > highest_value ? desc_for_display.get_element(i)->get_power() : highest_value;
+					lowest_value = desc_for_display.get_element(i)->get_power() < lowest_value ? desc_for_display.get_element(i)->get_power() : lowest_value;
+					combined_value += desc_for_display.get_element(i)->get_power();
 				}
 				lowest_equal_highest_value = highest_value == lowest_value;
 				lowest_value = combine_values ? combined_value : lowest_value;
@@ -2585,12 +2585,12 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				}
 				// Tractive effort
 				highest_value = 0;
-				lowest_value = desc_for_display.get_element(0)->get_power();
+				lowest_value = desc_for_display.get_element(0)->get_tractive_effort();
 				combined_value = 0;
 				for (int i = 0; i < desc_for_display.get_count(); i++) {
-					highest_value = desc_for_display.get_element(i)->get_power() > highest_value ? desc_for_display.get_element(i)->get_power() : highest_value;
-					lowest_value = desc_for_display.get_element(i)->get_power() < lowest_value ? desc_for_display.get_element(i)->get_power() : lowest_value;
-					combined_value += desc_for_display.get_element(i)->get_power();
+					highest_value = desc_for_display.get_element(i)->get_tractive_effort() > highest_value ? desc_for_display.get_element(i)->get_tractive_effort() : highest_value;
+					lowest_value = desc_for_display.get_element(i)->get_tractive_effort() < lowest_value ? desc_for_display.get_element(i)->get_tractive_effort() : lowest_value;
+					combined_value += desc_for_display.get_element(i)->get_tractive_effort();
 				}
 				lowest_equal_highest_value = highest_value == lowest_value;
 				lowest_value = combine_values ? combined_value : lowest_value;
