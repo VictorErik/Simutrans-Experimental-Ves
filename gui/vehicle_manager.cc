@@ -2430,7 +2430,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 
 
-		// Rolling distance		
+		// Rolling resistance		
 		highest_value = 0;
 		lowest_value = (double)desc_for_display.get_element(0)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(0)->get_weight();
 		combined_value = 0;
