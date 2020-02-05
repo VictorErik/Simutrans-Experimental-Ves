@@ -2661,29 +2661,49 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		display_multiline_text(pos.x, pos.y + pos_y, buf, SYSCOL_TEXT);
 
 		// column 2
-		// Vehicle intro and retire information:
 		pos_y = LINESPACE;
 		n = 0;
 		linespace_skips = 0;
-		n += sprintf(buf + n, "%s %s %04d\n",
-			translator::translate("Intro. date:"),
-			translator::get_month_name(desc_info_text->get_intro_year_month() % 12),
-			desc_info_text->get_intro_year_month() / 12
-		);
 
-		if (desc_info_text->get_retire_year_month() != DEFAULT_RETIRE_DATE * 12)
-		{
-			n += sprintf(buf + n, "%s %s %04d\n",
-				translator::translate("Retire. date:"),
-				translator::get_month_name(desc_info_text->get_retire_year_month() % 12),
-				desc_info_text->get_retire_year_month() / 12
-			);
+		// Vehicle intro information
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_intro_year_month();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_intro_year_month() > highest_value ? desc_for_display.get_element(i)->get_intro_year_month() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_intro_year_month() < lowest_value ? desc_for_display.get_element(i)->get_intro_year_month() : lowest_value;
 		}
-		else
-		{
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? highest_value : lowest_value;
+
+		n += sprintf(buf + n, "%s %s %04d", translator::translate("Intro. date:"), translator::get_month_name(lowest_value % 12), lowest_value / 12);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %s %04d", translator::get_month_name(highest_value % 12), highest_value / 12);
+		}
+
+		// Vehicle retire information
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_retire_year_month();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_retire_year_month() > highest_value ? desc_for_display.get_element(i)->get_retire_year_month() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_retire_year_month() < lowest_value ? desc_for_display.get_element(i)->get_retire_year_month() : lowest_value;
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+
+		if (lowest_value != DEFAULT_RETIRE_DATE * 12) {
+			n += sprintf(buf + n, "\n%s %s %04d", translator::translate("Retire. date:"), translator::get_month_name(lowest_value % 12), lowest_value / 12);
+			if (!combine_values && !lowest_equal_highest_value) {
+				n += sprintf(buf + n, " - ");
+				if (highest_value != DEFAULT_RETIRE_DATE * 12) {
+					n += sprintf(buf + n, "%s %04d", translator::get_month_name(highest_value % 12), highest_value / 12);
+				}
+			}
+		}
+		else {
 			n += sprintf(buf + n, "\n");
 		}
-		n += sprintf(buf + n, "\n");
+		n += sprintf(buf + n, "\n\n");
 
 		// Capacity information:
 		linespace_skips = 0;
