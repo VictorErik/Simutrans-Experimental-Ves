@@ -2711,10 +2711,12 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 		// Capacity information:
 		linespace_skips = 0;
+		bool has_capacity = false;
 		if (desc_for_display.get_count() < 2)
 		{
 			if (desc_info_text->get_total_capacity() > 0)
 			{
+				has_capacity = true;
 				bool pass_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS;
 				bool mail_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL;
 
@@ -2846,40 +2848,13 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 						desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
 					linespace_skips += 2;
 				}
-
-
-				char min_loading_time_as_clock[32];
-				char max_loading_time_as_clock[32];
-				//Loading time is only relevant if there is something to load.
-				welt->sprintf_ticks(min_loading_time_as_clock, sizeof(min_loading_time_as_clock), desc_info_text->get_min_loading_time());
-				welt->sprintf_ticks(max_loading_time_as_clock, sizeof(max_loading_time_as_clock), desc_info_text->get_max_loading_time());
-				n += sprintf(buf + n, "%s %s - %s \n", translator::translate("Loading time:"), min_loading_time_as_clock, max_loading_time_as_clock);
-
-				if (desc_info_text->get_catering_level() > 0)
-				{
-					if (mail_veh)
-					{
-						//Catering vehicles that carry mail are treated as TPOs.
-						n += sprintf(buf + n, translator::translate("This is a travelling post office"));
-						n += sprintf(buf + n, "\n");
-					}
-					else
-					{
-						n += sprintf(buf + n, translator::translate("Catering level: %i"), desc_info_text->get_catering_level());
-						n += sprintf(buf + n, "\n");
-					}
-				}
-				else
-				{
-					linespace_skips++;
-				}
-
 			}
 			else
 			{
 				n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
 				linespace_skips += 3;
 			}
+
 			if (linespace_skips > 0)
 			{
 				for (int i = 0; i < linespace_skips; i++)
@@ -2942,6 +2917,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 				for (int i = 0; i < pass_classes; i++) {
 					if (max_loaded_pass[i] > 0) {
+						has_capacity = true;
 						char class_name_untranslated[32];
 						sprintf(class_name_untranslated, "p_class[%u]", i);
 						const char* class_name = translator::translate(class_name_untranslated);
@@ -2950,6 +2926,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				}
 				for (int i = 0; i < mail_classes; i++) {
 					if (max_loaded_mail[i] > 0) {
+						has_capacity = true;
 						char class_name_untranslated[32];
 						sprintf(class_name_untranslated, "m_class[%u]", i);
 						const char* class_name = translator::translate(class_name_untranslated);
@@ -2959,6 +2936,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				for (int i = 0; i < goods_count; i++) {
 					const goods_desc_t* ware = goods_manager_t::get_info_catg_index(i);
 					if (max_loaded_waren[i] > 0) {
+						has_capacity = true;
 						if (goods_manager_t::get_info_catg_index(i)->get_catg() == 0) { // Special goods	
 							n += sprintf(buf + n, "%3d %s\n", max_loaded_waren[i], translator::translate(goods_manager_t::get_info_catg_index(i)->get_name()));
 						}
@@ -2973,6 +2951,70 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				linespace_skips += 3;
 			}
 		}
+		if (has_capacity) {
+			// Minimum loading time
+			// Compile this info into the lowest "min" and highest "max", as the info would be too confusing otherwise
+			highest_value = 0;
+			lowest_value = desc_for_display.get_element(0)->get_min_loading_time();
+			combined_value = 0;
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				lowest_value = desc_for_display.get_element(i)->get_min_loading_time() < lowest_value ? desc_for_display.get_element(i)->get_min_loading_time() : lowest_value;
+				combined_value = desc_for_display.get_element(i)->get_min_loading_time() > combined_value ? desc_for_display.get_element(i)->get_min_loading_time() : combined_value;
+				highest_value = desc_for_display.get_element(i)->get_max_loading_time() > highest_value ? desc_for_display.get_element(i)->get_max_loading_time() : highest_value;
+			}
+			if (combine_values) {// Display the highest "min" instead of the lowest "min".
+				lowest_value = combined_value;
+			}
+			char min_loading_time_as_clock[32];
+			char max_loading_time_as_clock[32];
+			welt->sprintf_ticks(min_loading_time_as_clock, sizeof(min_loading_time_as_clock), lowest_value);
+			welt->sprintf_ticks(max_loading_time_as_clock, sizeof(max_loading_time_as_clock), highest_value);
+			n += sprintf(buf + n, "\n%s %s - %s", translator::translate("Loading time:"), min_loading_time_as_clock, max_loading_time_as_clock);
+
+			// Catering and traveling post office
+			bool has_catering = false;
+			bool has_tpo = false;
+
+			bool catering_level[6];
+			for (int i = 0; i < 6; i++) {
+				catering_level[i] = false;
+			}
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				if (desc_for_display.get_element(i)->get_catering_level() > 0) {
+					if (desc_for_display.get_element(i)->get_freight_type() == goods_manager_t::passengers) {
+						has_catering = true;
+						catering_level[desc_for_display.get_element(i)->get_catering_level()] = true;
+					}
+					else if (desc_for_display.get_element(i)->get_freight_type() == goods_manager_t::mail) {
+						has_tpo = true;
+					}					
+				}
+			}
+			if (has_catering) {
+				n += sprintf(buf + n, "\n");
+				bool first_entry = true;
+				for (int i = 0; i < 6; i++) {
+					if (catering_level[i]) {
+						if (first_entry) {
+							n += sprintf(buf + n, translator::translate("Catering level: %i"), i); 
+							first_entry = false;
+						}
+						else {
+							n += sprintf(buf + n, ", %i", i);
+						}
+					}
+				}
+			}
+			if (has_tpo) {
+				n += sprintf(buf + n, "\n%s", translator::translate("travelling_post_office"));
+			}
+		}
+		else
+		{
+			linespace_skips++;
+		}
+
+
 
 		// Permissive way constraints
 		// (If vehicle has, way must have)
