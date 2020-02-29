@@ -2845,10 +2845,6 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 						translator::translate(desc_info_text->get_freight_type()->get_mass()),
 						desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
 					linespace_skips += 2;
-
-					char good_name[50];
-					sprintf(good_name, translator::translate(desc_info_text->get_freight_type()->get_mass()));
-
 				}
 
 
