@@ -2967,30 +2967,6 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 						}
 					}
 				}
-
-
-			
-
-
-				/*bool new_class = true;
-				bool any_class = false;
-				for (int i = 0; i < desc_for_display.get_count(); i++)
-				{
-					new_author = true;
-
-					for (int j = 0; j < i; j++)
-					{
-						if (strcmp(desc_for_display.get_element(i)->get_copyright(), desc_for_display.get_element(j)->get_copyright()) == 0) {
-							new_author = false;
-							break;
-						}
-					}
-					if (new_author) {
-						if (desc_for_display.get_element(i)->get_copyright()) {
-							n += sprintf(buf + n, ", %s", desc_for_display.get_element(i)->get_copyright());
-						}
-					}
-				}*/
 			}
 			else {
 				n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
