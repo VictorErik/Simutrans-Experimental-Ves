@@ -2232,10 +2232,10 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		extra_x += 5;
 
 		// Resale value, calculated by the selected veh_list. This is scheduled to be changed, when the new second hand market is introduced
-		highest_value = 0;
-		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
-		combined_value = 0;
 		if (count_veh_selection > 0) {
+			highest_value = 0;
+			lowest_value = veh_list.get_element(0)->calc_sale_value(); // Load default value
+			combined_value = 0;
 			for (int j = 0; j < veh_list.get_count(); j++) {
 				if (veh_selection[j] == true) {
 					vehicle_t* veh = veh_list.get_element(j);
