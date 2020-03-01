@@ -3053,7 +3053,6 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// Below is displayed with their very own "display_proportional_clip's", due to a potential color change
 		// First count returns:
 		int returns = 0;
-		const char* p = buf;
 		for (int i = 0; i < 1024; i++)
 		{
 			if (buf[i] == '\0') {
