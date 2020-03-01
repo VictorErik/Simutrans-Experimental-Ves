@@ -3053,6 +3053,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// Below is displayed with their very own "display_proportional_clip's", due to a potential color change
 		// First count returns:
 		int returns = 0;
+		int max_lines = 15;
 		for (int i = 0; i < 1024; i++)
 		{
 			if (buf[i] == '\0') {
@@ -3107,25 +3108,35 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 					   
 			for (int i = 0; i < 254; i++) {
 				if (shared_constraint[i] || (!combine_values && constraint[i])) {
-					n = 0;
-					n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: ")); // Translation kept for legacy issue
-					int remove_space = display_calc_proportional_string_len_width("\n", -1);
-					char tmpbuf[30];
-					sprintf(tmpbuf, "Prohibitive %i-%i", desc_for_display.get_element(0)->get_waytype(), i);
-					n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
-					color = shared_constraint[i] ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
-					display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2) - remove_space, pos.y + pos_y, buf, ALIGN_LEFT, color, false);
-					pos_y += LINESPACE;
+					if (returns < max_lines) {
+						n = 0;
+						n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: ")); // Translation kept for legacy issue
+						int remove_space = display_calc_proportional_string_len_width("\n", -1);
+						char tmpbuf[30];
+						sprintf(tmpbuf, "Prohibitive %i-%i", desc_for_display.get_element(0)->get_waytype(), i);
+						n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+						color = shared_constraint[i] ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
+						display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2) - remove_space, pos.y + pos_y, buf, ALIGN_LEFT, color, false);
+						pos_y += LINESPACE;
+					}
+					returns++;
 				}
 			}
 			if (is_shared_tilting || (!combine_values && is_tilting)) {
-				n = 0;
-				n += sprintf(buf + n, "%s: ", translator::translate("equipped_with"));
-				n += sprintf(buf + n, "%s", translator::translate("tilting_vehicle_equipment"));
-				color = is_shared_tilting ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
-				display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y, buf, ALIGN_LEFT, color, false);
-				pos_y += LINESPACE;
+				if (returns < max_lines) {
+					sprintf(buf, "%s: %s", translator::translate("equipped_with"), translator::translate("tilting_vehicle_equipment"));
+					color = is_shared_tilting ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
+					display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y, buf, ALIGN_LEFT, color, false);
+					pos_y += LINESPACE;
+				}
+				returns++;
 			}
+		}
+		if (returns > max_lines) {
+			sprintf(buf, "...");
+			display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, false);
+			pos_y += LINESPACE;
+			returns++;
 		}
 	}
 }
