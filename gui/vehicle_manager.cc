@@ -3376,6 +3376,10 @@ void vehicle_manager_t::display(scr_coord pos)
 
 	if (desc_for_display.get_count()>0)
 	{
+		bt_display_combined_info.set_visible(true);
+		if (select_multiple_desc || count_veh_selection > 0) {
+			bt_display_combined_info.enable();
+		}
 		if (no_class_vehicle)
 		{
 			// Display "none" if desc/vehicle doesnt support classes
@@ -3383,14 +3387,6 @@ void vehicle_manager_t::display(scr_coord pos)
 		}
 	}
 
-	if (select_multiple_desc || count_veh_selection > 0)
-	{
-		bt_display_combined_info.set_visible(true);	
-		if (desc_for_display.get_count() > 1 || count_veh_selection > 1)
-		{
-			bt_display_combined_info.enable();
-		}
-	}
 
 
 	if (count_veh_selection > 0)
