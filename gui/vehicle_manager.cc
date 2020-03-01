@@ -2175,7 +2175,7 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 {
 	char buf[1024];
-	const vehicle_desc_t *desc_info_text = NULL;
+	const vehicle_desc_t* desc_info_text = NULL;
 	int pos_y;
 	uint64 lowest_value = 0;
 	uint64 highest_value = 0;
@@ -2184,7 +2184,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 	bool combine_values = display_combined_info; // Display the combined value or the "ranged values"
 
 	// This section is originally fetched from the gui_convoy_assembler_t, however is modified to display colors for different entries, such as reassigned classes, increased maintenance etc.
-	pos_y = D_MARGIN_TOP + (D_BUTTON_HEIGHT); 
+	pos_y = D_MARGIN_TOP + (D_BUTTON_HEIGHT);
 	buf[0] = '\0';
 	if (desc_for_display.get_count() > 0) {
 		desc_info_text = desc_for_display.get_element(0);
@@ -2193,16 +2193,13 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		int linespace_skips = 0;
 		int n;
 		// Name and traction type OR the amount of selected desc's
-		if (desc_for_display.get_count() == 1)
-		{
+		if (desc_for_display.get_count() == 1) {
 			n = sprintf(buf, "%s", translator::translate(desc_info_text->get_name(), welt->get_settings().get_name_language_id()));
-			if (desc_info_text->get_power() > 0)
-			{
+			if (desc_info_text->get_power() > 0) {
 				sprintf(buf + n, " (%s)", translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]));
 			}
 		}
-		else
-		{
+		else {
 			n = sprintf(buf, "%s %i", translator::translate("number_of_selected_descs:"), desc_for_display.get_count());
 		}
 		display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
@@ -2212,8 +2209,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = desc_for_display.get_element(i)->get_value() > highest_value ? desc_for_display.get_element(i)->get_value() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_value() < lowest_value ? desc_for_display.get_element(i)->get_value() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_value();
@@ -2239,12 +2235,9 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
 		combined_value = 0;
-		if (count_veh_selection > 0)
-		{
-			for (int j = 0; j < veh_list.get_count(); j++)
-			{
-				if (veh_selection[j] == true)
-				{
+		if (count_veh_selection > 0) {
+			for (int j = 0; j < veh_list.get_count(); j++) {
+				if (veh_selection[j] == true) {
 					vehicle_t* veh = veh_list.get_element(j);
 					highest_value = veh->calc_sale_value() > highest_value ? veh->calc_sale_value() : highest_value;
 					lowest_value = veh->calc_sale_value() < lowest_value ? veh->calc_sale_value() : lowest_value;
@@ -2267,8 +2260,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_running_cost(); // Load default value
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = desc_for_display.get_element(i)->get_running_cost() > highest_value ? desc_for_display.get_element(i)->get_running_cost() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_running_cost() < lowest_value ? desc_for_display.get_element(i)->get_running_cost() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_running_cost();
@@ -2284,8 +2276,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_adjusted_monthly_fixed_cost(welt); // Load default value
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) > highest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) < lowest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt);
@@ -2347,8 +2338,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// Max speed
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_topspeed();
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = desc_for_display.get_element(i)->get_topspeed() > highest_value ? desc_for_display.get_element(i)->get_topspeed() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_topspeed() < lowest_value ? desc_for_display.get_element(i)->get_topspeed() : lowest_value;
 		}
@@ -2362,8 +2352,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_weight();
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = desc_for_display.get_element(i)->get_weight() > highest_value ? desc_for_display.get_element(i)->get_weight() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_weight() < lowest_value ? desc_for_display.get_element(i)->get_weight() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_weight();
@@ -2377,13 +2366,11 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		}
 
 
-		if (desc_info_text->get_waytype() != water_wt)
-		{
+		if (desc_info_text->get_waytype() != water_wt) {
 			// Axle load
 			highest_value = 0;
 			lowest_value = desc_for_display.get_element(0)->get_axle_load();
-			for (int i = 0; i < desc_for_display.get_count(); i++)
-			{
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
 				highest_value = desc_for_display.get_element(i)->get_axle_load() > highest_value ? desc_for_display.get_element(i)->get_axle_load() : highest_value;
 				lowest_value = desc_for_display.get_element(i)->get_axle_load() < lowest_value ? desc_for_display.get_element(i)->get_axle_load() : lowest_value;
 			}
@@ -2413,8 +2400,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = convoy_defaults.get_braking_force().to_double();
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			vehicle_as_potential_convoy_t convoy(*desc_for_display.get_element(i));
 			highest_value = (sint64)convoy.get_braking_force().to_double() > highest_value ? (sint64)convoy.get_braking_force().to_double() : highest_value;
 			lowest_value = (sint64)convoy.get_braking_force().to_double() < lowest_value ? (sint64)convoy.get_braking_force().to_double() : lowest_value;
@@ -2434,8 +2420,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = (double)desc_for_display.get_element(0)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(0)->get_weight();
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() > highest_value ? (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() : highest_value;
 			lowest_value = (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() < lowest_value ? (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() : lowest_value;
 			combined_value += (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight();
@@ -2451,8 +2436,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		highest_value = 0;
 		lowest_value = desc_for_display.get_element(0)->get_range();
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			highest_value = desc_for_display.get_element(i)->get_range() > highest_value ? desc_for_display.get_element(i)->get_range() : highest_value;
 			lowest_value = desc_for_display.get_element(i)->get_range() < lowest_value ? desc_for_display.get_element(i)->get_range() : lowest_value;
 			combined_value += desc_for_display.get_element(i)->get_range();
@@ -2471,8 +2455,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			}
 		}
 		else {
-			if (lowest_value == 0)
-			{
+			if (lowest_value == 0) {
 				n += sprintf(buf + n, "%i km - %s", highest_value, translator::translate("unlimited"));
 			}
 			else {
@@ -2483,14 +2466,12 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		n += sprintf(buf + n, "\n");
 
 		// Minimum runway length
-		if (desc_info_text->get_waytype() == air_wt)
-		{
+		if (desc_info_text->get_waytype() == air_wt) {
 			//n += sprintf(buf + n, "\n%s: %i m \n", translator::translate("Minimum runway length"), desc_info_text->get_minimum_runway_length());
 
 			highest_value = 0;
 			lowest_value = desc_for_display.get_element(0)->get_minimum_runway_length();
-			for (int i = 0; i < desc_for_display.get_count(); i++)
-			{
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
 				highest_value = desc_for_display.get_element(i)->get_minimum_runway_length() > highest_value ? desc_for_display.get_element(i)->get_minimum_runway_length() : highest_value;
 				lowest_value = desc_for_display.get_element(i)->get_minimum_runway_length() < lowest_value ? desc_for_display.get_element(i)->get_minimum_runway_length() : lowest_value;
 			}
@@ -2509,22 +2490,18 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// Engine information:
 		linespace_skips = 0;
 		combined_value = 0;
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			combined_value += desc_for_display.get_element(i)->get_power();
 		}
-		if (combined_value > 0)
-		{ // LOCO
+		if (combined_value > 0) { // LOCO
 			// Pulls
-			if (desc_for_display.get_count() < 2) // This information is too complicated to split. Only display if we show one vehicle at a time. TODO: Assemble all descs we have selected into a convoy to display combined here
-			{
+			if (desc_for_display.get_count() < 2) {// This information is too complicated to split. Only display if we show one vehicle at a time. TODO: Assemble all descs we have selected into a convoy to display combined here
 				sint32 friction = convoy.get_current_friction();
 				sint32 max_weight = convoy.calc_max_starting_weight(friction);
 				sint32 min_speed = convoy.calc_max_speed(weight_summary_t(max_weight, friction));
 				sint32 min_weight = convoy.calc_max_weight(friction);
 				sint32 max_speed = convoy.get_vehicle_summary().max_speed;
-				if (min_weight < convoy.get_vehicle_summary().weight)
-				{
+				if (min_weight < convoy.get_vehicle_summary().weight) {
 					min_weight = convoy.get_vehicle_summary().weight;
 					max_speed = convoy.calc_max_speed(weight_summary_t(min_weight, friction));
 				}
@@ -2535,19 +2512,15 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			}
 
 			// Engine type (if multiple desc's are selected)
-			if (desc_for_display.get_count() > 1)
-			{
+			if (desc_for_display.get_count() > 1) {
 				n += sprintf(buf + n, "%s ", translator::translate("types_of_engines:"));
 				bool multiple_engines = false;
-				for (int j = 0; j < 11; j++)
-				{
-					for (int i = 0; i < desc_for_display.get_count(); i++)
-					{
+				for (int j = 0; j < 11; j++) {
+					for (int i = 0; i < desc_for_display.get_count(); i++) {
 						if (desc_for_display.get_element(i)->get_power() > 0) {// Ignore motorless vehicles
 							if (desc_for_display.get_element(i)->get_engine_type() == j)
 							{
-								if (multiple_engines)
-								{
+								if (multiple_engines) {
 									n += sprintf(buf + n, ", ");
 								}
 								multiple_engines = true;
@@ -2563,12 +2536,10 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			n += sprintf(buf + n, "\n");
 
 			// Power/tractive effort force
-			if (desc_for_display.get_count() < 2) // Keep the old display when only single is selected
-			{
+			if (desc_for_display.get_count() < 2) {// Keep the old display when only single is selected
 				n += sprintf(buf + n, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]), desc_info_text->get_power(), desc_info_text->get_tractive_effort());
 			}
-			else
-			{
+			else {
 				// Power
 				highest_value = 0;
 				lowest_value = UINT64_MAX;
@@ -2606,10 +2577,9 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 					n += sprintf(buf + n, " - %d %s", highest_value, translator::translate("kN"));
 				}
 				n += sprintf(buf + n, "\n");
-			}	
+			}
 			// Gear
-			if (desc_for_display.get_count() < 2)
-			{
+			if (desc_for_display.get_count() < 2) {
 				if (desc_info_text->get_gear() != 64) // Do this entry really have to be here...??? If not, it should be skipped. Space is precious..
 				{
 					n += sprintf(buf + n, "%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
@@ -2617,17 +2587,14 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			}
 			n += sprintf(buf + n, "\n");
 		}
-		else
-		{
+		else {
 			n += sprintf(buf + n, "%s ", translator::translate("unpowered"));
 			linespace_skips = +2;
 		}
 
 
-		if (linespace_skips > 0)
-		{
-			for (int i = 0; i < linespace_skips; i++)
-			{
+		if (linespace_skips > 0) {
+			for (int i = 0; i < linespace_skips; i++) {
 				n += sprintf(buf + n, "\n");
 			}
 		}
@@ -2637,19 +2604,16 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		bool first_author = true;
 		bool new_author = true;
 		n += sprintf(buf + n, translator::translate("Constructed by %s"), ""); // Translation kept for legacy issue
-		for (int i = 0; i < desc_for_display.get_count(); i++)
-		{
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
 			new_author = true;
 
-			for (int j = 0; j < i; j++)
-			{
+			for (int j = 0; j < i; j++) {
 				if (strcmp(desc_for_display.get_element(i)->get_copyright(), desc_for_display.get_element(j)->get_copyright()) == 0) {
 					new_author = false;
 					break;
 				}
 			}
-			if (new_author)
-			{
+			if (new_author) {
 				if (first_author && desc_for_display.get_element(i)->get_copyright()) {
 					n += sprintf(buf + n, "%s", desc_for_display.get_element(i)->get_copyright());
 					first_author = false;
@@ -2712,24 +2676,19 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		// Capacity information:
 		linespace_skips = 0;
 		bool has_capacity = false;
-		if (desc_for_display.get_count() < 2)
-		{
-			if (desc_info_text->get_total_capacity() > 0)
-			{
+		if (desc_for_display.get_count() < 2) {
+			if (desc_info_text->get_total_capacity() > 0) {
 				has_capacity = true;
 				bool pass_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS;
 				bool mail_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL;
 
-				if (pass_veh || mail_veh)
-				{
+				if (pass_veh || mail_veh) {
 					uint8 classes_amount = desc_info_text->get_number_of_classes() < 1 ? 1 : desc_info_text->get_number_of_classes();
 					char extra_pass[8];
-					if (desc_info_text->get_overcrowded_capacity() > 0)
-					{
+					if (desc_info_text->get_overcrowded_capacity() > 0) {
 						sprintf(extra_pass, "(%i)", desc_info_text->get_overcrowded_capacity());
 					}
-					else
-					{
+					else {
 						extra_pass[0] = '\0';
 					}
 
@@ -2738,17 +2697,13 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 						translator::translate(desc_info_text->get_freight_type()->get_mass()),
 						desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
 
-					for (uint8 i = 0; i < classes_amount; i++)
-					{
-						if (desc_info_text->get_capacity(i) > 0)
-						{
+					for (uint8 i = 0; i < classes_amount; i++) {
+						if (desc_info_text->get_capacity(i) > 0) {
 							char class_name_untranslated[32];
-							if (mail_veh)
-							{
+							if (mail_veh) {
 								sprintf(class_name_untranslated, "m_class[%u]", i);
 							}
-							else
-							{
+							else {
 								sprintf(class_name_untranslated, "p_class[%u]", i);
 							}
 							const char* class_name = translator::translate(class_name_untranslated);
@@ -2756,27 +2711,20 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 							n += sprintf(buf + n, "%s: %3d %s %s ", class_name, desc_info_text->get_capacity(i), translator::translate(desc_info_text->get_freight_type()->get_mass()), translator::translate(desc_info_text->get_freight_type()->get_name()));
 
 							// if the classes in any of the SELECTED vehicles are reassigned, display that here
-							if (count_veh_selection > 0)
-							{
+							if (count_veh_selection > 0) {
 								bool multiple_classes = false;
 								int old_reassigned_class = -1;
 								uint8 display_class = i;
-								for (int j = 0; j < veh_list.get_count(); j++)
-								{
-									if (veh_selection[j] == true)
-									{
+								for (int j = 0; j < veh_list.get_count(); j++) {
+									if (veh_selection[j] == true) {
 										vehicle_t* veh = veh_list.get_element(j);
-										if (veh)
-										{
-											if (old_reassigned_class != veh->get_reassigned_class(i))
-											{
-												if (old_reassigned_class == -1)
-												{
+										if (veh) {
+											if (old_reassigned_class != veh->get_reassigned_class(i)) {
+												if (old_reassigned_class == -1) {
 													old_reassigned_class = veh->get_reassigned_class(i);
 													display_class = old_reassigned_class;
 												}
-												else
-												{
+												else {
 													multiple_classes = true;
 													break;
 												}
@@ -2784,20 +2732,15 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 										}
 									}
 								}
-								if (display_class != i)
-								{
-									if (multiple_classes)
-									{
+								if (display_class != i) {
+									if (multiple_classes) {
 										n += sprintf(buf + n, "- %s", translator::translate("reassigned_to_multiple"));
 									}
-									else
-									{
-										if (mail_veh)
-										{
+									else {
+										if (mail_veh) {
 											sprintf(class_name_untranslated, "m_class[%u]", display_class);
 										}
-										else
-										{
+										else {
 											sprintf(class_name_untranslated, "p_class[%u]", display_class);
 										}
 										const char* reassigned_class_name = translator::translate(class_name_untranslated);
@@ -2808,22 +2751,18 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 
 							n += sprintf(buf + n, "\n");
 
-							if (pass_veh)
-							{
+							if (pass_veh) {
 								char timebuf[32];
 								uint8 base_comfort = desc_info_text->get_comfort(i);
 								uint8 modified_comfort = 0;
-								if (i >= desc_info_text->get_catering_level())
-								{
+								if (i >= desc_info_text->get_catering_level()) {
 									modified_comfort = desc_info_text->get_catering_level() > 0 ? desc_info_text->get_adjusted_comfort(desc_info_text->get_catering_level(), i) - base_comfort : 0;
 								}
 								char extra_comfort[8];
-								if (modified_comfort > 0)
-								{
+								if (modified_comfort > 0) {
 									sprintf(extra_comfort, "+%i", modified_comfort);
 								}
-								else
-								{
+								else {
 									extra_comfort[0] = '\0';
 								}
 
@@ -2831,16 +2770,14 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 								welt->sprintf_time_secs(timebuf, sizeof(timebuf), welt->get_settings().max_tolerable_journey(base_comfort + modified_comfort));
 								n += sprintf(buf + n, "%s %s %s%s", extra_comfort, translator::translate("(Max. comfortable journey time: "), timebuf, ")\n");
 							}
-							else
-							{
+							else {
 								linespace_skips++;
 							}
 						}
 
 					}
 				}
-				else
-				{
+				else {
 					n += sprintf(buf + n, translator::translate("Capacity: %3d %s%s %s\n"),
 						desc_info_text->get_total_capacity(),
 						"\0",
@@ -2849,23 +2786,19 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 					linespace_skips += 2;
 				}
 			}
-			else
-			{
+			else {
 				n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
 				linespace_skips += 3;
 			}
 
-			if (linespace_skips > 0)
-			{
-				for (int i = 0; i < linespace_skips; i++)
-				{
+			if (linespace_skips > 0) {
+				for (int i = 0; i < linespace_skips; i++) {
 					n += sprintf(buf + n, "\n");
 				}
 				linespace_skips = 0;
 			}
 		}
-		else // Multiple desc's selected
-		{
+		else {// Multiple desc's selected
 			bool new_category = true;
 
 			combined_value = 0;
@@ -2987,7 +2920,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 					}
 					else if (desc_for_display.get_element(i)->get_freight_type() == goods_manager_t::mail) {
 						has_tpo = true;
-					}					
+					}
 				}
 			}
 			if (has_catering) {
@@ -2996,7 +2929,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				for (int i = 0; i < 6; i++) {
 					if (catering_level[i]) {
 						if (first_entry) {
-							n += sprintf(buf + n, translator::translate("Catering level: %i"), i); 
+							n += sprintf(buf + n, translator::translate("Catering level: %i"), i);
 							first_entry = false;
 						}
 						else {
@@ -3047,15 +2980,14 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		}
 
 
-		display_multiline_text(pos.x + l_column_3 + ((l_column_4 - l_column_3)/2), pos.y + pos_y + (LINESPACE * 2), buf, SYSCOL_TEXT);
+		display_multiline_text(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y + (LINESPACE * 2), buf, SYSCOL_TEXT);
 
 
 		// Below is displayed with their very own "display_proportional_clip's", due to a potential color change
 		// First count returns:
 		int returns = 0;
-		int max_lines = 15;
-		for (int i = 0; i < 1024; i++)
-		{
+		int max_lines = 16;
+		for (int i = 0; i < 1024; i++) {
 			if (buf[i] == '\0') {
 				break;
 			}
@@ -3105,7 +3037,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 					is_shared_tilting = false;
 				}
 			}
-					   
+
 			for (int i = 0; i < 254; i++) {
 				if (shared_constraint[i] || (!combine_values && constraint[i])) {
 					if (returns < max_lines) {
