@@ -2072,103 +2072,103 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 
 void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 {
-	//char buf[1024];
-	//char tmp[50];
-	//const vehicle_desc_t *desc_info_text = NULL;
-	//desc_info_text = desc_for_display;
-	//int pos_y = 0;
-	//int pos_x = 0;
-	//const uint16 month_now_absolute = welt->get_current_month();
-	//const uint16 month_now = welt->get_timeline_year_month();
-	//player_nr = welt->get_active_player_nr();
+	char buf[1024];
+	char tmp[50];
+	const vehicle_desc_t *desc_info_text = NULL;
+	int pos_y = 0;
+	int pos_x = 0;
+	const uint16 month_now_absolute = welt->get_current_month();
+	const uint16 month_now = welt->get_timeline_year_month();
+	player_nr = welt->get_active_player_nr();
 
-	//buf[0] = '\0';
-	//if (desc_info_text) {
+	buf[0] = '\0';
+	if (desc_for_display.get_count() > 0) {
+		desc_info_text = desc_for_display.get_element(0);
+	
 
-	//	COLOR_VAL veh_selected_color = SYSCOL_TEXT;
-	//	if (count_veh_selection == 0)
-	//	{
-	//		veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
-	//	}
+		COLOR_VAL veh_selected_color = SYSCOL_TEXT;
+		if (count_veh_selection == 0)	{
+			veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
+		}
 
-	//	// column 1
-	//	vehicle_as_potential_convoy_t convoy(*desc_info_text);
-	//	int linespace_skips = 0;
+		// column 1
+		vehicle_as_potential_convoy_t convoy(*desc_info_text);
+		int linespace_skips = 0;
 
-	//	pos_y += LINESPACE * 3;
-	//	// Age
-	//	if (count_veh_selection > 0 )
-	//	{
-	//		int max_age = 0;
-	//		int min_age = month_now_absolute;
+		pos_y += LINESPACE * 3;
+		// Age
+		if (count_veh_selection > 0 )
+		{
+			int max_age = 0;
+			int min_age = month_now_absolute;
 
-	//		for (int j = 0; j < veh_list.get_count(); j++)
-	//		{
-	//			if (veh_selection[j] == true)
-	//			{
-	//				vehicle_t* veh = veh_list.get_element(j);
-	//				if (veh->get_purchase_time() > max_age)
-	//				{
-	//					max_age = month_now_absolute - veh->get_purchase_time();
-	//				}
-	//				if (veh->get_purchase_time() <= min_age)
-	//				{
-	//					min_age = month_now_absolute - veh->get_purchase_time();
-	//				}
-	//			}
-	//		}
-	//		if (max_age < 0)
-	//		{
-	//			max_age = 0;
-	//		}
-	//		if (min_age < 0)
-	//		{
-	//			min_age = 0;
-	//		}
+			for (int j = 0; j < veh_list.get_count(); j++)
+			{
+				if (veh_selection[j] == true)
+				{
+					vehicle_t* veh = veh_list.get_element(j);
+					if (veh->get_purchase_time() > max_age)
+					{
+						max_age = month_now_absolute - veh->get_purchase_time();
+					}
+					if (veh->get_purchase_time() <= min_age)
+					{
+						min_age = month_now_absolute - veh->get_purchase_time();
+					}
+				}
+			}
+			if (max_age < 0)
+			{
+				max_age = 0;
+			}
+			if (min_age < 0)
+			{
+				min_age = 0;
+			}
 
-	//		min_age /= 12;
-	//		max_age /= 12;
+			min_age /= 12;
+			max_age /= 12;
 
-	//		char age_entry[128] = "\0";
+			char age_entry[128] = "\0";
 
-	//		if (max_age != min_age)
-	//		{
-	//			sprintf(age_entry, "%i - %i", max_age, min_age);
-	//		}
-	//		else
-	//		{
-	//			sprintf(age_entry, "%i", max_age);
-	//		}
-	//		if (max_age < 2)
-	//		{
-	//			sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("year"));
-	//		}
-	//		else
-	//		{
-	//			sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("years"));
-	//		}
-	//	}
-	//	else
-	//	{
-	//		sprintf(buf, translator::translate("age:"));
-	//	}
-	//	display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
-
-
-	//	pos_y += LINESPACE * 5;
+			if (max_age != min_age)
+			{
+				sprintf(age_entry, "%i - %i", max_age, min_age);
+			}
+			else
+			{
+				sprintf(age_entry, "%i", max_age);
+			}
+			if (max_age < 2)
+			{
+				sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("year"));
+			}
+			else
+			{
+				sprintf(buf, translator::translate("age: %s %s"), age_entry, translator::translate("years"));
+			}
+		}
+		else
+		{
+			sprintf(buf, translator::translate("age:"));
+		}
+		display_proportional_clip(pos.x + l_column_1, pos.y + pos_y, buf, ALIGN_LEFT, veh_selected_color, true);
 
 
-	//	pos_x = l_column_2;
-	//	pos_y = 0;
-
-	//	pos_x = l_column_3;
-	//	pos_y = 0;
+		pos_y += LINESPACE * 5;
 
 
+		pos_x = l_column_2;
+		pos_y = 0;
 
-	//}
+		pos_x = l_column_3;
+		pos_y = 0;
 
-	//// Odometer
+
+
+	}
+
+	// Odometer
 }
 
 
