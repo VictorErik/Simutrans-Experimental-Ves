@@ -4973,103 +4973,117 @@ void vehicle_manager_t::build_livery_list()
 
 void vehicle_manager_t::build_upgrade_list()
 {
-	//cont_upgrade.remove_all();
-	//upgrade_info.clear();
-	//int ypos = 10;
-	//amount_of_upgrades = 0;
-	//int box_height = LINESPACE * 3;
+	// TODO: When multiple desc's can be showed in the same entry, alter this function to generate multiple upgrades in entries as well.
+	cont_upgrade.remove_all();
+	upgrade_info.clear();
+	int ypos = 10;
+	amount_of_upgrades = 0;
+	int box_height = LINESPACE * 3;
 
-	//if (desc_for_display)
-	//{
-	//	if (display_upgrade_into) // Build the list of upgrades to this vehicle		
-	//	{
-	//		if (desc_for_display->get_upgrades_count() > 0)
-	//		{
-	//			const uint16 month_now = welt->get_timeline_year_month();
-	//			upgrade_info.resize(desc_for_display->get_upgrades_count());
-	//			for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
-	//			{
-	//				vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
-	//				if (upgrade)
-	//				{
-	//					//if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
-	//					if ((!upgrade->is_future(month_now) && !upgrade->is_retired(month_now))
-	//						|| (show_out_of_production_vehicles && upgrade->is_retired(month_now) && !upgrade->is_obsolete(month_now, welt))
-	//						|| (show_obsolete_vehicles && upgrade->is_obsolete(month_now, welt)))
-	//					{
-	//						gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
-	//						uinfo->set_pos(scr_coord(0, ypos));
-	//						uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
-	//						upgrade_info.append(uinfo);
-	//						cont_upgrade.add_component(uinfo);
-	//						ypos += max(uinfo->get_entry_height(), box_height);
-	//						amount_of_upgrades++;
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//	else // Build the list of vehicles that can upgrade into this vehicle
-	//	{
-	//		bool upgrades_from_this;
-	//		int counter = 0;
-	//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-	//		{
-	//			counter++;
-	//		}
-	//		upgrade_info.resize(counter);
-	//		FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
-	//		{
-	//			upgrades_from_this = false;
-	//			if (info->get_upgrades_count() > 0)
-	//			{
-	//				for (int i = 0; i < info->get_upgrades_count(); i++)
-	//				{
-	//					vehicle_desc_t* upgrade = (vehicle_desc_t*)info->get_upgrades(i);
-	//					if (upgrade == desc_for_display)
-	//					{
-	//						upgrades_from_this = true;
-	//						break;
-	//					}
-	//				}
-	//			}
-	//			if (upgrades_from_this)
-	//			{
-	//				gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
-	//				uinfo->set_pos(scr_coord(0, ypos));
-	//				uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
-	//				upgrade_info.append(uinfo);
-	//				cont_upgrade.add_component(uinfo);
-	//				ypos += max(uinfo->get_entry_height(), box_height);
-	//				amount_of_upgrades++;
-	//			}
-	//		}
-	//	}
-	//	upgrade_info.resize(amount_of_upgrades);
+	if (desc_for_display.get_count() == 1) // For the moment, only display this when exactly one desc is selected
+	{
+		vehicle_desc_t* desc = desc_for_display.get_element(0);
+		if (display_upgrade_into) // Build the list of upgrades to this vehicle		
+		{
+			if (desc->get_upgrades_count() > 0)
+			{
+				const uint16 month_now = welt->get_timeline_year_month();
+				upgrade_info.resize(desc->get_upgrades_count());
+				for (int i = 0; i < desc->get_upgrades_count(); i++)
+				{
+					vehicle_desc_t* upgrade = (vehicle_desc_t*)desc->get_upgrades(i);
+					if (upgrade)
+					{
+						//if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
+						if ((!upgrade->is_future(month_now) && !upgrade->is_retired(month_now))
+							|| (show_out_of_production_vehicles && upgrade->is_retired(month_now) && !upgrade->is_obsolete(month_now, welt))
+							|| (show_obsolete_vehicles && upgrade->is_obsolete(month_now, welt)))
+						{
+							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc);
+							uinfo->set_pos(scr_coord(0, ypos));
+							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
+							upgrade_info.append(uinfo);
+							cont_upgrade.add_component(uinfo);
+							ypos += max(uinfo->get_entry_height(), box_height);
+							amount_of_upgrades++;
+						}
+					}
+				}
+			}
+		}
+		else // Build the list of vehicles that can upgrade into this vehicle
+		{
+			bool upgrades_from_this;
+			int counter = 0;
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+			{
+				counter++;
+			}
+			upgrade_info.resize(counter);
+			FOR(slist_tpl<vehicle_desc_t *>, const info, vehicle_builder_t::get_info(way_type))
+			{
+				upgrades_from_this = false;
+				if (info->get_upgrades_count() > 0)
+				{
+					for (int i = 0; i < info->get_upgrades_count(); i++)
+					{
+						vehicle_desc_t* upgrade = (vehicle_desc_t*)info->get_upgrades(i);
+						if (upgrade == desc)
+						{
+							upgrades_from_this = true;
+							break;
+						}
+					}
+				}
+				if (upgrades_from_this)
+				{
+					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc);
+					uinfo->set_pos(scr_coord(0, ypos));
+					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
+					upgrade_info.append(uinfo);
+					cont_upgrade.add_component(uinfo);
+					ypos += max(uinfo->get_entry_height(), box_height);
+					amount_of_upgrades++;
+				}
+			}
+		}
+		upgrade_info.resize(amount_of_upgrades);
 
-	//	// Display "no_vehicles_available" when list is empty
-	//	if (amount_of_upgrades <= 0)
-	//	{
-	//		cbuffer_t buf;
-	//		buf.clear();
-	//		if (display_upgrade_into)
-	//		{
-	//			buf.append(translator::translate("no_upgrades_available"));
-	//		}
-	//		else
-	//		{
-	//			buf.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
-	//		}
-	//		int box_height = LINESPACE * 3;
-	//		gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
-	//		sinfo->set_pos(scr_coord(0, ypos));
-	//		sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
-	//		cont_upgrade.add_component(sinfo);
-	//		ypos += max(sinfo->get_entry_height(), box_height);
-	//	}
-	//	cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
-	//}
-	//display(scr_coord(0,0));
+		// Display "no_vehicles_available" when list is empty
+		if (amount_of_upgrades <= 0)
+		{
+			cbuffer_t buf;
+			buf.clear();
+			if (display_upgrade_into)
+			{
+				buf.append(translator::translate("no_upgrades_available"));
+			}
+			else
+			{
+				buf.append(translator::translate("no_vehicles_upgrade_to_this_vehicle"));
+			}
+			int box_height = LINESPACE * 3;
+			gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
+			sinfo->set_pos(scr_coord(0, ypos));
+			sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
+			cont_upgrade.add_component(sinfo);
+			ypos += max(sinfo->get_entry_height(), box_height);
+		}
+		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
+	}
+	else if (desc_for_display.get_count() > 1) { // Multiple desc's selected. Display warning
+		cbuffer_t buf;
+		buf.clear();
+		buf.append(translator::translate("select_single_desc_to_show_upgrades"));
+		int box_height = LINESPACE * 3;
+		gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
+		sinfo->set_pos(scr_coord(0, ypos));
+		sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
+		cont_upgrade.add_component(sinfo);
+		ypos += max(sinfo->get_entry_height(), box_height);
+		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
+	}
+	display(scr_coord(0,0));
 }
 
 void vehicle_manager_t::build_desc_list()
@@ -5363,6 +5377,7 @@ void vehicle_manager_t::build_veh_list()
 	}
 
 	display_veh_list();
+	build_upgrade_list();
 }
 
 void vehicle_manager_t::display_veh_list()
