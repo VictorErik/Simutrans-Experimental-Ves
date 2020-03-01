@@ -2948,7 +2948,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 			}
 			else {
 				n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
-				linespace_skips += 3;
+				n += sprintf(buf + n, "\n\n\n");
 			}
 		}
 		if (has_capacity) {
@@ -3009,55 +3009,130 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				n += sprintf(buf + n, "\n%s", translator::translate("travelling_post_office"));
 			}
 		}
-		else
-		{
-			linespace_skips++;
-		}
 
 
 
 		// Permissive way constraints
 		// (If vehicle has, way must have)
-		// @author: jamespetts
-		const way_constraints_t &way_constraints = desc_info_text->get_way_constraints();
-		for (uint8 i = 0; i < way_constraints.get_count(); i++)
-		{
-			if (way_constraints.get_permissive(i))
-			{
-				n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
-				char tmpbuf[30];
-				sprintf(tmpbuf, "Permissive %i-%i", desc_info_text->get_waytype(), i);
-				n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+		bool has_constraints = false;
+		bool is_tall = false;
+		bool constraint[254];
+		for (int i = 0; i < 254; i++) {
+			constraint[i] = false;
+		}
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			const way_constraints_t& way_constraints = desc_for_display.get_element(i)->get_way_constraints();
+			for (uint8 j = 0; j < way_constraints.get_count(); j++) {
+				if (way_constraints.get_permissive(j)) {
+					has_constraints = true;
+					constraint[j] = true;
+				}
+			}
+			if (desc_for_display.get_element(i)->get_is_tall()) {
+				has_constraints = true;
+				is_tall = true;
 			}
 		}
-		if (desc_info_text->get_is_tall())
-		{
-			n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
-			n += sprintf(buf + n, "%s", translator::translate("high_clearance_under_bridges_(no_low_bridges)"));
+
+		if (has_constraints) {
+			for (int i = 0; i < 254; i++) {
+				if (constraint[i]) {
+					n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
+					char tmpbuf[30];
+					sprintf(tmpbuf, "Permissive %i-%i", desc_for_display.get_element(0)->get_waytype(), i);
+					n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+				}
+			}
+			if (is_tall) {
+				n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
+				n += sprintf(buf + n, "%s", translator::translate("high_clearance_under_bridges_(no_low_bridges)"));
+			}
 		}
 
+
+		display_multiline_text(pos.x + 335/*370*/, pos.y + pos_y + (LINESPACE * 2), buf, SYSCOL_TEXT);
+
+
+		// Below is displayed with its very own "display_proportional_clip", due to potential color change
+		// count returns
+		int returns = 0;
+		const char* p = buf;
+		for (int i = 0; i < 1024; i++)
+		{
+			if (buf[i] == '\0') {
+				break;
+			}
+			if (buf[i] == '\n') {
+				returns++;
+			}
+		}
+		pos_y += (returns * LINESPACE) + LINESPACE;
+		COLOR_VAL color = SYSCOL_TEXT;
 
 		// Prohibitibve way constraints
 		// (If way has, vehicle must have)
-		// @author: jamespetts
-		for (uint8 i = 0; i < way_constraints.get_count(); i++)
-		{
-			if (way_constraints.get_prohibitive(i))
-			{
-				n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: "));
-				char tmpbuf[30];
-				sprintf(tmpbuf, "Prohibitive %i-%i", desc_info_text->get_waytype(), i);
-				n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+
+
+		has_constraints = false;
+		bool is_tilting = false;
+		bool is_shared_tilting = false;
+		bool shared_constraint[254];
+		for (int i = 0; i < 254; i++) {
+			constraint[i] = false;
+			shared_constraint[i] = false;
+		}
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			const way_constraints_t& way_constraints = desc_for_display.get_element(i)->get_way_constraints();
+			for (uint8 j = 0; j < way_constraints.get_count(); j++) {
+				if (way_constraints.get_prohibitive(j)) {
+					has_constraints = true;
+					constraint[j] = true;
+					shared_constraint[j] = true;
+				}
+			}
+			if (desc_for_display.get_element(i)->get_tilting()) {
+				has_constraints = true;
+				is_tilting = true;
+				is_shared_tilting = true;
 			}
 		}
-		if (desc_info_text->get_tilting())
-		{
-			n += sprintf(buf + n, "\n");
-			n += sprintf(buf + n, "%s: ", translator::translate("equipped_with"));
-			n += sprintf(buf + n, "%s", translator::translate("tilting_vehicle_equipment"));
+
+		if (has_constraints) {
+			// Turn off the prohibitive constraints which are not represented in all vehicles
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				const way_constraints_t& way_constraints = desc_for_display.get_element(i)->get_way_constraints();
+				for (uint8 j = 0; j < way_constraints.get_count(); j++) {
+					if (!way_constraints.get_prohibitive(j)) {
+						shared_constraint[j] = false;
+					}
+				}
+				if (!desc_for_display.get_element(i)->get_tilting()) {
+					is_shared_tilting = false;
+				}
+			}
+					   
+			for (int i = 0; i < 254; i++) {
+				if (shared_constraint[i] || (!combine_values && constraint[i])) {
+					n = 0;
+					n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: "));
+					char tmpbuf[30];
+					sprintf(tmpbuf, "Prohibitive %i-%i", desc_for_display.get_element(0)->get_waytype(), i);
+					n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+					color = shared_constraint[i] ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
+					display_proportional_clip(pos.x + 335/*370*/, pos.y + pos_y + (LINESPACE * 2), buf, ALIGN_LEFT, color, true);
+					pos_y += LINESPACE;
+				}
+			}
+			if (is_shared_tilting || (!combine_values && is_tilting)) {
+				n = 0;
+				n += sprintf(buf + n, "\n%s: ", translator::translate("equipped_with"));
+				n += sprintf(buf + n, "%s", translator::translate("tilting_vehicle_equipment"));
+				color = is_shared_tilting ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
+				display_proportional_clip(pos.x + 335/*370*/, pos.y + pos_y + (LINESPACE * 2), buf, ALIGN_LEFT, color, true);
+				pos_y += LINESPACE;
+			}
 		}
 
-		display_multiline_text(pos.x + 335/*370*/, pos.y + pos_y + (LINESPACE * 2), buf, SYSCOL_TEXT);
 
 	}
 }
