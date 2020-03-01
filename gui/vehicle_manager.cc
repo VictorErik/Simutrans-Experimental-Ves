@@ -193,7 +193,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
-	sprintf(text_show_all_vehicles, translator::translate("show_available_vehicles:"));
+	sprintf(text_show_all_vehicles, translator::translate("show_available_vehicles"));
 	bt_show_available_vehicles.init(button_t::square_state, text_show_all_vehicles, coord_dummy, size_dummy);
 	bt_show_available_vehicles.add_listener(this);
 	bt_show_available_vehicles.set_tooltip(translator::translate("tick_to_show_all_available_vehicles"));
@@ -202,21 +202,21 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	
 	// Show vehicles out of production button
-	sprintf(text_show_out_of_production_vehicles, translator::translate("show_vehicles_out_of_production:"));
+	sprintf(text_show_out_of_production_vehicles, translator::translate("Show outdated"));
 	bt_show_out_of_production_vehicles.init(button_t::square_state, text_show_out_of_production_vehicles, coord_dummy, size_dummy);
 	if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
 		bt_show_out_of_production_vehicles.add_listener(this);
-		bt_show_out_of_production_vehicles.set_tooltip(translator::translate("tick_to_show_vehicles_not_being_produced_anymore"));
+		bt_show_out_of_production_vehicles.set_tooltip(translator::translate("Show also vehicles no longer in production."));
 		bt_show_out_of_production_vehicles.pressed = show_out_of_production_vehicles;
 		add_component(&bt_show_out_of_production_vehicles);
 	}
 		
 	// Show obsolete vehicles button
-	sprintf(text_show_obsolete_vehicles, translator::translate("show_obsolete_vehicles:"));
+	sprintf(text_show_obsolete_vehicles, translator::translate("Show obsolete"));
 	bt_show_obsolete_vehicles.init(button_t::square_state, text_show_obsolete_vehicles, coord_dummy, size_dummy);
 	if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
 		bt_show_obsolete_vehicles.add_listener(this);
-		bt_show_obsolete_vehicles.set_tooltip(translator::translate("tick_to_show_all_obsolete_vehicles"));
+		bt_show_obsolete_vehicles.set_tooltip(translator::translate("Show also vehicles whose maintenance costs have increased due to obsolescence."));
 		bt_show_obsolete_vehicles.pressed = show_obsolete_vehicles;
 		add_component(&bt_show_obsolete_vehicles);
 	}
