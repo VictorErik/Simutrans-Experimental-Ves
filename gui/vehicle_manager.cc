@@ -2662,9 +2662,11 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		if (lowest_value != DEFAULT_RETIRE_DATE * 12) {
 			n += sprintf(buf + n, "\n%s %s %04d", translator::translate("Retire. date:"), translator::get_month_name(lowest_value % 12), lowest_value / 12);
 			if (!combine_values && !lowest_equal_highest_value) {
-				n += sprintf(buf + n, " - ");
 				if (highest_value != DEFAULT_RETIRE_DATE * 12) {
-					n += sprintf(buf + n, "%s %04d", translator::get_month_name(highest_value % 12), highest_value / 12);
+					n += sprintf(buf + n, " - %s %04d", translator::get_month_name(highest_value % 12), highest_value / 12);
+				}
+				else {
+					n += sprintf(buf + n, " - %s", translator::translate("no_retire_date"));
 				}
 			}
 		}
