@@ -2563,7 +2563,7 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 				lowest_value = UINT64_MAX;
 				combined_value = 0;
 				for (int i = 0; i < desc_for_display.get_count(); i++) {
-					if (desc_for_display.get_element(i)->get_tractive_effort() > 0) {// Ignore motorless vehicles
+					if (desc_for_display.get_element(i)->get_power() > 0) {// Ignore motorless vehicles
 						highest_value = desc_for_display.get_element(i)->get_tractive_effort() > highest_value ? desc_for_display.get_element(i)->get_tractive_effort() : highest_value;
 						lowest_value = desc_for_display.get_element(i)->get_tractive_effort() < lowest_value ? desc_for_display.get_element(i)->get_tractive_effort() : lowest_value;
 						combined_value += desc_for_display.get_element(i)->get_tractive_effort();
