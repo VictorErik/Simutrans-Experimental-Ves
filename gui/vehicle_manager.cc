@@ -90,6 +90,7 @@ bool vehicle_manager_t::show_available_vehicles = false;
 bool vehicle_manager_t::show_out_of_production_vehicles = false;
 bool vehicle_manager_t::show_obsolete_vehicles = false;
 bool vehicle_manager_t::select_multiple_desc = false;
+bool vehicle_manager_t::split_fixed_couplings = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
 bool vehicle_manager_t::show_obsolete_liveries = false;
@@ -225,15 +226,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		show_obsolete_vehicles = false;
 	}
 
-	// Select multiple desc's button
-	sprintf(text_select_multiple_desc, translator::translate("select_multiple_desc"));
-	bt_select_multiple_desc.init(button_t::square_state, text_select_multiple_desc, coord_dummy, size_dummy);
-	bt_select_multiple_desc.add_listener(this);
-	bt_select_multiple_desc.set_tooltip(translator::translate("tick_to_select_multiple_desc's"));
-	bt_select_multiple_desc.pressed = select_multiple_desc;
-	add_component(&bt_select_multiple_desc);
-	
-
 	// Waytype tab panel
 	tabs_waytype.add_listener(this);
 	add_component(&tabs_waytype);
@@ -241,6 +233,22 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// Vehicle type tab panel
 	tabs_vehicletype.add_listener(this);
 	add_component(&tabs_vehicletype);
+
+	// Select multiple desc's button
+	sprintf(text_select_multiple_desc, translator::translate("select_multiple_desc"));
+	bt_select_multiple_desc.init(button_t::square_state, text_select_multiple_desc, coord_dummy, size_dummy);
+	bt_select_multiple_desc.add_listener(this);
+	bt_select_multiple_desc.set_tooltip(translator::translate("tick_to_select_multiple_desc's"));
+	bt_select_multiple_desc.pressed = select_multiple_desc;
+	add_component(&bt_select_multiple_desc);
+
+	// Split fixed couplings button
+	sprintf(text_split_fixed_couplings, translator::translate("split_fixed_couplings"));
+	bt_split_fixed_couplings.init(button_t::square_state, text_split_fixed_couplings, coord_dummy, size_dummy);
+	bt_split_fixed_couplings.add_listener(this);
+	bt_split_fixed_couplings.set_tooltip(translator::translate("when_unticked_vehicles_with_fixed_connections_will_display_in_the_same_entry"));
+	bt_split_fixed_couplings.pressed = split_fixed_couplings;
+	add_component(&bt_split_fixed_couplings);
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_visible(true);
@@ -695,6 +703,15 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		//update_tabs(); // To display a tab with only multiple units?
 		save_previously_selected_desc();
 		page_turn_desc = false; 
+		display(scr_coord(0, 0));
+	}
+
+	if (comp == &bt_split_fixed_couplings) {
+		bt_split_fixed_couplings.pressed = !bt_split_fixed_couplings.pressed;
+		split_fixed_couplings = bt_split_fixed_couplings.pressed;
+		//update_tabs(); // To display a tab with only multiple units?
+		page_turn_desc = false;
+		build_desc_list();
 		display(scr_coord(0, 0));
 	}
 
@@ -3440,9 +3457,8 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Header columns:
 	h_column_1 = D_MARGIN_LEFT;
 	h_column_2 = h_column_1 + display_calc_proportional_string_len_width(text_show_all_vehicles, -1) + 30;
-	h_column_3 = h_column_2 + display_calc_proportional_string_len_width(text_select_multiple_desc, -1) + 30;
-	h_column_4 = h_column_3 + display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1) + 30;
-	h_column_5 = h_column_4 + display_calc_proportional_string_len_width(text_show_obsolete_vehicles, -1) + 30;
+	h_column_3 = h_column_2 + display_calc_proportional_string_len_width(text_show_out_of_production_vehicles, -1) + 30;
+	h_column_4 = h_column_3 + display_calc_proportional_string_len_width(text_show_obsolete_vehicles, -1) + 30;
 
 	// Start by determining which of these translations is the longest, since the GUI depends upon it:
 	label_length = max(display_calc_proportional_string_len_width(sortby_text, -1), display_calc_proportional_string_len_width(displayby_text, -1));
@@ -3463,17 +3479,13 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	bt_show_available_vehicles.set_pos(scr_coord(h_column_1, y_pos));
 	bt_show_available_vehicles.set_size(scr_size(h_column_2 - h_column_1, D_BUTTON_HEIGHT));
 
-	// Select multiple desc button
-	bt_select_multiple_desc.set_pos(scr_coord(h_column_2, y_pos));
-	bt_select_multiple_desc.set_size(scr_size(h_column_3 - h_column_2, D_BUTTON_HEIGHT));
-
 	// Show vehicles out of production button
-	bt_show_out_of_production_vehicles.set_pos(scr_coord(h_column_3, y_pos));
-	bt_show_out_of_production_vehicles.set_size(scr_size(h_column_4 - h_column_3, D_BUTTON_HEIGHT));
+	bt_show_out_of_production_vehicles.set_pos(scr_coord(h_column_2, y_pos));
+	bt_show_out_of_production_vehicles.set_size(scr_size(h_column_3 - h_column_2, D_BUTTON_HEIGHT));
 
 	// Show obsolete vehicles button
-	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_4, y_pos));
-	bt_show_obsolete_vehicles.set_size(scr_size(h_column_5 - h_column_4, D_BUTTON_HEIGHT));
+	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_3, y_pos));
+	bt_show_obsolete_vehicles.set_size(scr_size(h_column_4 - h_column_3, D_BUTTON_HEIGHT));
 
 	y_pos += D_BUTTON_HEIGHT;
 
@@ -3485,9 +3497,21 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Vehicle type tab panel
 	tabs_vehicletype.set_pos(scr_coord(u_column_1, y_pos));
 	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width/2), SCL_HEIGHT));
-	y_pos += (D_BUTTON_HEIGHT*2) + 6;
+	y_pos += (D_BUTTON_HEIGHT) + 6;
 
 	upper_section = y_pos;
+
+	// Select multiple desc button
+	label_length = display_calc_proportional_string_len_width(text_select_multiple_desc, -1) + 30;
+	bt_select_multiple_desc.set_pos(scr_coord(h_column_1, y_pos));
+	bt_select_multiple_desc.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
+
+	// Split fixed couplings button
+	bt_split_fixed_couplings.set_pos(scr_coord(h_column_1 + label_length, y_pos));
+	bt_split_fixed_couplings.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+
+
+	y_pos += D_BUTTON_HEIGHT;
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_pos(scr_coord(u_column_1, y_pos));

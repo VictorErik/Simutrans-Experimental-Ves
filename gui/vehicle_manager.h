@@ -113,7 +113,7 @@ private:
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
 	button_t bt_append_livery, bt_show_obsolete_liveries, bt_reset_all_classes;
-	button_t bt_select_multiple_desc, bt_display_combined_info;
+	button_t bt_select_multiple_desc, bt_display_combined_info, bt_split_fixed_couplings;
 
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
@@ -136,6 +136,7 @@ private:
 	bool any_mail_cargo, any_pass_cargo, no_class_vehicle;
 
 	char text_select_multiple_desc[50];
+	char text_split_fixed_couplings[50];
 	char text_show_all_vehicles[50];
 	char text_show_out_of_production_vehicles[50];
 	char text_show_obsolete_vehicles[50];
@@ -157,6 +158,7 @@ private:
 	static bool show_out_of_production_vehicles;
 	static bool show_obsolete_vehicles;
 	static bool select_multiple_desc;
+	static bool split_fixed_couplings;
 	static bool select_all;
 	static bool hide_veh_in_depot;
 	static bool show_obsolete_liveries;
