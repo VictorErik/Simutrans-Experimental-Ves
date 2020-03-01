@@ -216,7 +216,7 @@ private:
 	int h_column_4;
 	int h_column_5;
 
-	// Upper columns
+	// Upper columns: 6 columns (uneven)
 	int u_column_1;
 	int u_column_2;
 	int u_column_3;
@@ -226,7 +226,7 @@ private:
 
 	// (Middle section doesnt use columns)
 	
-	// Lower columns
+	// Lower columns: 6 columns
 	int l_column_1;
 	int l_column_2;
 	int l_column_3;
