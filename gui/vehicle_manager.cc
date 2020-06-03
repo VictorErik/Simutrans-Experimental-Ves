@@ -969,7 +969,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 					vehicle_t* veh = veh_list.get_element(j);
 					if (veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
 					{
-						convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
+						convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh->get_convoi();
 						for (int k = 0; k < cnv->get_vehicle_count(); k++) {
 							if (cnv->get_vehicle(k) == veh) {
 								vehicle_position = k;
@@ -977,6 +977,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 							}
 						}
 						// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc". For now, we send the current vehicle position along with the message to each convoy
+						buf.clear();
 						buf.printf("%i,%i,%i,%i,%i", i, new_class, good_type, reset, vehicle_position);
 						cnv->call_convoi_tool('e', buf);
 					}
