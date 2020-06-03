@@ -959,15 +959,27 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			}
 			int good_type = 0; // 0 = Passenger, 1 = Mail,
 			int reset = 0; // 0 = reset only single class, 1 = reset all classes
+			uint16 vehicle_position = 0;
 			cbuffer_t buf;
-			// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc"
-			buf.printf("%i,%i,%i,%i", i, new_class, good_type, reset);
 			for (int j = 0; j < veh_list.get_count(); j++)
 			{
 				if (veh_selection[j])
 				{
-					//convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
-					//cnv->call_convoi_tool('c', buf);
+					vehicle_position = 0;
+					vehicle_t* veh = veh_list.get_element(j);
+					if (veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+					{
+						convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
+						for (int k = 0; k < cnv->get_vehicle_count(); k++) {
+							if (cnv->get_vehicle(k) == veh) {
+								vehicle_position = k;
+								break;
+							}
+						}
+						// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc". For now, we send the current vehicle position along with the message to each convoy
+						buf.printf("%i,%i,%i,%i,%i", i, new_class, good_type, reset, vehicle_position);
+						cnv->call_convoi_tool('e', buf);
+					}
 				}
 			}
 
