@@ -5766,42 +5766,42 @@ void vehicle_manager_t::build_class_entries()
 }
 
 
-uint32 vehicle_manager_t::get_rdwr_id()
-{
-	return magic_vehicle_manager_t+player->get_player_nr();
-}
-void vehicle_manager_t::rdwr(loadsave_t *file)
-{
-	scr_size size;
-	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff, livery_xoff, livery_yoff;
-	if (file->is_saving()) {
-		size = get_windowsize();
-		desc_xoff = scrolly_desc.get_scroll_x();
-		desc_yoff = scrolly_desc.get_scroll_y();
-		veh_xoff = scrolly_veh.get_scroll_x();
-		veh_yoff = scrolly_veh.get_scroll_y();
-		upgrade_xoff = scrolly_upgrade.get_scroll_x();
-		upgrade_yoff = scrolly_upgrade.get_scroll_y();
-		//livery_xoff = scrolly_livery.get_scroll_x();
-		//livery_yoff = scrolly_livery.get_scroll_y();
-	}
-	size.rdwr(file);
-
-	file->rdwr_long(desc_xoff);
-	file->rdwr_long(desc_yoff);
-	file->rdwr_long(veh_xoff);
-	file->rdwr_long(veh_yoff);
-	file->rdwr_long(upgrade_xoff);
-	file->rdwr_long(upgrade_yoff);
-
-	// open dialogue
-	if (file->is_loading()) {
-		set_windowsize(size);
-		resize(scr_coord(0, 0));
-		scrolly_desc.set_scroll_position(desc_xoff, desc_yoff);
-		scrolly_veh.set_scroll_position(veh_xoff, veh_yoff);
-		scrolly_upgrade.set_scroll_position(upgrade_xoff, upgrade_yoff);
-		//scrolly_livery.set_scroll_position(livery_xoff, livery_yoff);
-	}
-}
+//uint32 vehicle_manager_t::get_rdwr_id()
+//{
+//	return magic_vehicle_manager_t+player->get_player_nr();
+//}
+//void vehicle_manager_t::rdwr(loadsave_t *file)
+//{
+//	scr_size size;
+//	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff, livery_xoff, livery_yoff;
+//	if (file->is_saving()) {
+//		size = get_windowsize();
+//		desc_xoff = scrolly_desc.get_scroll_x();
+//		desc_yoff = scrolly_desc.get_scroll_y();
+//		veh_xoff = scrolly_veh.get_scroll_x();
+//		veh_yoff = scrolly_veh.get_scroll_y();
+//		upgrade_xoff = scrolly_upgrade.get_scroll_x();
+//		upgrade_yoff = scrolly_upgrade.get_scroll_y();
+//		//livery_xoff = scrolly_livery.get_scroll_x();
+//		//livery_yoff = scrolly_livery.get_scroll_y();
+//	}
+//	size.rdwr(file);
+//
+//	file->rdwr_long(desc_xoff);
+//	file->rdwr_long(desc_yoff);
+//	file->rdwr_long(veh_xoff);
+//	file->rdwr_long(veh_yoff);
+//	file->rdwr_long(upgrade_xoff);
+//	file->rdwr_long(upgrade_yoff);
+//
+//	// open dialogue
+//	if (file->is_loading()) {
+//		set_windowsize(size);
+//		resize(scr_coord(0, 0));
+//		scrolly_desc.set_scroll_position(desc_xoff, desc_yoff);
+//		scrolly_veh.set_scroll_position(veh_xoff, veh_yoff);
+//		scrolly_upgrade.set_scroll_position(upgrade_xoff, upgrade_yoff);
+//		//scrolly_livery.set_scroll_position(livery_xoff, livery_yoff);
+//	}
+//}
 

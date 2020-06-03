@@ -433,8 +433,8 @@ public:
 
 
 	//// following: rdwr stuff
-	void rdwr( loadsave_t *file );
-	uint32 get_rdwr_id();
+	//void rdwr( loadsave_t *file );
+	//uint32 get_rdwr_id();
 };
 
 #endif
