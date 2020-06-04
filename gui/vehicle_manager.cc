@@ -411,8 +411,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	max_idx_information = 0;
 	tabs_info.add_tab(&cont_general_info, translator::translate("infotab_general_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_general;
-	tabs_info.add_tab(&cont_economics_info, translator::translate("infotab_economics_information"));
-	tabs_to_index_information[max_idx_information++] = infotab_economics;
+	tabs_info.add_tab(&cont_payload_info, translator::translate("infotab_payload_information"));
+	tabs_to_index_information[max_idx_information++] = infotab_payload;
 	tabs_info.add_tab(&cont_maintenance_info, translator::translate("infotab_maintenance_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_maintenance;
 	tabs_info.add_tab(&dummy, translator::translate("infotab_advanced"));
@@ -440,10 +440,10 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_general_info.add_component(&bt_display_combined_info);
 	}
 	
-	// Economics tab:
+	// Payload tab:
 	{
 		// ---- Vehicle cargo section ---- //
-		cont_economics_info.add_component(&lb_current_payload_information);
+		cont_payload_info.add_component(&lb_current_payload_information);
 
 		text_cargo.set_size(size_dummy);
 		text_cargo.set_pos(scr_coord(D_H_SPACE, D_V_SPACE));
@@ -451,7 +451,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		scrolly_cargo.set_scroll_amount_y(40);
 		scrolly_cargo.set_visible(true);
 		scrolly_cargo.set_focusable(true);
-		cont_economics_info.add_component(&scrolly_cargo);
+		cont_payload_info.add_component(&scrolly_cargo);
 
 		const int old_len = buf_cargo.len();
 		update_cargo_manifest(buf_cargo);
@@ -461,8 +461,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 
 		// ---- Vehicle class section ---- //	
-		cont_economics_info.add_component(&lb_available_classes);
-		cont_economics_info.add_component(&lb_reassign_class_to);
+		cont_payload_info.add_component(&lb_available_classes);
+		cont_payload_info.add_component(&lb_reassign_class_to);
 
 		// Create the list of comboboxes, as well as the names of the classes
 		for (int i = 0; i < pass_classes; i++)
@@ -470,7 +470,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_combobox_t* class_selector = new gui_combobox_t();
 			if (class_selector != nullptr)
 			{
-				cont_economics_info.add_component(class_selector);
+				cont_payload_info.add_component(class_selector);
 				class_selector->add_listener(this);
 				class_selector->set_focusable(false);
 				pass_class_sel.append(class_selector);
@@ -478,7 +478,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_label_t* class_label = new gui_label_t();
 			if (class_label != nullptr)
 			{
-				cont_economics_info.add_component(class_label);
+				cont_payload_info.add_component(class_label);
 				lb_pass_class.append(class_label);
 			}
 
@@ -495,7 +495,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_combobox_t* class_selector = new gui_combobox_t();
 			if (class_selector != nullptr)
 			{
-				cont_economics_info.add_component(class_selector);
+				cont_payload_info.add_component(class_selector);
 				class_selector->add_listener(this);
 				class_selector->set_focusable(false);
 				mail_class_sel.append(class_selector);
@@ -503,7 +503,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_label_t* class_label = new gui_label_t();
 			if (class_label != nullptr)
 			{
-				cont_economics_info.add_component(class_label);
+				cont_payload_info.add_component(class_label);
 				lb_mail_class.append(class_label);
 			}
 			char* class_name = new char[32]();
@@ -518,26 +518,26 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_reset_all_classes.set_text("reset_all_classes");
 		bt_reset_all_classes.add_listener(this);
 		bt_reset_all_classes.set_tooltip("resets_all_classes_to_their_defaults");
-		cont_economics_info.add_component(&bt_reset_all_classes);
+		cont_payload_info.add_component(&bt_reset_all_classes);
 
 
 		// ---- Livery section ---- //		
 
-		cont_economics_info.add_component(&lb_available_liveries);
+		cont_payload_info.add_component(&lb_available_liveries);
 
 		// Livery buttons
 		bt_append_livery.init(button_t::roundbox, translator::translate("append_livery"), coord_dummy, D_BUTTON_SIZE);
 		bt_append_livery.add_listener(this);
 		bt_append_livery.set_tooltip(translator::translate("append_the_choosen_livery_on_all_vehicles"));
 		bt_append_livery.set_visible(true);
-		cont_economics_info.add_component(&bt_append_livery);
+		cont_payload_info.add_component(&bt_append_livery);
 	
 		bt_show_obsolete_liveries.init(button_t::square_state, translator::translate("show_obsolete_liveries"), coord_dummy, scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 		if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
 			bt_show_obsolete_liveries.add_listener(this);
 			bt_show_obsolete_liveries.set_tooltip(translator::translate("tick_to_show_obsolete_liveries"));
 			bt_show_obsolete_liveries.pressed = show_obsolete_liveries;
-			cont_economics_info.add_component(&bt_show_obsolete_liveries);
+			cont_payload_info.add_component(&bt_show_obsolete_liveries);
 		}
 		else {
 			show_obsolete_liveries = false;
@@ -549,7 +549,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		scrolly_livery.set_scroll_amount_y(40);
 		scrolly_livery.set_visible(true);
 		scrolly_livery.set_focusable(true);
-		cont_economics_info.add_component(&scrolly_livery);
+		cont_payload_info.add_component(&scrolly_livery);
 	}
 
 	// Maintenance tab:
@@ -1113,7 +1113,7 @@ void vehicle_manager_t::display_tab_objects()
 	int info_display = (uint16)selected_tab_information;
 	if (info_display == infotab_general)	{
 	}
-	else if (info_display == infotab_economics)	{
+	else if (info_display == infotab_payload)	{
 		build_livery_list();
 	}
 	else if (info_display == infotab_maintenance)	{
@@ -2040,7 +2040,7 @@ break;
 	return display;
 }
 
-void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
+void vehicle_manager_t::draw_payload_information(const scr_coord& pos)
 {
 	char buf[1024];
 	char tmp[50];
@@ -3350,13 +3350,13 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	{
 		draw_general_information(pos + desc_info_text_pos);
 	}
-	else if (info_display == infotab_economics)
+	else if (info_display == infotab_payload)
 	{
 		if (update_veh_list)
 		{
 			build_livery_list();
 		}
-		draw_economics_information(pos + desc_info_text_pos);
+		draw_payload_information(pos + desc_info_text_pos);
 	}
 	else if (info_display == infotab_maintenance)
 	{
@@ -3493,7 +3493,7 @@ void vehicle_manager_t::display(scr_coord pos)
 			}
 		}
 
-		// Economics tab buttons:
+		// Payload tab buttons:
 		// This button needs more logic as to when it shall enable (multiple liveries to choose from etc)
 		bt_append_livery.enable();
 
@@ -3715,7 +3715,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		bt_display_combined_info.set_pos(scr_coord(l_column_1, y_pos));
 		bt_display_combined_info.set_width(column_width);
 	}
-	// Economics tab:
+	// Payload tab:
 	{ 		// Column 1-2
 		y_pos = D_MARGIN_TOP;
 		lb_current_payload_information.set_pos(scr_coord(l_column_1, y_pos));

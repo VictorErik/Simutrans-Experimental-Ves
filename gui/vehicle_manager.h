@@ -90,7 +90,7 @@ public:
 
 	enum info_tab_t {
 		infotab_general,
-		infotab_economics,
+		infotab_payload,
 		infotab_maintenance,
 		infotab_advanced,
 		DISPLAY_MODES_INFOTAB
@@ -102,7 +102,7 @@ private:
 	player_t *player;
 	uint8 player_nr;
 
-	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_general_info, cont_maintenance_info, cont_economics_info, dummy;
+	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_general_info, cont_maintenance_info, cont_payload_info, dummy;
 	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade, scrolly_livery, scrolly_cargo;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_vehicletype;
@@ -357,7 +357,7 @@ public:
 	void build_livery_list();
 
 	void draw_general_information(const scr_coord& pos);
-	void draw_economics_information(const scr_coord& pos);
+	void draw_payload_information(const scr_coord& pos);
 	void draw_maintenance_information(const scr_coord& pos);
 
 	void vehicle_manager_t::display_tab_objects();
