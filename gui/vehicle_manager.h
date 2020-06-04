@@ -111,6 +111,7 @@ private:
 	gui_combobox_t combo_sorter_veh;
 	gui_combobox_t combo_display_desc, combo_display_veh;
 
+	cbuffer_t buf_cargo; // Must be initialized BEFORE the corresponding gui_textarea_t, or it will crash
 	gui_textarea_t text_cargo;
 
 	button_t bt_show_available_vehicles, bt_show_out_of_production_vehicles, bt_show_obsolete_vehicles;
