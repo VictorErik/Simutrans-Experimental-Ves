@@ -187,7 +187,9 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade),
-	scrolly_livery(&cont_livery)
+	scrolly_livery(&cont_livery),
+	scrolly_cargo(&text_cargo),
+	text_cargo(&buf_cargo)
 {
 	scr_coord coord_dummy = scr_coord(0, 0);
 	scr_size size_dummy = scr_size(0, 0);
@@ -442,6 +444,21 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	{
 		// ---- Vehicle cargo section ---- //
 		cont_economics_info.add_component(&lb_current_payload_information);
+
+		text_cargo.set_size(size_dummy);
+		text_cargo.set_pos(scr_coord(D_H_SPACE, D_V_SPACE));
+		scrolly_cargo.set_show_scroll_y(true);
+		scrolly_cargo.set_scroll_amount_y(40);
+		scrolly_cargo.set_visible(true);
+		scrolly_cargo.set_focusable(true);
+		cont_economics_info.add_component(&scrolly_cargo);
+
+		const int old_len = buf_cargo.len();
+		update_cargo_manifest(buf_cargo);
+		if (old_len != buf_cargo.len()) {
+			text_cargo.recalc_size();
+		}
+
 
 		// ---- Vehicle class section ---- //	
 		cont_economics_info.add_component(&lb_available_classes);
@@ -2119,10 +2136,14 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	{
 		old_count_cargo_carried = new_count_cargo_carried;
 		{
-			update_cargo_manifest(cargo_buf);
+			const int old_len = buf_cargo.len();
+			update_cargo_manifest(buf_cargo);
+			if (old_len != buf_cargo.len()) {
+				text_cargo.recalc_size();
+			}
 		}
 	}
-	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, veh_selected_color);
+	//display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, veh_selected_color);
 
 	// Column 3-4
 	pos_y = D_BUTTON_HEIGHT * 2;
@@ -3299,7 +3320,11 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	if (update_desc_list)
 	{
 		build_desc_list();
-		update_cargo_manifest(cargo_buf);
+		const int old_len = buf_cargo.len();
+		update_cargo_manifest(buf_cargo);
+		if (old_len != buf_cargo.len()) {
+			text_cargo.recalc_size();
+		}
 	}
 	else if (update_veh_list)
 	{
@@ -3308,7 +3333,11 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 			reset_veh_text_input_display();
 		}
 		build_veh_list();
-		update_cargo_manifest(cargo_buf);
+		const int old_len = buf_cargo.len();
+		update_cargo_manifest(buf_cargo);
+		if (old_len != buf_cargo.len()) {
+			text_cargo.recalc_size();
+		}
 	}
 
 	// The "draw" information in the info tabs are fetched here
@@ -3690,6 +3719,12 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	{ 		// Column 1-2
 		y_pos = D_MARGIN_TOP;
 		lb_current_payload_information.set_pos(scr_coord(l_column_1, y_pos));
+
+		y_pos += D_BUTTON_HEIGHT;
+		y_pos += LINESPACE * 2;
+		
+		scrolly_cargo.set_pos(scr_coord(l_column_1, y_pos));
+		scrolly_cargo.set_size(scr_size(l_column_2 - l_column_1 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 
 		// Column 3-4
 		y_pos = D_MARGIN_TOP;
