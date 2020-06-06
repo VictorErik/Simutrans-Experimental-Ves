@@ -3612,14 +3612,12 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Split fixed couplings button
 	label_length = display_calc_proportional_string_len_width(text_split_fixed_couplings, -1) + 30;
 	bt_split_fixed_couplings.set_pos(scr_coord(h_column_2, y_pos));
-	//bt_split_fixed_couplings.set_pos(scr_coord(h_column_1 + x_pos, y_pos));
 	bt_split_fixed_couplings.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
 	x_pos += label_length;
 
 	// Show in convoy burron
 	label_length = display_calc_proportional_string_len_width(text_show_in_convoys, -1) + 30;
 	bt_show_in_convoys.set_pos(scr_coord(h_column_3, y_pos));
-	//bt_show_in_convoys.set_pos(scr_coord(h_column_1 + x_pos, y_pos));
 	bt_show_in_convoys.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
 	x_pos += label_length;
 	x_pos = 0;
