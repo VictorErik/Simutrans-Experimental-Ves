@@ -189,7 +189,8 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	scrolly_upgrade(&cont_upgrade),
 	scrolly_livery(&cont_livery),
 	scrolly_cargo(&text_cargo),
-	text_cargo(&buf_cargo)
+	text_cargo(&buf_cargo),
+	scrolly_class_reassign(&cont_class_reassign)
 {
 	scr_coord coord_dummy = scr_coord(0, 0);
 	scr_size size_dummy = scr_size(0, 0);
@@ -464,13 +465,20 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		cont_payload_info.add_component(&lb_available_classes);
 		cont_payload_info.add_component(&lb_reassign_class_to);
 
+		cont_class_reassign.set_size(size_dummy);
+		scrolly_class_reassign.set_show_scroll_y(true);
+		scrolly_class_reassign.set_scroll_amount_y(40);
+		scrolly_class_reassign.set_visible(true);
+		scrolly_class_reassign.set_focusable(true);
+		cont_payload_info.add_component(&scrolly_class_reassign);
+
 		// Create the list of comboboxes, as well as the names of the classes
 		for (int i = 0; i < pass_classes; i++)
 		{
 			gui_combobox_t* class_selector = new gui_combobox_t();
 			if (class_selector != nullptr)
 			{
-				cont_payload_info.add_component(class_selector);
+				cont_class_reassign.add_component(class_selector);
 				class_selector->add_listener(this);
 				class_selector->set_focusable(false);
 				pass_class_sel.append(class_selector);
@@ -478,7 +486,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_label_t* class_label = new gui_label_t();
 			if (class_label != nullptr)
 			{
-				cont_payload_info.add_component(class_label);
+				cont_class_reassign.add_component(class_label);
 				lb_pass_class.append(class_label);
 			}
 
@@ -495,7 +503,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_combobox_t* class_selector = new gui_combobox_t();
 			if (class_selector != nullptr)
 			{
-				cont_payload_info.add_component(class_selector);
+				cont_class_reassign.add_component(class_selector);
 				class_selector->add_listener(this);
 				class_selector->set_focusable(false);
 				mail_class_sel.append(class_selector);
@@ -503,7 +511,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_label_t* class_label = new gui_label_t();
 			if (class_label != nullptr)
 			{
-				cont_payload_info.add_component(class_label);
+				cont_class_reassign.add_component(class_label);
 				lb_mail_class.append(class_label);
 			}
 			char* class_name = new char[32]();
@@ -518,7 +526,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_reset_all_classes.set_text("reset_all_classes");
 		bt_reset_all_classes.add_listener(this);
 		bt_reset_all_classes.set_tooltip("resets_all_classes_to_their_defaults");
-		cont_payload_info.add_component(&bt_reset_all_classes);
+		cont_class_reassign.add_component(&bt_reset_all_classes);
 
 
 		// ---- Livery section ---- //		
@@ -3709,6 +3717,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	l_column_7 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 6;
 
 	int column_width = l_column_2 - l_column_1 - 5;
+	int double_column_width = l_column_3 - l_column_1 + 2;
 	// General information tab:
 	{
 		y_pos = D_MARGIN_TOP;
@@ -3734,6 +3743,10 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 		y_pos += D_BUTTON_HEIGHT;
 
+		scrolly_class_reassign.set_pos(scr_coord(l_column_3, y_pos));
+		scrolly_class_reassign.set_size(scr_size(double_column_width, INFORMATION_COLUMN_HEIGHT - D_BUTTON_HEIGHT));
+		int cont_y = 0;
+
 		if (no_class_vehicle)
 		{
 			// Display "none" if desc/vehicle doesnt support classes
@@ -3743,44 +3756,43 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		}
 		else
 		{
-
 			for (int i = 0; i < pass_class_sel.get_count(); i++)
 			{
 				if (pass_capacity_at_accommodation[i] > 0)
 				{
-					lb_pass_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
+					lb_pass_class.at(i)->set_pos(scr_coord(D_MARGIN_LEFT, cont_y));
 					lb_pass_class.at(i)->set_width(column_width);
-					pass_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
+					pass_class_sel.at(i)->set_pos(scr_coord(column_width + D_MARGIN_LEFT, cont_y));
 					pass_class_sel.at(i)->set_highlight_color(1);
 					pass_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
-					y_pos += D_BUTTON_HEIGHT;
+					cont_y += D_BUTTON_HEIGHT;
 				}
 			}
 			if (any_mail_cargo && any_pass_cargo)
 			{
-				y_pos += D_BUTTON_HEIGHT;
+				cont_y += D_BUTTON_HEIGHT;
 			}
 
 			for (int i = 0; i < mail_class_sel.get_count(); i++)
 			{
 				if (mail_capacity_at_accommodation[i] > 0)
 				{
-					lb_mail_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
+					lb_mail_class.at(i)->set_pos(scr_coord(D_MARGIN_LEFT, cont_y));
 					lb_mail_class.at(i)->set_width(column_width);
-					mail_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
+					mail_class_sel.at(i)->set_pos(scr_coord(column_width + D_MARGIN_LEFT, cont_y));
 					mail_class_sel.at(i)->set_highlight_color(1);
 					mail_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
-					y_pos += D_BUTTON_HEIGHT;
+					cont_y += D_BUTTON_HEIGHT;
 				}
 			}
-			y_pos += D_BUTTON_HEIGHT;
+			cont_y += D_BUTTON_HEIGHT;
 		}
 
-
-		bt_reset_all_classes.set_pos(scr_coord(l_column_4, y_pos));
+		bt_reset_all_classes.set_pos(scr_coord(D_MARGIN_LEFT, cont_y));
 		bt_reset_all_classes.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
+		cont_y += D_BUTTON_HEIGHT;
 
-
+		cont_class_reassign.set_size(scr_size(double_column_width, cont_y));
 
 
 
