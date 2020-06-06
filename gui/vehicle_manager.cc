@@ -81,7 +81,8 @@ static uint8 selected_sortby_desc = 0;
 static uint8 selected_sortby_veh = 0;
 static uint8 selected_displ_desc = 0;
 static uint8 selected_displ_veh = 0;
-static vehicle_desc_t* desc_for_display = NULL;
+vector_tpl<vehicle_desc_t*> desc_for_display;
+static bool desc_for_display_reset = true;
 
 bool vehicle_manager_t::desc_sortreverse = false;
 bool vehicle_manager_t::veh_sortreverse = false;
@@ -89,9 +90,11 @@ bool vehicle_manager_t::show_available_vehicles = false;
 bool vehicle_manager_t::show_out_of_production_vehicles = false;
 bool vehicle_manager_t::show_obsolete_vehicles = false;
 bool vehicle_manager_t::select_multiple_desc = false;
+bool vehicle_manager_t::split_fixed_couplings = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
 bool vehicle_manager_t::show_obsolete_liveries = false;
+bool vehicle_manager_t::display_combined_info = false;
 
 vehicle_manager_t::sort_mode_desc_t vehicle_manager_t::sortby_desc = by_desc_name;
 vehicle_manager_t::sort_mode_veh_t vehicle_manager_t::sortby_veh = by_issue;
@@ -100,7 +103,7 @@ vehicle_manager_t::display_mode_veh_t vehicle_manager_t::display_veh = displ_veh
 
 int vehicle_manager_t::display_desc_by_good = 0;
 int vehicle_manager_t::display_desc_by_class = 0;
-int vehicle_manager_t::display_veh_by_cargo = 0;
+int vehicle_manager_t::display_veh_by_payload = 0;  // 254 = show all, 253 = any load, 252 = only empty load; 0 = Pass, 1 = Mail, 2 + n = Special freight, "desc_count_special_freight" + n = Normal freight
 
 const char *vehicle_manager_t::sort_text_desc[SORT_MODES_DESC] =
 {
@@ -148,7 +151,7 @@ const char *vehicle_manager_t::display_text_veh[DISPLAY_MODES_VEH] =
 	"age",
 	"odometer",
 	"location",
-	"cargo"
+	"payload"
 };
 
 static const char * engine_type_names[11] =
@@ -180,18 +183,21 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	lb_available_liveries(translator::translate("available_liveries:"), SYSCOL_TEXT, gui_label_t::left),
 	lb_available_classes(translator::translate("available_classes:"), SYSCOL_TEXT, gui_label_t::left),
 	lb_reassign_class_to(translator::translate("reassign_class_to:"), SYSCOL_TEXT, gui_label_t::left),
-	lb_current_cargo_information(translator::translate("current_cargo_information:"), SYSCOL_TEXT, gui_label_t::left),
+	lb_current_payload_information(translator::translate("current_payload_information:"), SYSCOL_TEXT, gui_label_t::left),
 	scrolly_desc(&cont_desc),
 	scrolly_veh(&cont_veh),
 	scrolly_upgrade(&cont_upgrade),
-	scrolly_livery(&cont_livery)
+	scrolly_livery(&cont_livery),
+	scrolly_cargo(&text_cargo),
+	text_cargo(&buf_cargo),
+	scrolly_class_reassign(&cont_class_reassign)
 {
 	scr_coord coord_dummy = scr_coord(0, 0);
 	scr_size size_dummy = scr_size(0, 0);
 
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
-	sprintf(text_show_all_vehicles, translator::translate("show_available_vehicles:"));
+	sprintf(text_show_all_vehicles, translator::translate("show_available_vehicles"));
 	bt_show_available_vehicles.init(button_t::square_state, text_show_all_vehicles, coord_dummy, size_dummy);
 	bt_show_available_vehicles.add_listener(this);
 	bt_show_available_vehicles.set_tooltip(translator::translate("tick_to_show_all_available_vehicles"));
@@ -200,21 +206,21 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 
 	
 	// Show vehicles out of production button
-	sprintf(text_show_out_of_production_vehicles, translator::translate("show_vehicles_out_of_production:"));
+	sprintf(text_show_out_of_production_vehicles, translator::translate("Show outdated"));
 	bt_show_out_of_production_vehicles.init(button_t::square_state, text_show_out_of_production_vehicles, coord_dummy, size_dummy);
 	if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
 		bt_show_out_of_production_vehicles.add_listener(this);
-		bt_show_out_of_production_vehicles.set_tooltip(translator::translate("tick_to_show_vehicles_not_being_produced_anymore"));
+		bt_show_out_of_production_vehicles.set_tooltip(translator::translate("Show also vehicles no longer in production."));
 		bt_show_out_of_production_vehicles.pressed = show_out_of_production_vehicles;
 		add_component(&bt_show_out_of_production_vehicles);
 	}
 		
 	// Show obsolete vehicles button
-	sprintf(text_show_obsolete_vehicles, translator::translate("show_obsolete_vehicles:"));
+	sprintf(text_show_obsolete_vehicles, translator::translate("Show obsolete"));
 	bt_show_obsolete_vehicles.init(button_t::square_state, text_show_obsolete_vehicles, coord_dummy, size_dummy);
 	if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
 		bt_show_obsolete_vehicles.add_listener(this);
-		bt_show_obsolete_vehicles.set_tooltip(translator::translate("tick_to_show_all_obsolete_vehicles"));
+		bt_show_obsolete_vehicles.set_tooltip(translator::translate("Show also vehicles whose maintenance costs have increased due to obsolescence."));
 		bt_show_obsolete_vehicles.pressed = show_obsolete_vehicles;
 		add_component(&bt_show_obsolete_vehicles);
 	}
@@ -223,15 +229,6 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		show_obsolete_vehicles = false;
 	}
 
-	// Select multiple desc's button
-	sprintf(text_select_multiple_desc, translator::translate("select_multiple_desc"));
-	bt_select_multiple_desc.init(button_t::square_state, text_select_multiple_desc, coord_dummy, size_dummy);
-	bt_select_multiple_desc.add_listener(this);
-	bt_select_multiple_desc.set_tooltip(translator::translate("tick_to_select_multiple_desc's"));
-	bt_select_multiple_desc.pressed = select_multiple_desc;
-	add_component(&bt_select_multiple_desc);
-	
-
 	// Waytype tab panel
 	tabs_waytype.add_listener(this);
 	add_component(&tabs_waytype);
@@ -239,6 +236,22 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// Vehicle type tab panel
 	tabs_vehicletype.add_listener(this);
 	add_component(&tabs_vehicletype);
+
+	// Select multiple desc's button
+	sprintf(text_select_multiple_desc, translator::translate("select_multiple_desc"));
+	bt_select_multiple_desc.init(button_t::square_state, text_select_multiple_desc, coord_dummy, size_dummy);
+	bt_select_multiple_desc.add_listener(this);
+	bt_select_multiple_desc.set_tooltip(translator::translate("tick_to_select_multiple_desc's"));
+	bt_select_multiple_desc.pressed = select_multiple_desc;
+	add_component(&bt_select_multiple_desc);
+
+	// Split fixed couplings button
+	sprintf(text_split_fixed_couplings, translator::translate("split_fixed_couplings"));
+	bt_split_fixed_couplings.init(button_t::square_state, text_split_fixed_couplings, coord_dummy, size_dummy);
+	bt_split_fixed_couplings.add_listener(this);
+	bt_split_fixed_couplings.set_tooltip(translator::translate("when_unticked_vehicles_with_fixed_connections_will_display_in_the_same_entry"));
+	bt_split_fixed_couplings.pressed = split_fixed_couplings;
+	add_component(&bt_split_fixed_couplings);
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_visible(true);
@@ -397,10 +410,10 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	// ----------- Lower section info box with tab panels, buttons, labels and whatnot -----------------//
 	// Lower section tab panels
 	max_idx_information = 0;
-	tabs_info.add_tab(&dummy, translator::translate("infotab_general_information"));
+	tabs_info.add_tab(&cont_general_info, translator::translate("infotab_general_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_general;
-	tabs_info.add_tab(&cont_economics_info, translator::translate("infotab_economics_information"));
-	tabs_to_index_information[max_idx_information++] = infotab_economics;
+	tabs_info.add_tab(&cont_payload_info, translator::translate("infotab_payload_information"));
+	tabs_to_index_information[max_idx_information++] = infotab_payload;
 	tabs_info.add_tab(&cont_maintenance_info, translator::translate("infotab_maintenance_information"));
 	tabs_to_index_information[max_idx_information++] = infotab_maintenance;
 	tabs_info.add_tab(&dummy, translator::translate("infotab_advanced"));
@@ -417,15 +430,47 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	}
 	tabs_info.add_listener(this);
 	add_component(&tabs_info);
+
+	// General information tab:
+	{
+		sprintf(text_display_combined_info, translator::translate("display_combined_info:"));
+		bt_display_combined_info.init(button_t::square_state, text_display_combined_info, coord_dummy, scr_size((display_calc_proportional_string_len_width(text_display_combined_info, -1) + 30) , D_BUTTON_HEIGHT));
+		bt_display_combined_info.add_listener(this);
+		bt_display_combined_info.set_tooltip(translator::translate("display_info_either_as_either_min_to_max_or_summed_up_as_if_it_was_a_convoy"));
+		bt_display_combined_info.pressed = display_combined_info;
+		cont_general_info.add_component(&bt_display_combined_info);
+	}
 	
-	// Economics tab:
+	// Payload tab:
 	{
 		// ---- Vehicle cargo section ---- //
-		cont_economics_info.add_component(&lb_current_cargo_information);
+		cont_payload_info.add_component(&lb_current_payload_information);
+
+		text_cargo.set_size(size_dummy);
+		text_cargo.set_pos(scr_coord(D_H_SPACE, D_V_SPACE));
+		scrolly_cargo.set_show_scroll_y(true);
+		scrolly_cargo.set_scroll_amount_y(40);
+		scrolly_cargo.set_visible(true);
+		scrolly_cargo.set_focusable(true);
+		cont_payload_info.add_component(&scrolly_cargo);
+
+		const int old_len = buf_cargo.len();
+		update_cargo_manifest(buf_cargo);
+		if (old_len != buf_cargo.len()) {
+			text_cargo.recalc_size();
+		}
+
 
 		// ---- Vehicle class section ---- //	
-		cont_economics_info.add_component(&lb_available_classes);
-		cont_economics_info.add_component(&lb_reassign_class_to);
+		cont_payload_info.add_component(&lb_available_classes);
+		cont_payload_info.add_component(&lb_reassign_class_to);
+
+		cont_class_reassign.set_size(size_dummy);
+		scrolly_class_reassign.set_show_scroll_y(true);
+		scrolly_class_reassign.set_scroll_amount_y(40);
+		scrolly_class_reassign.set_visible(true);
+		scrolly_class_reassign.set_focusable(true);
+		cont_payload_info.add_component(&scrolly_class_reassign);
 
 		// Create the list of comboboxes, as well as the names of the classes
 		for (int i = 0; i < pass_classes; i++)
@@ -433,7 +478,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_combobox_t* class_selector = new gui_combobox_t();
 			if (class_selector != nullptr)
 			{
-				cont_economics_info.add_component(class_selector);
+				cont_class_reassign.add_component(class_selector);
 				class_selector->add_listener(this);
 				class_selector->set_focusable(false);
 				pass_class_sel.append(class_selector);
@@ -441,7 +486,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_label_t* class_label = new gui_label_t();
 			if (class_label != nullptr)
 			{
-				cont_economics_info.add_component(class_label);
+				cont_class_reassign.add_component(class_label);
 				lb_pass_class.append(class_label);
 			}
 
@@ -458,7 +503,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_combobox_t* class_selector = new gui_combobox_t();
 			if (class_selector != nullptr)
 			{
-				cont_economics_info.add_component(class_selector);
+				cont_class_reassign.add_component(class_selector);
 				class_selector->add_listener(this);
 				class_selector->set_focusable(false);
 				mail_class_sel.append(class_selector);
@@ -466,7 +511,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 			gui_label_t* class_label = new gui_label_t();
 			if (class_label != nullptr)
 			{
-				cont_economics_info.add_component(class_label);
+				cont_class_reassign.add_component(class_label);
 				lb_mail_class.append(class_label);
 			}
 			char* class_name = new char[32]();
@@ -481,26 +526,26 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_reset_all_classes.set_text("reset_all_classes");
 		bt_reset_all_classes.add_listener(this);
 		bt_reset_all_classes.set_tooltip("resets_all_classes_to_their_defaults");
-		cont_economics_info.add_component(&bt_reset_all_classes);
+		cont_class_reassign.add_component(&bt_reset_all_classes);
 
 
 		// ---- Livery section ---- //		
 
-		cont_economics_info.add_component(&lb_available_liveries);
+		cont_payload_info.add_component(&lb_available_liveries);
 
 		// Livery buttons
 		bt_append_livery.init(button_t::roundbox, translator::translate("append_livery"), coord_dummy, D_BUTTON_SIZE);
 		bt_append_livery.add_listener(this);
 		bt_append_livery.set_tooltip(translator::translate("append_the_choosen_livery_on_all_vehicles"));
 		bt_append_livery.set_visible(true);
-		cont_economics_info.add_component(&bt_append_livery);
+		cont_payload_info.add_component(&bt_append_livery);
 	
 		bt_show_obsolete_liveries.init(button_t::square_state, translator::translate("show_obsolete_liveries"), coord_dummy, scr_size(D_BUTTON_WIDTH * 2, D_BUTTON_HEIGHT));
 		if (welt->use_timeline() && welt->get_settings().get_allow_buying_obsolete_vehicles() == 1) {
 			bt_show_obsolete_liveries.add_listener(this);
 			bt_show_obsolete_liveries.set_tooltip(translator::translate("tick_to_show_obsolete_liveries"));
 			bt_show_obsolete_liveries.pressed = show_obsolete_liveries;
-			cont_economics_info.add_component(&bt_show_obsolete_liveries);
+			cont_payload_info.add_component(&bt_show_obsolete_liveries);
 		}
 		else {
 			show_obsolete_liveries = false;
@@ -512,7 +557,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		scrolly_livery.set_scroll_amount_y(40);
 		scrolly_livery.set_visible(true);
 		scrolly_livery.set_focusable(true);
-		cont_economics_info.add_component(&scrolly_livery);
+		cont_payload_info.add_component(&scrolly_livery);
 	}
 
 	// Maintenance tab:
@@ -555,17 +600,24 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	//display_desc_by_good = 0;
 	//display_desc_by_class = 0;
 	//display_veh_by_cargo = 0;
+
 	selected_desc_index = -1;
 	selected_upgrade_index = -1;
 	display_upgrade_into = true;
 	count_veh_selection = 0;
-	goto_this_desc = desc_for_display;
+	if (desc_for_display_reset)
+	{
+		desc_for_display.clear();
+		desc_for_display_reset = false;
+	}
+
+	goto_this_desc = desc_for_display.get_count() > 0 ? desc_for_display.get_element(0) : NULL;
 	sortby_desc = (sort_mode_desc_t)selected_sortby_desc;
 	display_desc = (display_mode_desc_t)selected_displ_desc;
 	sortby_veh = (sort_mode_veh_t)selected_sortby_veh;
 	display_veh = (display_mode_veh_t)selected_displ_veh;
 	
-	if (desc_for_display)
+	if (desc_for_display.get_count() > 0)
 	{
 		selected_tab_waytype_index = 0;
 	}
@@ -673,10 +725,19 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	if (comp == &bt_select_multiple_desc) {
 		bt_select_multiple_desc.pressed = !bt_select_multiple_desc.pressed;
 		select_multiple_desc = bt_select_multiple_desc.pressed;
-		//update_tabs();
-		//save_previously_selected_desc();
-		//page_turn_desc = false;
-		//build_desc_list();
+		//update_tabs(); // To display a tab with only multiple units?
+		save_previously_selected_desc();
+		page_turn_desc = false; 
+		display(scr_coord(0, 0));
+	}
+
+	if (comp == &bt_split_fixed_couplings) {
+		bt_split_fixed_couplings.pressed = !bt_split_fixed_couplings.pressed;
+		split_fixed_couplings = bt_split_fixed_couplings.pressed;
+		//update_tabs(); // To display a tab with only multiple units?
+		page_turn_desc = false;
+		build_desc_list();
+		display(scr_coord(0, 0));
 	}
 
 	if (comp == &tabs_waytype) {
@@ -815,7 +876,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			display_mode = 0;
 		}
 		if (display_veh == displ_veh_cargo)	{
-			display_veh_by_cargo = display_mode;
+			display_veh_by_payload = display_mode;
 		}
 		build_veh_list();
 	}
@@ -889,6 +950,10 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		selected_tab_information = tabs_to_index_information[tab];
 		display_tab_objects();
 	}
+	if (comp == &bt_display_combined_info) {
+		bt_display_combined_info.pressed = !bt_display_combined_info.pressed;
+		display_combined_info = bt_display_combined_info.pressed;
+	}
 	if (comp == &bt_upgrade_to_from) {
 		display_upgrade_into = !display_upgrade_into;
 		if (display_upgrade_into)
@@ -919,15 +984,28 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			}
 			int good_type = 0; // 0 = Passenger, 1 = Mail,
 			int reset = 0; // 0 = reset only single class, 1 = reset all classes
+			uint16 vehicle_position = 0;
 			cbuffer_t buf;
-			// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc"
-			buf.printf("%i,%i,%i,%i", i, new_class, good_type, reset);
 			for (int j = 0; j < veh_list.get_count(); j++)
 			{
 				if (veh_selection[j])
 				{
-					//convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
-					//cnv->call_convoi_tool('c', buf);
+					vehicle_position = 0;
+					vehicle_t* veh = veh_list.get_element(j);
+					if (veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+					{
+						convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh->get_convoi();
+						for (int k = 0; k < cnv->get_vehicle_count(); k++) {
+							if (cnv->get_vehicle(k) == veh) {
+								vehicle_position = k;
+								break;
+							}
+						}
+						// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc". For now, we send the current vehicle position along with the message to each convoy
+						buf.clear();
+						buf.printf("%i,%i,%i,%i,%i", i, new_class, good_type, reset, vehicle_position);
+						cnv->call_convoi_tool('e', buf);
+					}
 				}
 			}
 
@@ -952,6 +1030,7 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			}
 			int good_type = 1; // 0 = Passenger, 1 = Mail,
 			int reset = 0; // 0 = reset only single class, 1 = reset all classes
+			uint16 vehicle_position = 0;
 			cbuffer_t buf;
 			// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc"
 			buf.printf("%i,%i,%i,%i", i, new_class, good_type, reset);
@@ -959,8 +1038,22 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 			{
 				if (veh_selection[j])
 				{
-					//convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh_list.get_element(j)->get_convoi();
-					//cnv->call_convoi_tool('c', buf);
+					vehicle_position = 0;
+					vehicle_t* veh = veh_list.get_element(j);
+					if (veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+					{
+						convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh->get_convoi();
+						for (int k = 0; k < cnv->get_vehicle_count(); k++) {
+							if (cnv->get_vehicle(k) == veh) {
+								vehicle_position = k;
+								break;
+							}
+						}
+						// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc". For now, we send the current vehicle position along with the message to each convoy
+						buf.clear();
+						buf.printf("%i,%i,%i,%i,%i", i, new_class, good_type, reset, vehicle_position);
+						cnv->call_convoi_tool('e', buf);
+					}
 				}
 			}
 			build_class_entries();
@@ -975,13 +1068,31 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 	{
 		int good_type = 0; // 0 = Passenger, 1 = Mail,
 		int reset = 1; // 0 = reset only single class, 1 = reset all classes
+		uint16 vehicle_position = 0;
 		cbuffer_t buf;
-		buf.printf("%i,%i,%i,%i", 0, 0, good_type, reset);
-		//for (unsigned convoy = 0; convoy < line->count_convoys(); convoy++)
-		//{
-		//	convoihandle_t cnv = line->get_convoy(convoy);
-		//	cnv->call_convoi_tool('c', buf);
-		//}
+		for (int j = 0; j < veh_list.get_count(); j++)
+		{
+			if (veh_selection[j])
+			{
+				vehicle_position = 0;
+				vehicle_t* veh = veh_list.get_element(j);
+				if (veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_MAIL || veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+				{
+					convoihandle_t cnv = (quickstone_tpl<convoi_t>)veh->get_convoi();
+					for (int k = 0; k < cnv->get_vehicle_count(); k++) {
+						if (cnv->get_vehicle(k) == veh) {
+							vehicle_position = k;
+							break;
+						}
+					}
+					// TODO: add ability to alter the class of only one vehicle at a time in "simtool.cc". For now, we send the current vehicle position along with the message to each convoy
+					good_type = veh->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS ? 0 : 1;
+					buf.clear();
+					buf.printf("%i,%i,%i,%i,%i", 0, 0, good_type, reset, vehicle_position);
+					cnv->call_convoi_tool('e', buf);
+				}
+			}
+		}
 
 		for (int i = 0; i < pass_class_sel.get_count(); i++)
 		{
@@ -1010,7 +1121,7 @@ void vehicle_manager_t::display_tab_objects()
 	int info_display = (uint16)selected_tab_information;
 	if (info_display == infotab_general)	{
 	}
-	else if (info_display == infotab_economics)	{
+	else if (info_display == infotab_payload)	{
 		build_livery_list();
 	}
 	else if (info_display == infotab_maintenance)	{
@@ -1298,59 +1409,129 @@ void vehicle_manager_t::reset_veh_text_input_display()
 				break;
 			case displ_veh_cargo:
 			{
+				vector_tpl<const goods_desc_t*> desc_goods_list;// The complete list of goods that the selected desc's can carry
+				desc_includes_pass = false;
+				desc_includes_mail = false;
+				desc_includes_special = false;
+				desc_includes_normal = false;
+				desc_count_special_freight = 0;
 				combo_veh_display.clear_elements();
 				combo_veh_display.set_visible(true);
 				veh_display_combobox_indexes.clear();
-				display_show_any = false;
-				int counter = 0;
-				if (desc_for_display)
+				display_show_any_payload = false;
+				desc_goods_list.clear();
+				if (desc_for_display.get_count() > 0)
 				{
-					FOR(vector_tpl<goods_desc_t const*>, const i, welt->get_goods_list()) {
-						if (i->get_catg_index() == desc_for_display->get_freight_type()->get_catg_index())
+					desc_goods_list.resize(welt->get_goods_list().get_count());
+					int counter = 0;
+					int category_counter = 0;
+					// Determine wether the selected vehicle(s) can carry any payload at all
+					FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list())
+					{
+						for (int i = 0; i < desc_for_display.get_count(); i++)
 						{
-							counter++;
+							vehicle_desc_t* desc = desc_for_display.get_element(i);
+							if (desc->get_total_capacity()>0 && g->get_catg_index() == desc->get_freight_type()->get_catg_index())
+							{
+								if (g->get_catg() == 0)
+								{
+									if (g->get_catg_index() == goods_manager_t::INDEX_PAS) {
+										desc_goods_list.append(g);
+										category_counter = !desc_includes_pass ? category_counter +1 : category_counter;
+										desc_includes_pass = true;
+									}
+									else if (g->get_catg_index() == goods_manager_t::INDEX_MAIL) {
+										desc_goods_list.append(g);
+										category_counter = !desc_includes_mail ? category_counter +1 : category_counter;
+										desc_includes_mail = true;
+									}
+									else { // Special freight
+										desc_goods_list.append(g);
+										desc_count_special_freight++;
+										category_counter = !desc_includes_special ? category_counter +1 : category_counter;
+										desc_includes_special = true;
+									}
+								}
+								else // Normal freight
+								{
+									desc_goods_list.append(g);
+									desc_includes_normal = true;
+								}
+
+								counter++;
+								break;
+							}
 						}
 					}
+
+					desc_goods_list.resize(counter);
 					veh_display_combobox_indexes.resize(counter);
-					if (desc_for_display->get_total_capacity() > 0)
+
+					// Build the combobox with the given entries
+					if (desc_goods_list.get_count() > 0)
 					{
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("show_all"), SYSCOL_TEXT));
-						veh_display_combobox_indexes.append(0);
+						veh_display_combobox_indexes.append(254);
+						if (desc_includes_normal || category_counter > 1) {
+							display_show_any_payload = true;
+							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("any_payload"), SYSCOL_TEXT));
+							veh_display_combobox_indexes.append(253);
+						}
+						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
+						veh_display_combobox_indexes.append(252);
+
 
 						// Passenger and mail vehicles display by class here perhaps?
-						if (desc_for_display->get_freight_type() == goods_manager_t::passengers)
+						if (desc_includes_pass)
 						{
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(0);
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_for_display->get_freight_type()->get_name()), SYSCOL_TEXT));
+							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(goods_manager_t::passengers->get_name()), SYSCOL_TEXT));
 							veh_display_combobox_indexes.append(goods_manager_t::INDEX_PAS);
 						}
-						else if (desc_for_display->get_freight_type() == goods_manager_t::mail)
+						if (desc_includes_mail)
 						{
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(0);
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_for_display->get_freight_type()->get_name()), SYSCOL_TEXT));
+							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(goods_manager_t::mail->get_name()), SYSCOL_TEXT));
 							veh_display_combobox_indexes.append(goods_manager_t::INDEX_MAIL);
 						}
-						else if (desc_for_display->get_freight_type()->get_catg() == 0) // Special freight
+						if (desc_includes_special)
 						{
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(0);
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_for_display->get_freight_type()->get_name()), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(desc_for_display->get_freight_type()->get_catg());
-						}
-						else // Normal good car
-						{
-							display_show_any = true;
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("empty_vehicle"), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(0);
-							combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("any_load"), SYSCOL_TEXT));
-							veh_display_combobox_indexes.append(0);
-							FOR(vector_tpl<goods_desc_t const*>, const i, welt->get_goods_list()) {
-								if (i->get_catg_index() == desc_for_display->get_freight_type()->get_catg_index())
+							counter = 0;
+							// In order to get a consistent order (haha), we apply the goods in the order they come out from this loop
+							FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list())
+							{
+								if (g->get_catg() == 0) // Special freight
 								{
-									combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(i->get_name()), SYSCOL_TEXT));
-									veh_display_combobox_indexes.append(i->get_index());
+									for (int i = 0; i < desc_goods_list.get_count(); i++)
+									{
+										if (desc_goods_list.get_element(i) == g)
+										{
+											combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
+											veh_display_combobox_indexes.append(desc_goods_list.get_element(i)->get_index()); // Special freight = n + 2	
+											//veh_display_combobox_indexes.append(2 + desc_goods_list.get_element(i)->get_index()); // Special freight = n + 2	
+											counter++;
+										}
+									}
+								}
+							}
+						}
+						// Normal good car
+						if (desc_includes_normal)
+						{
+							counter = 0;
+							// In order to get a consistent order, we apply the goods in the order they come out from this loop
+							FOR(vector_tpl<goods_desc_t const*>, const g, welt->get_goods_list())
+							{
+								if (g->get_catg() != 0) // Not special freight
+								{
+									for (int i = 0; i < desc_goods_list.get_count(); i++)
+									{
+										if (desc_goods_list.get_element(i) == g)
+										{
+											combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate(desc_goods_list.get_element(i)->get_name()), SYSCOL_TEXT));
+											veh_display_combobox_indexes.append(desc_goods_list.get_element(i)->get_index()); // Normal freight = n + 2 + desc_count_special_freight
+											//veh_display_combobox_indexes.append(desc_count_special_freight + 2 + desc_goods_list.get_element(i)->get_index()); // Normal freight = n + 2 + desc_count_special_freight
+											counter++;
+										}
+									}
 								}
 							}
 						}
@@ -1358,16 +1539,16 @@ void vehicle_manager_t::reset_veh_text_input_display()
 					else // Carries no good
 					{
 						combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
-						display_veh_by_cargo = 0;
+						display_veh_by_payload = 0;
 					}
 				}
 				else // No vehicles selected
 				{
 					combo_veh_display.append_element(new gui_scrolled_list_t::const_text_scrollitem_t(translator::translate("carries_no_good"), SYSCOL_TEXT));
-					display_veh_by_cargo = 0;
+					display_veh_by_payload = 0;
 				}
 
-				combo_veh_display.set_selection(display_veh_by_cargo);
+				combo_veh_display.set_selection(display_veh_by_payload);
 				tooltip_syntax_display.printf(translator::translate("select_a_cargo_from_the_right_drop_down_list"));
 				break;
 
@@ -1714,20 +1895,20 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 	// First, go through the different display categories to see if this vehicle fit
 	if (display_veh == displ_veh_cargo)
 	{
-		if (display_veh_by_cargo == 0) // Show all vehicles
+		if (display_veh_by_payload == 0) // Show all vehicles.
 		{
 			display = true;
 		}
-		else if (display_veh_by_cargo == 1) // Show only empty vehicles
+		else if (display_veh_by_payload == 1 && display_show_any_payload)
 		{
-			if (veh->get_cargo_carried() <= 0)
+			if (veh->get_cargo_carried() > 0)
 			{
 				display = true;
 			}
 		}
-		else if (display_veh_by_cargo == 2 && display_show_any)
+		else if ((display_veh_by_payload == 1 && !display_show_any_payload) || (display_veh_by_payload == 2 && display_show_any_payload)) // Show only empty vehicles
 		{
-			if (veh->get_cargo_carried() > 0)
+			if (veh->get_cargo_carried() <= 0)
 			{
 				display = true;
 			}
@@ -1757,8 +1938,12 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 			{
 				if (veh_display_combobox_indexes.get_count() > 0)
 				{
+					if (display_veh_by_payload >= veh_display_combobox_indexes.get_count())
+					{
+						display_veh_by_payload = 1;
+					}
 					int freight_index = fracht_array.get_element(i).get_index();
-					int freight_index_vehicle = veh_display_combobox_indexes[display_veh_by_cargo];
+					int freight_index_vehicle = veh_display_combobox_indexes[display_veh_by_payload];
 					if (freight_index == freight_index_vehicle)
 					{
 						display = true;
@@ -1768,6 +1953,7 @@ bool vehicle_manager_t::is_veh_displayable(vehicle_t *veh)
 
 		}
 	}
+	
 
 	else if (display_veh == displ_veh_location) // free text input
 	{
@@ -1862,12 +2048,12 @@ break;
 	return display;
 }
 
-void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
+void vehicle_manager_t::draw_payload_information(const scr_coord& pos)
 {
 	char buf[1024];
 	char tmp[50];
-	const vehicle_desc_t* desc_info_text = NULL;
-	desc_info_text = desc_for_display;
+	//const vehicle_desc_t* desc_info_text = NULL;
+	//desc_info_text = desc_for_display;
 	int pos_y = 0;
 	int pos_x = 0;
 	int width = get_windowsize().w;
@@ -1958,10 +2144,14 @@ void vehicle_manager_t::draw_economics_information(const scr_coord& pos)
 	{
 		old_count_cargo_carried = new_count_cargo_carried;
 		{
-			update_cargo_manifest(cargo_buf);
+			const int old_len = buf_cargo.len();
+			update_cargo_manifest(buf_cargo);
+			if (old_len != buf_cargo.len()) {
+				text_cargo.recalc_size();
+			}
 		}
 	}
-	display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, veh_selected_color);
+	//display_multiline_text(pos.x + l_column_1, pos.y + pos_y, cargo_buf, veh_selected_color);
 
 	// Column 3-4
 	pos_y = D_BUTTON_HEIGHT * 2;
@@ -1977,7 +2167,6 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	char buf[1024];
 	char tmp[50];
 	const vehicle_desc_t *desc_info_text = NULL;
-	desc_info_text = desc_for_display;
 	int pos_y = 0;
 	int pos_x = 0;
 	const uint16 month_now_absolute = welt->get_current_month();
@@ -1985,11 +2174,12 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 	player_nr = welt->get_active_player_nr();
 
 	buf[0] = '\0';
-	if (desc_info_text) {
+	if (desc_for_display.get_count() > 0) {
+		desc_info_text = desc_for_display.get_element(0);
+	
 
 		COLOR_VAL veh_selected_color = SYSCOL_TEXT;
-		if (count_veh_selection == 0)
-		{
+		if (count_veh_selection == 0)	{
 			veh_selected_color = SYSCOL_EDIT_TEXT_DISABLED;
 		}
 
@@ -2077,73 +2267,120 @@ void vehicle_manager_t::draw_maintenance_information(const scr_coord& pos)
 void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 {
 	char buf[1024];
-	const vehicle_desc_t *desc_info_text = NULL;
-	desc_info_text = desc_for_display;
-	int pos_y = 0;
+	const vehicle_desc_t* desc_info_text = NULL;
+	int pos_y;
+	uint64 lowest_value = 0;
+	uint64 highest_value = 0;
+	uint64 combined_value = 0;
+	bool lowest_equal_highest_value = false;
+	bool combine_values = display_combined_info; // Display the combined value or the "ranged values"
 
 	// This section is originally fetched from the gui_convoy_assembler_t, however is modified to display colors for different entries, such as reassigned classes, increased maintenance etc.
+	pos_y = D_MARGIN_TOP + (D_BUTTON_HEIGHT);
 	buf[0] = '\0';
-	if (desc_info_text) {
+	if (desc_for_display.get_count() > 0) {
+		desc_info_text = desc_for_display.get_element(0);
 		// column 1
 		vehicle_as_potential_convoy_t convoy(*desc_info_text);
 		int linespace_skips = 0;
-
-		// Name and traction type
-		int n = sprintf(buf, "%s", translator::translate(desc_info_text->get_name(), welt->get_settings().get_name_language_id()));
-		if (desc_info_text->get_power() > 0)
-		{
-			sprintf(buf + n, " (%s)", translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]));
+		int n;
+		// Name and traction type OR the amount of selected desc's
+		if (desc_for_display.get_count() == 1) {
+			n = sprintf(buf, "%s", translator::translate(desc_info_text->get_name(), welt->get_settings().get_name_language_id()));
+			if (desc_info_text->get_power() > 0) {
+				sprintf(buf + n, " (%s)", translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]));
+			}
+		}
+		else {
+			n = sprintf(buf, "%s %i", translator::translate("number_of_selected_descs:"), desc_for_display.get_count());
 		}
 		display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		pos_y += LINESPACE;
 
-		// Cost information:
-		// If any SELECTED vehicles, find out what their resale values are. If different resale values, then show the range
-		double max_resale_value = -1;
-		double min_resale_value = desc_info_text->get_value();
-		if (count_veh_selection > 0)
-		{
-		/*	for (uint8 j = 0; j < veh_selection.get_count(); j++)
-			{
-				vehicle_t* veh = veh_selection.get_element(j);
-				if (veh->calc_sale_value() > max_resale_value)
-				{
-					max_resale_value = veh->calc_sale_value();
-				}
-				if (veh->calc_sale_value() <= min_resale_value)
-				{
-					min_resale_value = veh->calc_sale_value();
-				}
-			}*/
+		// Cost information:		
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_value(); // Load default value
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_value() > highest_value ? desc_for_display.get_element(i)->get_value() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_value() < lowest_value ? desc_for_display.get_element(i)->get_value() : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_value();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
+		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+		char tmp_1[128];
+		char tmp_2[128];
+		money_to_string(tmp_1, lowest_value / 100.0, false);
+		money_to_string(tmp_2, highest_value / 100.0, false);
+		n = sprintf(buf, translator::translate("Cost: %8s"), tmp_1);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %s", tmp_2);
 		}
 
-		char tmp[128];
-		money_to_string(tmp, desc_info_text->get_value() / 100.0, false);
-		sprintf(buf, translator::translate("Cost: %8s"), tmp);
+		if (count_veh_selection > 0) {
+			n += sprintf(buf + n, "; "); // If vehicles are selected, their resale price will be shown in another color, needing a black semicolon to separate it from the cost
+		}
 		int extra_x = display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		extra_x += 5;
-		char resale_entry[128] = "\0";
-		if (max_resale_value != -1)
-		{
-			char tmp_1[128];
-			char tmp_2[128];
-			money_to_string(tmp_1, max_resale_value / 100.0, false);
-			money_to_string(tmp_2, min_resale_value / 100.0, false);
 
-			if (max_resale_value != min_resale_value)
-			{
-				sprintf(resale_entry, "(%s %s - %s)", translator::translate("Restwert:"), tmp_1, tmp_2);
+		// Resale value, calculated by the selected veh_list. This is scheduled to be changed, when the new second hand market is introduced
+		if (count_veh_selection > 0) {
+			highest_value = 0;
+			lowest_value = veh_list.get_element(0)->calc_sale_value(); // Load default value
+			combined_value = 0;
+			for (int j = 0; j < veh_list.get_count(); j++) {
+				if (veh_selection[j] == true) {
+					vehicle_t* veh = veh_list.get_element(j);
+					highest_value = veh->calc_sale_value() > highest_value ? veh->calc_sale_value() : highest_value;
+					lowest_value = veh->calc_sale_value() < lowest_value ? veh->calc_sale_value() : lowest_value;
+					combined_value += veh->calc_sale_value();
+				}
 			}
-			else
-			{
-				sprintf(resale_entry, "(%s %s)", translator::translate("Restwert:"), tmp_1);
+			lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
+			lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+			money_to_string(tmp_1, lowest_value / 100.0, false);
+			money_to_string(tmp_2, highest_value / 100.0, false);
+			n = sprintf(buf, "%s %s", translator::translate("Restwert:"), tmp_1);
+			if (!combine_values && !lowest_equal_highest_value) {
+				sprintf(buf + n, " - %s", tmp_2);
 			}
-			sprintf(buf, "%s", resale_entry);
 			display_proportional_clip(pos.x + extra_x, pos.y + pos_y, buf, ALIGN_LEFT, COL_DARK_GREEN, true);
 		}
 		pos_y += LINESPACE;
 
-		sprintf(buf, translator::translate("Maintenance: %1.2f$/km, %1.2f$/month\n"), desc_info_text->get_running_cost() / 100.0, desc_info_text->get_adjusted_monthly_fixed_cost(welt) / 100.0);
+		// Maintenance 1/2: Per km
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_running_cost(); // Load default value
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_running_cost() > highest_value ? desc_for_display.get_element(i)->get_running_cost() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_running_cost() < lowest_value ? desc_for_display.get_element(i)->get_running_cost() : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_running_cost();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
+		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+		n = sprintf(buf, "%s %1.2f$", translator::translate("Maintenance:"), lowest_value / 100.0);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %1.2f$", highest_value / 100.0);
+		}
+		n += sprintf(buf + n, "/%s", translator::translate("km"));
+		// Maintenance 2/2: Per Month
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_adjusted_monthly_fixed_cost(welt); // Load default value
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) > highest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) < lowest_value ? desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt) : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_adjusted_monthly_fixed_cost(welt);
+		}
+		lowest_equal_highest_value = highest_value == lowest_value; // Are all the values equal?
+		lowest_value = combine_values ? combined_value : lowest_value; // Should we use the combined value instead?
+
+		n += sprintf(buf + n, ", %1.2f$", lowest_value / 100.0);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %1.2f$", highest_value / 100.0);
+		}
+		n += sprintf(buf + n, "/%s", translator::translate("month"));
 		display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, true);
 		pos_y += LINESPACE;
 
@@ -2155,7 +2392,9 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		mon_nominal += welt->calc_adjusted_monthly_figure(desc_info_text->get_fixed_cost());
 		mon_actual += welt->calc_adjusted_monthly_figure(desc_info_text->get_fixed_cost(welt));
 		bool increased_cost = false;
-	
+
+		// Following outcommented section requires a rework to function with multiple desc's
+		/*
 		if (run_nominal) run_percent = ((run_actual - run_nominal) * 100) / run_nominal;
 		if (mon_nominal) mon_percent = ((mon_actual - mon_nominal) * 100) / mon_nominal;
 		if (run_percent)
@@ -2183,341 +2422,748 @@ void vehicle_manager_t::draw_general_information(const scr_coord& pos)
 		{
 			display_proportional_clip(pos.x, pos.y + pos_y, buf, ALIGN_LEFT, COL_DARK_BLUE, true);
 		}
+		*/
 
-		pos_y += LINESPACE*2;
+		pos_y += LINESPACE * 2;
 		n = 0;
-
 		// Physics information:
-		n += sprintf(buf + n, "%s %3d km/h\n", translator::translate("Max. speed:"), desc_info_text->get_topspeed());
-		n += sprintf(buf + n, "%s %4.1ft\n", translator::translate("Weight:"), desc_info_text->get_weight() / 1000.0); // Convert kg to tonnes
-		if (desc_info_text->get_waytype() != water_wt)
-		{
-			n += sprintf(buf + n, "%s %it\n", translator::translate("Axle load:"), desc_info_text->get_axle_load());
-			char tmpbuf[16];
-			const double reduced_way_wear_factor = desc_info_text->get_way_wear_factor() / 10000.0;
-			number_to_string(tmpbuf, reduced_way_wear_factor, 4);
-			n += sprintf(buf + n, "%s: %s\n", translator::translate("Way wear factor"), tmpbuf);
+		// Max speed
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_topspeed();
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_topspeed() > highest_value ? desc_for_display.get_element(i)->get_topspeed() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_topspeed() < lowest_value ? desc_for_display.get_element(i)->get_topspeed() : lowest_value;
 		}
-		n += sprintf(buf + n, "%s %4.1fkN\n", translator::translate("Max. brake force:"), convoy.get_braking_force().to_double() / 1000.0); // Extended only
-		n += sprintf(buf + n, "%s %4.3fkN\n", translator::translate("Rolling resistance:"), desc_info_text->get_rolling_resistance().to_double() * (double)desc_info_text->get_weight() / 1000.0); // Extended only
+		lowest_equal_highest_value = highest_value == lowest_value;
 
-		n += sprintf(buf + n, "%s: ", translator::translate("Range"));
-		if (desc_info_text->get_range() == 0)
-		{
-			n += sprintf(buf + n, translator::translate("unlimited"));
+		n = sprintf(buf, "%s %3d %s", translator::translate("Max. speed:"), (sint32)lowest_value, translator::translate("km/h"));
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %3d %s", (sint32)highest_value, translator::translate("km/h"));
 		}
-		else
-		{
-			n += sprintf(buf + n, "%i km", desc_info_text->get_range());
+		// Weight
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_weight();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_weight() > highest_value ? desc_for_display.get_element(i)->get_weight() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_weight() < lowest_value ? desc_for_display.get_element(i)->get_weight() : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_weight();
 		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s %4.1ft", translator::translate("Weight:"), (uint32)lowest_value / 1000.0);// Convert kg to tonnes
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %4.1ft", (uint32)highest_value / 1000.0);// Convert kg to tonnes
+		}
+
+
+		if (desc_info_text->get_waytype() != water_wt) {
+			// Axle load
+			highest_value = 0;
+			lowest_value = desc_for_display.get_element(0)->get_axle_load();
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				highest_value = desc_for_display.get_element(i)->get_axle_load() > highest_value ? desc_for_display.get_element(i)->get_axle_load() : highest_value;
+				lowest_value = desc_for_display.get_element(i)->get_axle_load() < lowest_value ? desc_for_display.get_element(i)->get_axle_load() : lowest_value;
+			}
+			lowest_equal_highest_value = highest_value == lowest_value;
+			lowest_value = combine_values ? highest_value : lowest_value;
+
+			n += sprintf(buf + n, "\n%s %it", translator::translate("Axle load:"), (uint16)lowest_value);
+			if (!combine_values && !lowest_equal_highest_value) {
+				n += sprintf(buf + n, " - %it", (uint16)highest_value);
+			}
+
+			// Way wear factor
+			//if (desc_for_display.get_count() < 2) // TODO: Check how way wear factors adds up. Just add them together? display the highest?
+			{
+				char tmpbuf[16];
+				const double reduced_way_wear_factor = desc_info_text->get_way_wear_factor() / 10000.0;
+				number_to_string(tmpbuf, reduced_way_wear_factor, 4);
+				n += sprintf(buf + n, "\n%s: %s", translator::translate("Way wear factor"), tmpbuf);
+			}
+			//else
+			{
+				//n += sprintf(buf + n, "\n");
+			}
+		}
+		// Max. brake force
+		vehicle_as_potential_convoy_t convoy_defaults(*desc_for_display.get_element(0));
+		highest_value = 0;
+		lowest_value = convoy_defaults.get_braking_force().to_double();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			vehicle_as_potential_convoy_t convoy(*desc_for_display.get_element(i));
+			highest_value = (sint64)convoy.get_braking_force().to_double() > highest_value ? (sint64)convoy.get_braking_force().to_double() : highest_value;
+			lowest_value = (sint64)convoy.get_braking_force().to_double() < lowest_value ? (sint64)convoy.get_braking_force().to_double() : lowest_value;
+			combined_value += (sint64)convoy.get_braking_force().to_double();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s %4.1fkN", translator::translate("Max. brake force:"), (float)lowest_value / 1000.0);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %4.1fkN", (float)highest_value / 1000.0);
+		}
+
+
+
+		// Rolling resistance		
+		highest_value = 0;
+		lowest_value = (double)desc_for_display.get_element(0)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(0)->get_weight();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() > highest_value ? (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() : highest_value;
+			lowest_value = (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() < lowest_value ? (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight() : lowest_value;
+			combined_value += (double)desc_for_display.get_element(i)->get_rolling_resistance().to_double() * (double)desc_for_display.get_element(i)->get_weight();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s %4.3fkN", translator::translate("Rolling resistance:"), (float)lowest_value / 1000.0);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %4.3fkN", (float)highest_value / 1000.0);
+		}
+		// Range
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_range();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_range() > highest_value ? desc_for_display.get_element(i)->get_range() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_range() < lowest_value ? desc_for_display.get_element(i)->get_range() : lowest_value;
+			combined_value += desc_for_display.get_element(i)->get_range();
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+		//lowest_value = combine_values ? combined_value : lowest_value;
+
+		n += sprintf(buf + n, "\n%s: ", translator::translate("Range"));
+		bool unlimited = false;
+		if (combine_values || lowest_equal_highest_value) {
+			if (lowest_value == 0) {
+				n += sprintf(buf + n, translator::translate("unlimited"));
+			}
+			else {
+				n += sprintf(buf + n, "%i km", lowest_value);
+			}
+		}
+		else {
+			if (lowest_value == 0) {
+				n += sprintf(buf + n, "%i km - %s", highest_value, translator::translate("unlimited"));
+			}
+			else {
+				n += sprintf(buf + n, "%i km - %i km", lowest_value, highest_value);
+			}
+		}
+
 		n += sprintf(buf + n, "\n");
 
-		if (desc_info_text->get_waytype() == air_wt)
-		{
-			n += sprintf(buf + n, "%s: %i m \n", translator::translate("Minimum runway length"), desc_info_text->get_minimum_runway_length());
+		// Minimum runway length
+		if (desc_info_text->get_waytype() == air_wt) {
+			//n += sprintf(buf + n, "\n%s: %i m \n", translator::translate("Minimum runway length"), desc_info_text->get_minimum_runway_length());
+
+			highest_value = 0;
+			lowest_value = desc_for_display.get_element(0)->get_minimum_runway_length();
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				highest_value = desc_for_display.get_element(i)->get_minimum_runway_length() > highest_value ? desc_for_display.get_element(i)->get_minimum_runway_length() : highest_value;
+				lowest_value = desc_for_display.get_element(i)->get_minimum_runway_length() < lowest_value ? desc_for_display.get_element(i)->get_minimum_runway_length() : lowest_value;
+			}
+			lowest_equal_highest_value = highest_value == lowest_value;
+			lowest_value = combine_values ? highest_value : lowest_value;
+
+			n += sprintf(buf + n, "\n%s: %i m ", translator::translate("Minimum runway length"), (uint16)lowest_value);
+			if (!combine_values && !lowest_equal_highest_value) {
+				n += sprintf(buf + n, " - %i m", (uint16)highest_value);
+			}
 		}
-		n += sprintf(buf + n, "\n");
+		n += sprintf(buf + n, "\n\n");
 
 		linespace_skips = 0;
 
 		// Engine information:
 		linespace_skips = 0;
-		if (desc_info_text->get_power() > 0)
-		{ // LOCO
-			sint32 friction = convoy.get_current_friction();
-			sint32 max_weight = convoy.calc_max_starting_weight(friction);
-			sint32 min_speed = convoy.calc_max_speed(weight_summary_t(max_weight, friction));
-			sint32 min_weight = convoy.calc_max_weight(friction);
-			sint32 max_speed = convoy.get_vehicle_summary().max_speed;
-			if (min_weight < convoy.get_vehicle_summary().weight)
-			{
-				min_weight = convoy.get_vehicle_summary().weight;
-				max_speed = convoy.calc_max_speed(weight_summary_t(min_weight, friction));
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			combined_value += desc_for_display.get_element(i)->get_power();
+		}
+		if (combined_value > 0) { // LOCO
+			// Pulls
+			if (desc_for_display.get_count() < 2) {// This information is too complicated to split. Only display if we show one vehicle at a time. TODO: Assemble all descs we have selected into a convoy to display combined here
+				sint32 friction = convoy.get_current_friction();
+				sint32 max_weight = convoy.calc_max_starting_weight(friction);
+				sint32 min_speed = convoy.calc_max_speed(weight_summary_t(max_weight, friction));
+				sint32 min_weight = convoy.calc_max_weight(friction);
+				sint32 max_speed = convoy.get_vehicle_summary().max_speed;
+				if (min_weight < convoy.get_vehicle_summary().weight) {
+					min_weight = convoy.get_vehicle_summary().weight;
+					max_speed = convoy.calc_max_speed(weight_summary_t(min_weight, friction));
+				}
+				n += sprintf(buf + n, "%s:", translator::translate("Pulls"));
+				n += sprintf(buf + n,
+					min_speed == max_speed ? translator::translate(" %gt @ %d km/h ") : translator::translate(" %gt @ %dkm/h%s%gt @ %dkm/h")  /*" %g t @ %d km/h " : " %g t @ %d km/h %s %g t @ %d km/h"*/,
+					min_weight * 0.001f, max_speed, translator::translate("..."), max_weight * 0.001f, min_speed);
 			}
-			n += sprintf(buf + n, "%s:", translator::translate("Pulls"));
-			n += sprintf(buf + n,
-				min_speed == max_speed ? translator::translate(" %gt @ %d km/h ") : translator::translate(" %gt @ %dkm/h%s%gt @ %dkm/h")  /*" %g t @ %d km/h " : " %g t @ %d km/h %s %g t @ %d km/h"*/,
-				min_weight * 0.001f, max_speed, translator::translate("..."), max_weight * 0.001f, min_speed);
+
+			// Engine type (if multiple desc's are selected)
+			if (desc_for_display.get_count() > 1) {
+				n += sprintf(buf + n, "%s ", translator::translate("types_of_engines:"));
+				bool multiple_engines = false;
+				for (int j = 0; j < 11; j++) {
+					for (int i = 0; i < desc_for_display.get_count(); i++) {
+						if (desc_for_display.get_element(i)->get_power() > 0) {// Ignore motorless vehicles
+							if (desc_for_display.get_element(i)->get_engine_type() == j)
+							{
+								if (multiple_engines) {
+									n += sprintf(buf + n, ", ");
+								}
+								multiple_engines = true;
+								n += sprintf(buf + n, "%s", translator::translate(engine_type_names[j + 1]));
+								break;
+							}
+						}
+					}
+				}
+			}
+
+
 			n += sprintf(buf + n, "\n");
-			n += sprintf(buf + n, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]), desc_info_text->get_power(), desc_info_text->get_tractive_effort());
-			if (desc_info_text->get_gear() != 64) // Do this entry really have to be here...??? If not, it should be skipped. Space is precious..
-			{
-				n += sprintf(buf + n, "%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
+
+			// Power/tractive effort force
+			if (desc_for_display.get_count() < 2) {// Keep the old display when only single is selected
+				n += sprintf(buf + n, translator::translate("Power/tractive force (%s): %4d kW / %d kN\n"), translator::translate(engine_type_names[desc_info_text->get_engine_type() + 1]), desc_info_text->get_power(), desc_info_text->get_tractive_effort());
 			}
-			else
-			{
-				//linespace_skips++;
+			else {
+				// Power
+				highest_value = 0;
+				lowest_value = UINT64_MAX;
+				combined_value = 0;
+				for (int i = 0; i < desc_for_display.get_count(); i++) {
+					if (desc_for_display.get_element(i)->get_power() > 0) {// Ignore motorless vehicles
+						highest_value = desc_for_display.get_element(i)->get_power() > highest_value ? desc_for_display.get_element(i)->get_power() : highest_value;
+						lowest_value = desc_for_display.get_element(i)->get_power() < lowest_value ? desc_for_display.get_element(i)->get_power() : lowest_value;
+						combined_value += desc_for_display.get_element(i)->get_power();
+					}
+				}
+				lowest_equal_highest_value = highest_value == lowest_value;
+				lowest_value = combine_values ? combined_value : lowest_value;
+
+				n += sprintf(buf + n, "%s %4d %s", translator::translate("power/tractive_force:"), lowest_value, translator::translate("kW"));
+				if (!combine_values && !lowest_equal_highest_value) {
+					n += sprintf(buf + n, " - %d %s", highest_value, translator::translate("kW"));
+				}
+				// Tractive effort
+				highest_value = 0;
+				lowest_value = UINT64_MAX;
+				combined_value = 0;
+				for (int i = 0; i < desc_for_display.get_count(); i++) {
+					if (desc_for_display.get_element(i)->get_power() > 0) {// Ignore motorless vehicles
+						highest_value = desc_for_display.get_element(i)->get_tractive_effort() > highest_value ? desc_for_display.get_element(i)->get_tractive_effort() : highest_value;
+						lowest_value = desc_for_display.get_element(i)->get_tractive_effort() < lowest_value ? desc_for_display.get_element(i)->get_tractive_effort() : lowest_value;
+						combined_value += desc_for_display.get_element(i)->get_tractive_effort();
+					}
+				}
+				lowest_equal_highest_value = highest_value == lowest_value;
+				lowest_value = combine_values ? combined_value : lowest_value;
+
+				n += sprintf(buf + n, " / %d %s", lowest_value, translator::translate("kN"));
+				if (!combine_values && !lowest_equal_highest_value) {
+					n += sprintf(buf + n, " - %d %s", highest_value, translator::translate("kN"));
+				}
+				n += sprintf(buf + n, "\n");
+			}
+			// Gear
+			if (desc_for_display.get_count() < 2) {
+				if (desc_info_text->get_gear() != 64) // Do this entry really have to be here...??? If not, it should be skipped. Space is precious..
+				{
+					n += sprintf(buf + n, "%s %0.2f : 1", translator::translate("Gear:"), desc_info_text->get_gear() / 64.0);
+				}
 			}
 			n += sprintf(buf + n, "\n");
 		}
-		else
-		{
+		else {
 			n += sprintf(buf + n, "%s ", translator::translate("unpowered"));
 			linespace_skips = +2;
 		}
-		if (linespace_skips > 0)
-		{
-			for (int i = 0; i < linespace_skips; i++)
-			{
+
+
+		if (linespace_skips > 0) {
+			for (int i = 0; i < linespace_skips; i++) {
 				n += sprintf(buf + n, "\n");
 			}
 		}
 		linespace_skips = 0;
 
 		// Copyright information:
-		if (char const* const copyright = desc_info_text->get_copyright())
-		{
-			n += sprintf(buf + n, translator::translate("Constructed by %s"), copyright);
+		bool first_author = true;
+		bool new_author = true;
+		n += sprintf(buf + n, translator::translate("Constructed by %s"), ""); // Translation kept for legacy issue
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			new_author = true;
+
+			for (int j = 0; j < i; j++) {
+				if (strcmp(desc_for_display.get_element(i)->get_copyright(), desc_for_display.get_element(j)->get_copyright()) == 0) {
+					new_author = false;
+					break;
+				}
+			}
+			if (new_author) {
+				if (first_author && desc_for_display.get_element(i)->get_copyright()) {
+					n += sprintf(buf + n, "%s", desc_for_display.get_element(i)->get_copyright());
+					first_author = false;
+				}
+				else if (desc_for_display.get_element(i)->get_copyright()) {
+					n += sprintf(buf + n, ", %s", desc_for_display.get_element(i)->get_copyright());
+				}
+			}
 		}
+
+
 		n += sprintf(buf + n, "\n");
 		display_multiline_text(pos.x, pos.y + pos_y, buf, SYSCOL_TEXT);
 
 		// column 2
-		// Vehicle intro and retire information:
-		pos_y = 0;
+		pos_y = LINESPACE;
 		n = 0;
 		linespace_skips = 0;
-		n += sprintf(buf + n, "%s %s %04d\n",
-			translator::translate("Intro. date:"),
-			translator::get_month_name(desc_info_text->get_intro_year_month() % 12),
-			desc_info_text->get_intro_year_month() / 12
-		);
 
-		if (desc_info_text->get_retire_year_month() != DEFAULT_RETIRE_DATE * 12)
-		{
-			n += sprintf(buf + n, "%s %s %04d\n",
-				translator::translate("Retire. date:"),
-				translator::get_month_name(desc_info_text->get_retire_year_month() % 12),
-				desc_info_text->get_retire_year_month() / 12
-			);
+		// Vehicle intro information
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_intro_year_month();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_intro_year_month() > highest_value ? desc_for_display.get_element(i)->get_intro_year_month() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_intro_year_month() < lowest_value ? desc_for_display.get_element(i)->get_intro_year_month() : lowest_value;
 		}
-		else
-		{
+		lowest_equal_highest_value = highest_value == lowest_value;
+		lowest_value = combine_values ? highest_value : lowest_value;
+
+		n += sprintf(buf + n, "%s %s %04d", translator::translate("Intro. date:"), translator::get_month_name(lowest_value % 12), lowest_value / 12);
+		if (!combine_values && !lowest_equal_highest_value) {
+			n += sprintf(buf + n, " - %s %04d", translator::get_month_name(highest_value % 12), highest_value / 12);
+		}
+
+		// Vehicle retire information
+		highest_value = 0;
+		lowest_value = desc_for_display.get_element(0)->get_retire_year_month();
+		combined_value = 0;
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			highest_value = desc_for_display.get_element(i)->get_retire_year_month() > highest_value ? desc_for_display.get_element(i)->get_retire_year_month() : highest_value;
+			lowest_value = desc_for_display.get_element(i)->get_retire_year_month() < lowest_value ? desc_for_display.get_element(i)->get_retire_year_month() : lowest_value;
+		}
+		lowest_equal_highest_value = highest_value == lowest_value;
+
+		if (lowest_value != DEFAULT_RETIRE_DATE * 12) {
+			n += sprintf(buf + n, "\n%s %s %04d", translator::translate("Retire. date:"), translator::get_month_name(lowest_value % 12), lowest_value / 12);
+			if (!combine_values && !lowest_equal_highest_value) {
+				if (highest_value != DEFAULT_RETIRE_DATE * 12) {
+					n += sprintf(buf + n, " - %s %04d", translator::get_month_name(highest_value % 12), highest_value / 12);
+				}
+				else {
+					n += sprintf(buf + n, " - %s", translator::translate("no_retire_date"));
+				}
+			}
+		}
+		else {
 			n += sprintf(buf + n, "\n");
 		}
-		n += sprintf(buf + n, "\n");
+		n += sprintf(buf + n, "\n\n");
 
 		// Capacity information:
 		linespace_skips = 0;
-		if (desc_info_text->get_total_capacity() > 0)
-		{
-			bool pass_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS;
-			bool mail_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL;
+		bool has_capacity = false;
+		if (desc_for_display.get_count() < 2) {
+			if (desc_info_text->get_total_capacity() > 0) {
+				has_capacity = true;
+				bool pass_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS;
+				bool mail_veh = desc_info_text->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL;
 
-			if (pass_veh || mail_veh)
-			{
-				uint8 classes_amount = desc_info_text->get_number_of_classes() < 1 ? 1 : desc_info_text->get_number_of_classes();
-				char extra_pass[8];
-				if (desc_info_text->get_overcrowded_capacity() > 0)
-				{
-					sprintf(extra_pass, "(%i)", desc_info_text->get_overcrowded_capacity());
-				}
-				else
-				{
-					extra_pass[0] = '\0';
-				}
+				if (pass_veh || mail_veh) {
+					uint8 classes_amount = desc_info_text->get_number_of_classes() < 1 ? 1 : desc_info_text->get_number_of_classes();
+					char extra_pass[8];
+					if (desc_info_text->get_overcrowded_capacity() > 0) {
+						sprintf(extra_pass, "(%i)", desc_info_text->get_overcrowded_capacity());
+					}
+					else {
+						extra_pass[0] = '\0';
+					}
 
-				n += sprintf(buf + n, translator::translate("Capacity: %3d %s%s %s\n"),
-					desc_info_text->get_total_capacity(), extra_pass,
-					translator::translate(desc_info_text->get_freight_type()->get_mass()),
-					desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
+					n += sprintf(buf + n, translator::translate("Capacity: %3d %s%s %s\n"),
+						desc_info_text->get_total_capacity(), extra_pass,
+						translator::translate(desc_info_text->get_freight_type()->get_mass()),
+						desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
 
-				for (uint8 i = 0; i < classes_amount; i++)
-				{
-					if (desc_info_text->get_capacity(i) > 0)
-					{
-						char class_name_untranslated[32];
-						if (mail_veh)
-						{
-							sprintf(class_name_untranslated, "m_class[%u]", i);
-						}
-						else
-						{
-							sprintf(class_name_untranslated, "p_class[%u]", i);
-						}
-						const char* class_name = translator::translate(class_name_untranslated);
+					for (uint8 i = 0; i < classes_amount; i++) {
+						if (desc_info_text->get_capacity(i) > 0) {
+							char class_name_untranslated[32];
+							if (mail_veh) {
+								sprintf(class_name_untranslated, "m_class[%u]", i);
+							}
+							else {
+								sprintf(class_name_untranslated, "p_class[%u]", i);
+							}
+							const char* class_name = translator::translate(class_name_untranslated);
 
-						n += sprintf(buf + n, "%s: %3d %s %s ", class_name, desc_info_text->get_capacity(i), translator::translate(desc_info_text->get_freight_type()->get_mass()), translator::translate(desc_info_text->get_freight_type()->get_name()));
-						
-						// if the classes in any of the SELECTED vehicles are reassigned, display that here
-						if (count_veh_selection > 0)
-						{
-							bool multiple_classes = false;
-							int old_reassigned_class = -1;
-							uint8 display_class = i;
-							for (int j = 0; j < veh_list.get_count(); j++)
-							{
-								if (veh_selection[j] == true)
-								{
-									vehicle_t* veh = veh_list.get_element(j);
-									if (veh)
-									{
-										if (old_reassigned_class != veh->get_reassigned_class(i))
-										{
-											if (old_reassigned_class == -1)
-											{
-												old_reassigned_class = veh->get_reassigned_class(i);
-												display_class = old_reassigned_class;
-											}
-											else
-											{
-												multiple_classes = true;
-												break;
+							n += sprintf(buf + n, "%s: %3d %s %s ", class_name, desc_info_text->get_capacity(i), translator::translate(desc_info_text->get_freight_type()->get_mass()), translator::translate(desc_info_text->get_freight_type()->get_name()));
+
+							// if the classes in any of the SELECTED vehicles are reassigned, display that here
+							if (count_veh_selection > 0) {
+								bool multiple_classes = false;
+								int old_reassigned_class = -1;
+								uint8 display_class = i;
+								for (int j = 0; j < veh_list.get_count(); j++) {
+									if (veh_selection[j] == true) {
+										vehicle_t* veh = veh_list.get_element(j);
+										if (veh) {
+											if (old_reassigned_class != veh->get_reassigned_class(i)) {
+												if (old_reassigned_class == -1) {
+													old_reassigned_class = veh->get_reassigned_class(i);
+													display_class = old_reassigned_class;
+												}
+												else {
+													multiple_classes = true;
+													break;
+												}
 											}
 										}
 									}
 								}
-							}
-							if (display_class != i)
-							{
-								if (multiple_classes)
-								{
-									n += sprintf(buf + n, "- %s", translator::translate("reassigned_to_multiple"));
-								}
-								else
-								{
-									if (mail_veh)
-									{
-										sprintf(class_name_untranslated, "m_class[%u]", display_class);
+								if (display_class != i) {
+									if (multiple_classes) {
+										n += sprintf(buf + n, "- %s", translator::translate("reassigned_to_multiple"));
 									}
-									else
-									{
-										sprintf(class_name_untranslated, "p_class[%u]", display_class);
+									else {
+										if (mail_veh) {
+											sprintf(class_name_untranslated, "m_class[%u]", display_class);
+										}
+										else {
+											sprintf(class_name_untranslated, "p_class[%u]", display_class);
+										}
+										const char* reassigned_class_name = translator::translate(class_name_untranslated);
+										n += sprintf(buf + n, "- %s: %s", translator::translate("reassigned_to"), reassigned_class_name);
 									}
-									const char* reassigned_class_name = translator::translate(class_name_untranslated);
-									n += sprintf(buf + n, "- %s: %s", translator::translate("reassigned_to"), reassigned_class_name);
 								}
 							}
-						}
-						
-						n += sprintf(buf + n, "\n");
 
-						if (pass_veh)
-						{
-							char timebuf[32];
-							uint8 base_comfort = desc_info_text->get_comfort(i);
-							uint8 modified_comfort = 0;
-							if (i >= desc_info_text->get_catering_level())
-							{
-								modified_comfort = desc_info_text->get_catering_level() > 0 ? desc_info_text->get_adjusted_comfort(desc_info_text->get_catering_level(), i) - base_comfort : 0;
-							}
-							char extra_comfort[8];
-							if (modified_comfort > 0)
-							{
-								sprintf(extra_comfort, "+%i", modified_comfort);
-							}
-							else
-							{
-								extra_comfort[0] = '\0';
-							}
+							n += sprintf(buf + n, "\n");
 
-							n += sprintf(buf + n, " - %s %i", translator::translate("Comfort:"), base_comfort);
-							welt->sprintf_time_secs(timebuf, sizeof(timebuf), welt->get_settings().max_tolerable_journey(base_comfort + modified_comfort));
-							n += sprintf(buf + n, "%s %s %s%s", extra_comfort, translator::translate("(Max. comfortable journey time: "), timebuf, ")\n");
+							if (pass_veh) {
+								char timebuf[32];
+								uint8 base_comfort = desc_info_text->get_comfort(i);
+								uint8 modified_comfort = 0;
+								if (i >= desc_info_text->get_catering_level()) {
+									modified_comfort = desc_info_text->get_catering_level() > 0 ? desc_info_text->get_adjusted_comfort(desc_info_text->get_catering_level(), i) - base_comfort : 0;
+								}
+								char extra_comfort[8];
+								if (modified_comfort > 0) {
+									sprintf(extra_comfort, "+%i", modified_comfort);
+								}
+								else {
+									extra_comfort[0] = '\0';
+								}
+
+								n += sprintf(buf + n, " - %s %i", translator::translate("Comfort:"), base_comfort);
+								welt->sprintf_time_secs(timebuf, sizeof(timebuf), welt->get_settings().max_tolerable_journey(base_comfort + modified_comfort));
+								n += sprintf(buf + n, "%s %s %s%s", extra_comfort, translator::translate("(Max. comfortable journey time: "), timebuf, ")\n");
+							}
+							else {
+								linespace_skips++;
+							}
 						}
-						else
-						{
-							linespace_skips++;
+
+					}
+				}
+				else {
+					n += sprintf(buf + n, translator::translate("Capacity: %3d %s%s %s\n"),
+						desc_info_text->get_total_capacity(),
+						"\0",
+						translator::translate(desc_info_text->get_freight_type()->get_mass()),
+						desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
+					linespace_skips += 2;
+				}
+			}
+			else {
+				n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
+				linespace_skips += 3;
+			}
+
+			if (linespace_skips > 0) {
+				for (int i = 0; i < linespace_skips; i++) {
+					n += sprintf(buf + n, "\n");
+				}
+				linespace_skips = 0;
+			}
+		}
+		else {// Multiple desc's selected
+			bool new_category = true;
+
+			combined_value = 0;
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				combined_value += desc_for_display.get_element(i)->get_total_capacity();
+			}
+			if (combined_value > 0) {
+				size_t const goods_count = goods_manager_t::get_count();
+				ALLOCA(uint32, max_loaded_waren, goods_count);
+				MEMZERON(max_loaded_waren, goods_count);
+
+				size_t const pass_classes = goods_manager_t::passengers->get_number_of_classes();
+				ALLOCA(uint32, max_loaded_pass, pass_classes);
+				MEMZERON(max_loaded_pass, pass_classes);
+
+				size_t const mail_classes = goods_manager_t::mail->get_number_of_classes();
+				ALLOCA(uint32, max_loaded_mail, mail_classes);
+				MEMZERON(max_loaded_mail, mail_classes);
+				int index = 0;
+
+				for (uint32 i = 0; i != desc_for_display.get_count(); ++i) {
+
+					const vehicle_desc_t* desc = desc_for_display.get_element(i);
+					bool pass_veh = desc->get_freight_type() == goods_manager_t::passengers;
+					bool mail_veh = desc->get_freight_type() == goods_manager_t::mail;
+					const goods_desc_t* ware_desc = desc->get_freight_type();
+					const uint16 menge = desc->get_total_capacity();
+					const uint8 classes_to_check = desc->get_number_of_classes();
+
+					// first add to capacity indicator
+
+					if (pass_veh) {
+						for (uint8 j = 0; j < pass_classes; j++) {
+							max_loaded_pass[j] += desc->get_capacity(j);
 						}
 					}
+					else if (mail_veh) {
+						for (uint8 j = 0; j < mail_classes; j++) {
+							max_loaded_mail[j] += desc->get_capacity(j);
+						}
+					}
+					else if (menge > 0 && ware_desc != goods_manager_t::none) {
+						max_loaded_waren[ware_desc->get_catg_index()] += menge;
+						index = ware_desc->get_catg_index();
+					}
+				}
 
+				n += sprintf(buf + n, "%s\n", translator::translate("capacity:"));
+
+				for (int i = 0; i < pass_classes; i++) {
+					if (max_loaded_pass[i] > 0) {
+						has_capacity = true;
+						char class_name_untranslated[32];
+						sprintf(class_name_untranslated, "p_class[%u]", i);
+						const char* class_name = translator::translate(class_name_untranslated);
+						n += sprintf(buf + n, "%3d %s %s\n", max_loaded_pass[i], class_name, translator::translate(goods_manager_t::passengers->get_name()));
+					}
+				}
+				for (int i = 0; i < mail_classes; i++) {
+					if (max_loaded_mail[i] > 0) {
+						has_capacity = true;
+						char class_name_untranslated[32];
+						sprintf(class_name_untranslated, "m_class[%u]", i);
+						const char* class_name = translator::translate(class_name_untranslated);
+						n += sprintf(buf + n, "%3d%s%s %s\n", max_loaded_mail[i], translator::translate(goods_manager_t::mail->get_mass()), class_name, translator::translate(goods_manager_t::mail->get_name()));
+					}
+				}
+				for (int i = 0; i < goods_count; i++) {
+					const goods_desc_t* ware = goods_manager_t::get_info_catg_index(i);
+					if (max_loaded_waren[i] > 0) {
+						has_capacity = true;
+						if (goods_manager_t::get_info_catg_index(i)->get_catg() == 0) { // Special goods	
+							n += sprintf(buf + n, "%3d %s\n", max_loaded_waren[i], translator::translate(goods_manager_t::get_info_catg_index(i)->get_name()));
+						}
+						else {
+							n += sprintf(buf + n, "%3d%s %s\n", max_loaded_waren[i], translator::translate(goods_manager_t::get_info_catg_index(i)->get_mass()), translator::translate(goods_manager_t::get_info_catg_index(i)->get_catg_name()));
+						}
+					}
 				}
 			}
-			else
-			{
-				n += sprintf(buf + n, translator::translate("Capacity: %3d %s%s %s\n"),
-					desc_info_text->get_total_capacity(),
-					"\0",
-					translator::translate(desc_info_text->get_freight_type()->get_mass()),
-					desc_info_text->get_freight_type()->get_catg() == 0 ? translator::translate(desc_info_text->get_freight_type()->get_name()) : translator::translate(desc_info_text->get_freight_type()->get_catg_name()));
-				linespace_skips += 2;
+			else {
+				n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
+				n += sprintf(buf + n, "\n\n\n");
 			}
-
-
+		}
+		if (has_capacity) {
+			// Minimum loading time
+			// Compile this info into the lowest "min" and highest "max", as the info would be too confusing otherwise
+			highest_value = 0;
+			lowest_value = desc_for_display.get_element(0)->get_min_loading_time();
+			combined_value = 0;
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				lowest_value = desc_for_display.get_element(i)->get_min_loading_time() < lowest_value ? desc_for_display.get_element(i)->get_min_loading_time() : lowest_value;
+				combined_value = desc_for_display.get_element(i)->get_min_loading_time() > combined_value ? desc_for_display.get_element(i)->get_min_loading_time() : combined_value;
+				highest_value = desc_for_display.get_element(i)->get_max_loading_time() > highest_value ? desc_for_display.get_element(i)->get_max_loading_time() : highest_value;
+			}
+			if (combine_values) {// Display the highest "min" instead of the lowest "min".
+				lowest_value = combined_value;
+			}
 			char min_loading_time_as_clock[32];
 			char max_loading_time_as_clock[32];
-			//Loading time is only relevant if there is something to load.
-			welt->sprintf_ticks(min_loading_time_as_clock, sizeof(min_loading_time_as_clock), desc_info_text->get_min_loading_time());
-			welt->sprintf_ticks(max_loading_time_as_clock, sizeof(max_loading_time_as_clock), desc_info_text->get_max_loading_time());
-			n += sprintf(buf + n, "%s %s - %s \n", translator::translate("Loading time:"), min_loading_time_as_clock, max_loading_time_as_clock);
+			welt->sprintf_ticks(min_loading_time_as_clock, sizeof(min_loading_time_as_clock), lowest_value);
+			welt->sprintf_ticks(max_loading_time_as_clock, sizeof(max_loading_time_as_clock), highest_value);
+			n += sprintf(buf + n, "\n%s %s - %s", translator::translate("Loading time:"), min_loading_time_as_clock, max_loading_time_as_clock);
 
-			if (desc_info_text->get_catering_level() > 0)
-			{
-				if (mail_veh)
-				{
-					//Catering vehicles that carry mail are treated as TPOs.
-					n += sprintf(buf + n, translator::translate("This is a travelling post office"));
-					n += sprintf(buf + n, "\n");
-				}
-				else
-				{
-					n += sprintf(buf + n, translator::translate("Catering level: %i"), desc_info_text->get_catering_level());
-					n += sprintf(buf + n, "\n");
+			// Catering and traveling post office
+			bool has_catering = false;
+			bool has_tpo = false;
+
+			bool catering_level[6];
+			for (int i = 0; i < 6; i++) {
+				catering_level[i] = false;
+			}
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				if (desc_for_display.get_element(i)->get_catering_level() > 0) {
+					if (desc_for_display.get_element(i)->get_freight_type() == goods_manager_t::passengers) {
+						has_catering = true;
+						catering_level[desc_for_display.get_element(i)->get_catering_level()] = true;
+					}
+					else if (desc_for_display.get_element(i)->get_freight_type() == goods_manager_t::mail) {
+						has_tpo = true;
+					}
 				}
 			}
-			else
-			{
-				linespace_skips++;
-			}
-
-		}
-		else
-		{
-			n += sprintf(buf + n, "%s ", translator::translate("this_vehicle_carries_no_good"));
-			linespace_skips += 3;
-		}
-		if (linespace_skips > 0)
-		{
-			for (int i = 0; i < linespace_skips; i++)
-			{
+			if (has_catering) {
 				n += sprintf(buf + n, "\n");
+				bool first_entry = true;
+				for (int i = 0; i < 6; i++) {
+					if (catering_level[i]) {
+						if (first_entry) {
+							n += sprintf(buf + n, translator::translate("Catering level: %i"), i);
+							first_entry = false;
+						}
+						else {
+							n += sprintf(buf + n, ", %i", i);
+						}
+					}
+				}
 			}
-			linespace_skips = 0;
+			if (has_tpo) {
+				n += sprintf(buf + n, "\n%s", translator::translate("travelling_post_office"));
+			}
 		}
 
-		// Permissive way constraints
-		// (If vehicle has, way must have)
-		// @author: jamespetts
-		const way_constraints_t &way_constraints = desc_info_text->get_way_constraints();
-		for (uint8 i = 0; i < way_constraints.get_count(); i++)
-		{
-			if (way_constraints.get_permissive(i))
-			{
+		// Permissive way constraints (If vehicle has, way must have)
+		bool has_constraints = false;
+		bool is_tall = false;
+		bool constraint[254];
+		for (int i = 0; i < 254; i++) {
+			constraint[i] = false;
+		}
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			const way_constraints_t& way_constraints = desc_for_display.get_element(i)->get_way_constraints();
+			for (uint8 j = 0; j < way_constraints.get_count(); j++) {
+				if (way_constraints.get_permissive(j)) {
+					has_constraints = true;
+					constraint[j] = true;
+				}
+			}
+			if (desc_for_display.get_element(i)->get_is_tall()) {
+				has_constraints = true;
+				is_tall = true;
+			}
+		}
+
+		if (has_constraints) {
+			for (int i = 0; i < 254; i++) {
+				if (constraint[i]) {
+					n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
+					char tmpbuf[30];
+					sprintf(tmpbuf, "Permissive %i-%i", desc_for_display.get_element(0)->get_waytype(), i);
+					n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+				}
+			}
+			if (is_tall) {
 				n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
-				char tmpbuf[30];
-				sprintf(tmpbuf, "Permissive %i-%i", desc_info_text->get_waytype(), i);
-				n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+				n += sprintf(buf + n, "%s", translator::translate("high_clearance_under_bridges_(no_low_bridges)"));
 			}
 		}
-		if (desc_info_text->get_is_tall())
-		{
-			n += sprintf(buf + n, "%s", translator::translate("\nMUST USE: "));
-			n += sprintf(buf + n, "%s", translator::translate("high_clearance_under_bridges_(no_low_bridges)"));
-		}
 
 
-		// Prohibitibve way constraints
-		// (If way has, vehicle must have)
-		// @author: jamespetts
-		for (uint8 i = 0; i < way_constraints.get_count(); i++)
-		{
-			if (way_constraints.get_prohibitive(i))
-			{
-				n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: "));
-				char tmpbuf[30];
-				sprintf(tmpbuf, "Prohibitive %i-%i", desc_info_text->get_waytype(), i);
-				n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+		display_multiline_text(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y + (LINESPACE * 2), buf, SYSCOL_TEXT);
+
+
+		// Below is displayed with their very own "display_proportional_clip's", due to a potential color change
+		// First count returns:
+		int returns = 0;
+		int max_lines = 16;
+		for (int i = 0; i < 1024; i++) {
+			if (buf[i] == '\0') {
+				break;
+			}
+			if (buf[i] == '\n') {
+				returns++;
 			}
 		}
-		if (desc_info_text->get_tilting())
-		{
-			n += sprintf(buf + n, "\n");
-			n += sprintf(buf + n, "%s: ", translator::translate("equipped_with"));
-			n += sprintf(buf + n, "%s", translator::translate("tilting_vehicle_equipment"));
+		pos_y += (returns * LINESPACE) + LINESPACE;
+		pos_y += (LINESPACE * 2);
+		COLOR_VAL color = SYSCOL_TEXT;
+
+		// Prohibitibve way constraints (If way has, vehicle must have)
+		has_constraints = false;
+		bool is_tilting = false;
+		bool is_shared_tilting = false;
+		bool shared_constraint[254];
+		for (int i = 0; i < 254; i++) {
+			constraint[i] = false;
+			shared_constraint[i] = false;
+		}
+		for (int i = 0; i < desc_for_display.get_count(); i++) {
+			const way_constraints_t& way_constraints = desc_for_display.get_element(i)->get_way_constraints();
+			for (uint8 j = 0; j < way_constraints.get_count(); j++) {
+				if (way_constraints.get_prohibitive(j)) {
+					has_constraints = true;
+					constraint[j] = true;
+					shared_constraint[j] = true;
+				}
+			}
+			if (desc_for_display.get_element(i)->get_tilting()) {
+				has_constraints = true;
+				is_tilting = true;
+				is_shared_tilting = true;
+			}
 		}
 
-		display_multiline_text(pos.x + 335/*370*/, pos.y + pos_y + (LINESPACE * 2), buf, SYSCOL_TEXT);
+		if (has_constraints) {
+			// Turn off the prohibitive constraints which are not represented in all vehicles
+			for (int i = 0; i < desc_for_display.get_count(); i++) {
+				const way_constraints_t& way_constraints = desc_for_display.get_element(i)->get_way_constraints();
+				for (uint8 j = 0; j < way_constraints.get_count(); j++) {
+					if (!way_constraints.get_prohibitive(j)) {
+						shared_constraint[j] = false;
+					}
+				}
+				if (!desc_for_display.get_element(i)->get_tilting()) {
+					is_shared_tilting = false;
+				}
+			}
 
+			for (int i = 0; i < 254; i++) {
+				if (shared_constraint[i] || (!combine_values && constraint[i])) {
+					if (returns < max_lines) {
+						n = 0;
+						n += sprintf(buf + n, "%s", translator::translate("\nMAY USE: ")); // Translation kept for legacy issue
+						int remove_space = display_calc_proportional_string_len_width("\n", -1);
+						char tmpbuf[30];
+						sprintf(tmpbuf, "Prohibitive %i-%i", desc_for_display.get_element(0)->get_waytype(), i);
+						n += sprintf(buf + n, "%s", translator::translate(tmpbuf));
+						color = shared_constraint[i] ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
+						display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2) - remove_space, pos.y + pos_y, buf, ALIGN_LEFT, color, false);
+						pos_y += LINESPACE;
+					}
+					returns++;
+				}
+			}
+			if (is_shared_tilting || (!combine_values && is_tilting)) {
+				if (returns < max_lines) {
+					sprintf(buf, "%s: %s", translator::translate("equipped_with"), translator::translate("tilting_vehicle_equipment"));
+					color = is_shared_tilting ? SYSCOL_TEXT : SYSCOL_EDIT_TEXT_DISABLED;
+					display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y, buf, ALIGN_LEFT, color, false);
+					pos_y += LINESPACE;
+				}
+				returns++;
+			}
+		}
+		if (returns > max_lines) {
+			sprintf(buf, "...");
+			display_proportional_clip(pos.x + l_column_3 + ((l_column_4 - l_column_3) / 2), pos.y + pos_y, buf, ALIGN_LEFT, SYSCOL_TEXT, false);
+			pos_y += LINESPACE;
+			returns++;
+		}
 	}
 }
 
@@ -2534,11 +3180,15 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	display_ddd_box_clip(pos.x + middle_line - 5, pos.y + header_section + upper_section, 0, height - lower_section + extra_height, MN_GREY0, MN_GREY4); // Vertical separator
 
 	// This handles the selection of the vehicles in the "desc" section
+
+	if (!select_multiple_desc)
 	{
+		old_count_desc_selection = 0;
 		for (int i = 0; i < desc_info.get_count(); i++)
 		{
 			if (desc_info.get_element(i)->is_selected())
 			{
+				old_count_desc_selection = 1;
 				no_desc_selected = false;
 				int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
 				int actual_index = i + offset_index;
@@ -2546,7 +3196,9 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 				{
 					if (actual_index < desc_list.get_count())
 					{
-						desc_for_display = desc_list.get_element(actual_index);
+						desc_for_display.clear();
+						desc_for_display.resize(1);
+						desc_for_display.append(desc_list.get_element(actual_index));
 						selected_desc_index = actual_index;
 
 						for (int j = 0; j < desc_info.get_count(); j++)
@@ -2556,6 +3208,7 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 								desc_info.get_element(j)->set_selection(false);
 							}
 						}
+						update_desc_selection();
 						update_veh_list = true;
 						break;
 					}
@@ -2563,9 +3216,28 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 			}
 		}
 	}
+	else
+	{
+		new_count_desc_selection = 0;
+		for (int i = 0; i < desc_info.get_count(); i++)
+		{
+			if (desc_info.get_element(i)->is_selected())
+			{
+				no_desc_selected = false;
+				new_count_desc_selection++;
+			}
+		}
+		if (old_count_desc_selection != new_count_desc_selection)
+		{
+			old_count_desc_selection = new_count_desc_selection;
+			{
+				update_desc_selection();
+			}
+		}
+	}
 	if (no_desc_selected && !page_turn_desc && selected_desc_index != -1)
 	{
-		desc_for_display = NULL;
+		desc_for_display.clear();
 		update_veh_list = true;
 		selected_desc_index = -1;
 	}
@@ -2656,12 +3328,24 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	if (update_desc_list)
 	{
 		build_desc_list();
-		update_cargo_manifest(cargo_buf);
+		const int old_len = buf_cargo.len();
+		update_cargo_manifest(buf_cargo);
+		if (old_len != buf_cargo.len()) {
+			text_cargo.recalc_size();
+		}
 	}
 	else if (update_veh_list)
 	{
+		if (display_veh==display_veh_by_payload) // Because some sort- and display modes requires to be reset when new vehicles are added
+		{
+			reset_veh_text_input_display();
+		}
 		build_veh_list();
-		update_cargo_manifest(cargo_buf);
+		const int old_len = buf_cargo.len();
+		update_cargo_manifest(buf_cargo);
+		if (old_len != buf_cargo.len()) {
+			text_cargo.recalc_size();
+		}
 	}
 
 	// The "draw" information in the info tabs are fetched here
@@ -2674,13 +3358,13 @@ void vehicle_manager_t::draw(scr_coord pos, scr_size size)
 	{
 		draw_general_information(pos + desc_info_text_pos);
 	}
-	else if (info_display == infotab_economics)
+	else if (info_display == infotab_payload)
 	{
 		if (update_veh_list)
 		{
 			build_livery_list();
 		}
-		draw_economics_information(pos + desc_info_text_pos);
+		draw_payload_information(pos + desc_info_text_pos);
 	}
 	else if (info_display == infotab_maintenance)
 	{
@@ -2782,21 +3466,28 @@ void vehicle_manager_t::display(scr_coord pos)
 
 	// Lower section stuff:
 
-
+	bt_display_combined_info.set_visible(false);
+	bt_display_combined_info.disable();
 	bt_upgrade_im.disable();
 	bt_upgrade_ov.disable();
 	bt_append_livery.disable();
 	bt_reset_all_classes.disable();
 	lb_reassign_class_to.set_color(SYSCOL_EDIT_TEXT_DISABLED);
 
-	if (desc_for_display)
+	if (desc_for_display.get_count()>0)
 	{
+		bt_display_combined_info.set_visible(true);
+		if (select_multiple_desc || count_veh_selection > 0) {
+			bt_display_combined_info.enable();
+		}
 		if (no_class_vehicle)
 		{
 			// Display "none" if desc/vehicle doesnt support classes
 			lb_pass_class.at(0)->set_color(SYSCOL_TEXT);
 		}
 	}
+
+
 
 	if (count_veh_selection > 0)
 	{
@@ -2810,7 +3501,7 @@ void vehicle_manager_t::display(scr_coord pos)
 			}
 		}
 
-		// Economics tab buttons:
+		// Payload tab buttons:
 		// This button needs more logic as to when it shall enable (multiple liveries to choose from etc)
 		bt_append_livery.enable();
 
@@ -2879,9 +3570,6 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	bt_show_obsolete_vehicles.set_pos(scr_coord(h_column_3, y_pos));
 	bt_show_obsolete_vehicles.set_size(scr_size(h_column_4 - h_column_3, D_BUTTON_HEIGHT));
 
-	// Select multiple desc button
-	bt_select_multiple_desc.set_pos(scr_coord(h_column_4, y_pos));
-	bt_select_multiple_desc.set_size(scr_size(width - h_column_4, D_BUTTON_HEIGHT));
 	y_pos += D_BUTTON_HEIGHT;
 
 	// Waytype tab panel
@@ -2892,9 +3580,21 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	// Vehicle type tab panel
 	tabs_vehicletype.set_pos(scr_coord(u_column_1, y_pos));
 	tabs_vehicletype.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 11 - 4 + (extra_width/2), SCL_HEIGHT));
-	y_pos += (D_BUTTON_HEIGHT*2) + 6;
+	y_pos += (D_BUTTON_HEIGHT) + 6;
 
 	upper_section = y_pos;
+
+	// Select multiple desc button
+	label_length = display_calc_proportional_string_len_width(text_select_multiple_desc, -1) + 30;
+	bt_select_multiple_desc.set_pos(scr_coord(h_column_1, y_pos));
+	bt_select_multiple_desc.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
+
+	// Split fixed couplings button
+	bt_split_fixed_couplings.set_pos(scr_coord(h_column_1 + label_length, y_pos));
+	bt_split_fixed_couplings.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+
+
+	y_pos += D_BUTTON_HEIGHT;
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_pos(scr_coord(u_column_1, y_pos));
@@ -3017,10 +3717,23 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	l_column_7 = ((width - D_MARGIN_LEFT - D_MARGIN_RIGHT) / 6) * 6;
 
 	int column_width = l_column_2 - l_column_1 - 5;
-	// Economics tab:
+	int double_column_width = l_column_3 - l_column_1 + 2;
+	// General information tab:
+	{
+		y_pos = D_MARGIN_TOP;
+		bt_display_combined_info.set_pos(scr_coord(l_column_1, y_pos));
+		bt_display_combined_info.set_width(column_width);
+	}
+	// Payload tab:
 	{ 		// Column 1-2
 		y_pos = D_MARGIN_TOP;
-		lb_current_cargo_information.set_pos(scr_coord(l_column_1, y_pos));
+		lb_current_payload_information.set_pos(scr_coord(l_column_1, y_pos));
+
+		y_pos += D_BUTTON_HEIGHT;
+		y_pos += LINESPACE * 2;
+		
+		scrolly_cargo.set_pos(scr_coord(l_column_1, y_pos));
+		scrolly_cargo.set_size(scr_size(l_column_2 - l_column_1 + column_width, UPGRADE_LIST_COLUMN_HEIGHT));
 
 		// Column 3-4
 		y_pos = D_MARGIN_TOP;
@@ -3029,6 +3742,10 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		lb_reassign_class_to.set_pos(scr_coord(l_column_4, y_pos));
 
 		y_pos += D_BUTTON_HEIGHT;
+
+		scrolly_class_reassign.set_pos(scr_coord(l_column_3, y_pos));
+		scrolly_class_reassign.set_size(scr_size(double_column_width, INFORMATION_COLUMN_HEIGHT - D_BUTTON_HEIGHT));
+		int cont_y = 0;
 
 		if (no_class_vehicle)
 		{
@@ -3039,44 +3756,43 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 		}
 		else
 		{
-
 			for (int i = 0; i < pass_class_sel.get_count(); i++)
 			{
 				if (pass_capacity_at_accommodation[i] > 0)
 				{
-					lb_pass_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
+					lb_pass_class.at(i)->set_pos(scr_coord(D_MARGIN_LEFT, cont_y));
 					lb_pass_class.at(i)->set_width(column_width);
-					pass_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
+					pass_class_sel.at(i)->set_pos(scr_coord(column_width + D_MARGIN_LEFT, cont_y));
 					pass_class_sel.at(i)->set_highlight_color(1);
 					pass_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
-					y_pos += D_BUTTON_HEIGHT;
+					cont_y += D_BUTTON_HEIGHT;
 				}
 			}
 			if (any_mail_cargo && any_pass_cargo)
 			{
-				y_pos += D_BUTTON_HEIGHT;
+				cont_y += D_BUTTON_HEIGHT;
 			}
 
 			for (int i = 0; i < mail_class_sel.get_count(); i++)
 			{
 				if (mail_capacity_at_accommodation[i] > 0)
 				{
-					lb_mail_class.at(i)->set_pos(scr_coord(l_column_3, y_pos));
+					lb_mail_class.at(i)->set_pos(scr_coord(D_MARGIN_LEFT, cont_y));
 					lb_mail_class.at(i)->set_width(column_width);
-					mail_class_sel.at(i)->set_pos(scr_coord(l_column_4, y_pos));
+					mail_class_sel.at(i)->set_pos(scr_coord(column_width + D_MARGIN_LEFT, cont_y));
 					mail_class_sel.at(i)->set_highlight_color(1);
 					mail_class_sel.at(i)->set_size(scr_size(column_width, D_BUTTON_HEIGHT));
-					y_pos += D_BUTTON_HEIGHT;
+					cont_y += D_BUTTON_HEIGHT;
 				}
 			}
-			y_pos += D_BUTTON_HEIGHT;
+			cont_y += D_BUTTON_HEIGHT;
 		}
 
-
-		bt_reset_all_classes.set_pos(scr_coord(l_column_4, y_pos));
+		bt_reset_all_classes.set_pos(scr_coord(D_MARGIN_LEFT, cont_y));
 		bt_reset_all_classes.set_size(scr_size(column_width, D_BUTTON_HEIGHT));
+		cont_y += D_BUTTON_HEIGHT;
 
-
+		cont_class_reassign.set_size(scr_size(double_column_width, cont_y));
 
 
 
@@ -3166,9 +3882,9 @@ void vehicle_manager_t::update_tabs()
 			}
 		}
 	}
-	else if (desc_for_display)
+	else if (desc_for_display.get_count()>0)
 	{ // Should only come in here when window is just opened and no tabs have been created yet
-		old_selected_tab = (waytype_t*)desc_for_display->get_waytype();
+		old_selected_tab = (waytype_t*)desc_for_display.get_element(0)->get_waytype();
 	}
 
 	tabs_waytype.clear();
@@ -4303,7 +5019,7 @@ void vehicle_manager_t::build_livery_list()
 	amount_of_liveries = 0;
 	int box_height = LINESPACE * 3;
 
-	if (desc_for_display)
+	if (desc_for_display.get_count() > 0)
 	{
 		// Resize the livery_info vector
 		uint32 n = 0;
@@ -4358,7 +5074,7 @@ void vehicle_manager_t::build_livery_list()
 		// If no liveries available, display just the one it has
 		if (amount_of_liveries <= 0)
 		{
-			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display);
+			gui_livery_info_t* const linfo = new gui_livery_info_t(desc_for_display.get_element(0));
 			linfo->set_pos(scr_coord(0, ypos));
 			linfo->set_size(scr_size(initial_livery_entry_width, max(linfo->get_entry_height(), box_height)));
 			livery_info.append(linfo);
@@ -4374,23 +5090,25 @@ void vehicle_manager_t::build_livery_list()
 
 void vehicle_manager_t::build_upgrade_list()
 {
+	// TODO: When multiple desc's can be showed in the same entry, alter this function to generate multiple upgrades in entries as well.
 	cont_upgrade.remove_all();
 	upgrade_info.clear();
 	int ypos = 10;
 	amount_of_upgrades = 0;
 	int box_height = LINESPACE * 3;
 
-	if (desc_for_display)
+	if (desc_for_display.get_count() == 1) // For the moment, only display this when exactly one desc is selected
 	{
+		vehicle_desc_t* desc = desc_for_display.get_element(0);
 		if (display_upgrade_into) // Build the list of upgrades to this vehicle		
 		{
-			if (desc_for_display->get_upgrades_count() > 0)
+			if (desc->get_upgrades_count() > 0)
 			{
 				const uint16 month_now = welt->get_timeline_year_month();
-				upgrade_info.resize(desc_for_display->get_upgrades_count());
-				for (int i = 0; i < desc_for_display->get_upgrades_count(); i++)
+				upgrade_info.resize(desc->get_upgrades_count());
+				for (int i = 0; i < desc->get_upgrades_count(); i++)
 				{
-					vehicle_desc_t* upgrade = (vehicle_desc_t*)desc_for_display->get_upgrades(i);
+					vehicle_desc_t* upgrade = (vehicle_desc_t*)desc->get_upgrades(i);
 					if (upgrade)
 					{
 						//if (!upgrade->is_future(month_now) && (!upgrade->is_retired(month_now)))
@@ -4398,7 +5116,7 @@ void vehicle_manager_t::build_upgrade_list()
 							|| (show_out_of_production_vehicles && upgrade->is_retired(month_now) && !upgrade->is_obsolete(month_now, welt))
 							|| (show_obsolete_vehicles && upgrade->is_obsolete(month_now, welt)))
 						{
-							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc_for_display);
+							gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(upgrade, desc);
 							uinfo->set_pos(scr_coord(0, ypos));
 							uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 							upgrade_info.append(uinfo);
@@ -4427,7 +5145,7 @@ void vehicle_manager_t::build_upgrade_list()
 					for (int i = 0; i < info->get_upgrades_count(); i++)
 					{
 						vehicle_desc_t* upgrade = (vehicle_desc_t*)info->get_upgrades(i);
-						if (upgrade == desc_for_display)
+						if (upgrade == desc)
 						{
 							upgrades_from_this = true;
 							break;
@@ -4436,7 +5154,7 @@ void vehicle_manager_t::build_upgrade_list()
 				}
 				if (upgrades_from_this)
 				{
-					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc_for_display);
+					gui_upgrade_info_t* const uinfo = new gui_upgrade_info_t(info, desc);
 					uinfo->set_pos(scr_coord(0, ypos));
 					uinfo->set_size(scr_size(initial_upgrade_entry_width, max(uinfo->get_entry_height(), box_height)));
 					upgrade_info.append(uinfo);
@@ -4468,6 +5186,18 @@ void vehicle_manager_t::build_upgrade_list()
 			cont_upgrade.add_component(sinfo);
 			ypos += max(sinfo->get_entry_height(), box_height);
 		}
+		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
+	}
+	else if (desc_for_display.get_count() > 1) { // Multiple desc's selected. Display warning
+		cbuffer_t buf;
+		buf.clear();
+		buf.append(translator::translate("select_single_desc_to_show_upgrades"));
+		int box_height = LINESPACE * 3;
+		gui_special_info_t* const sinfo = new gui_special_info_t(buf, MN_GREY1);
+		sinfo->set_pos(scr_coord(0, ypos));
+		sinfo->set_size(scr_size(initial_upgrade_entry_width, max(sinfo->get_entry_height(), box_height)));
+		cont_upgrade.add_component(sinfo);
+		ypos += max(sinfo->get_entry_height(), box_height);
 		cont_upgrade.set_size(scr_size(initial_upgrade_entry_width - 12, ypos));
 	}
 	display(scr_coord(0,0));
@@ -4561,7 +5291,9 @@ void vehicle_manager_t::build_desc_list()
 	}
 	if (goto_this_desc)
 	{
-		desc_for_display = goto_this_desc;
+		desc_for_display.clear();
+		desc_for_display.resize(1);
+		desc_for_display.append(goto_this_desc);
 		save_previously_selected_desc();
 		goto_this_desc = NULL;
 	}
@@ -4571,7 +5303,14 @@ void vehicle_manager_t::build_desc_list()
 void vehicle_manager_t::save_previously_selected_desc()
 {
 	// When we need to remember what vehicle was selected, for instance due to resorting, this will remember it.
-	old_desc_for_display = desc_for_display;
+	if (desc_for_display.get_count() > 0)
+	{
+		old_desc_for_display = desc_for_display.get_element(0);
+	}
+	else
+	{
+		old_desc_for_display = NULL;
+	}
 }
 
 void vehicle_manager_t::display_desc_list()
@@ -4664,7 +5403,7 @@ void vehicle_manager_t::display_desc_list()
 	{
 		if (!old_desc_for_display)
 		{
-			desc_for_display = NULL;
+			desc_for_display.clear();
 		}
 		old_desc_for_display = NULL;
 	}
@@ -4688,14 +5427,16 @@ void vehicle_manager_t::build_veh_list()
 	int counter = 0;
 	way_type = (waytype_t)selected_tab_waytype;
 	veh_list.clear();
-	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-			{
-				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == desc_for_display && is_veh_displayable((vehicle_t*)v))
+	for (int i = 0; i < desc_for_display.get_count(); i++){
+		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 				{
-					counter++;
+					vehicle_t* v = cnv->get_vehicle(veh);
+					if (v->get_desc() == desc_for_display.get_element(i) && is_veh_displayable((vehicle_t*)v))
+					{
+						counter++;
+					}
 				}
 			}
 		}
@@ -4703,14 +5444,16 @@ void vehicle_manager_t::build_veh_list()
 	veh_list.resize(counter);
 
 	// Populate the vector with the vehicles we own that is also "for display"
-	FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
-		if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
-			for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
-			{
-				vehicle_t* v = cnv->get_vehicle(veh);
-				if (v->get_desc() == desc_for_display && is_veh_displayable((vehicle_t*)v))
+	for (int i = 0; i < desc_for_display.get_count(); i++) {
+		FOR(vector_tpl<convoihandle_t>, const cnv, welt->convoys()) {
+			if (cnv->get_owner() == player && cnv->get_vehicle(0)->get_waytype() == way_type) {
+				for (unsigned veh = 0; veh < cnv->get_vehicle_count(); veh++)
 				{
-					veh_list.append(v);
+					vehicle_t* v = cnv->get_vehicle(veh);
+					if (v->get_desc() == desc_for_display.get_element(i) && is_veh_displayable((vehicle_t*)v))
+					{
+						veh_list.append(v);
+					}
 				}
 			}
 		}
@@ -4751,6 +5494,8 @@ void vehicle_manager_t::build_veh_list()
 	}
 
 	display_veh_list();
+	build_upgrade_list(); 
+	build_livery_list();
 }
 
 void vehicle_manager_t::display_veh_list()
@@ -4776,7 +5521,7 @@ void vehicle_manager_t::display_veh_list()
 	for (i = 0; i < icnv; i++) {
 		if (veh_list.get_element(i) != NULL)
 		{
-			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i+ offset_index), sortby_veh, display_veh);
+			gui_veh_info_t* const vinfo = new gui_veh_info_t(veh_list.get_element(i + offset_index), sortby_veh, display_veh);
 			vinfo->set_pos(scr_coord(0, ypos));
 			vinfo->set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, vinfo->get_entry_height()));
 			vinfo->set_selection(veh_selection[i + offset_index]);
@@ -4802,6 +5547,24 @@ void vehicle_manager_t::display_veh_list()
 	veh_info.set_count(icnv);
 	cont_veh.set_size(scr_size(VEHICLE_NAME_COLUMN_WIDTH - 12, ypos));
 	display(scr_coord(0, 0));
+}
+
+void vehicle_manager_t::update_desc_selection()
+{
+	// This builds the actual array of selected desc's that we will show info about
+	int offset_index = (page_display_desc * desc_pr_page) - desc_pr_page;
+	desc_for_display.clear();
+	desc_for_display.resize(old_count_desc_selection);
+	for (int i = 0; i < desc_info.get_count(); i++)
+	{
+		if (desc_info.get_element(i)->is_selected())
+		{
+			int actual_index = i + offset_index;
+			desc_for_display.append(desc_list.get_element(actual_index));
+		}
+	}
+	// Build the vehicle list again
+	build_veh_list();
 }
 
 void vehicle_manager_t::update_veh_selection()
@@ -4832,7 +5595,6 @@ void vehicle_manager_t::update_veh_selection()
 	//build_class_entries();
 	display(scr_coord(0, 0));
 }
-
 
 void vehicle_manager_t::update_cargo_manifest(cbuffer_t& buf)
 {
@@ -5049,50 +5811,47 @@ void vehicle_manager_t::build_class_entries()
 	// if no vehicle is selected, only the desc, then display the class labels
 	// TODO: Make this take into consideration multiple desc's at the same time
 
-	if (!any_mail_cargo && !any_pass_cargo && desc_for_display)
+	if (!any_mail_cargo && !any_pass_cargo && desc_for_display.get_count()>0)
 	{
-		if (desc_for_display->get_total_capacity() > 0)
+		for (int j = 0; j < desc_for_display.get_count(); j++)
 		{
-			if (desc_for_display->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+			vehicle_desc_t* desc = desc_for_display.get_element(j);
+			if (desc && desc->get_total_capacity() > 0)
 			{
-				for (int i = 0; i < pass_classes; i++)
+				if (desc->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
 				{
-					if (desc_for_display->get_capacity(i) > 0)
+					for (int i = 0; i < pass_classes; i++)
 					{
-						pass_class_sel.at(i)->set_visible(true);
-						lb_pass_class.at(i)->set_visible(true);
-						pass_capacity_at_accommodation[i] = desc_for_display->get_capacity(i);
-						any_pass_cargo = true;
+						if (desc->get_capacity(i) > 0)
+						{
+							pass_class_sel.at(i)->set_visible(true);
+							lb_pass_class.at(i)->set_visible(true);
+							pass_capacity_at_accommodation[i] = desc->get_capacity(i);
+							any_pass_cargo = true;
+						}
+					}
+				}
+				else if (desc->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+				{
+					for (int i = 0; i < mail_classes; i++)
+					{
+						if (desc->get_capacity(i) > 0)
+						{
+							mail_class_sel.at(i)->set_visible(true);
+							lb_mail_class.at(i)->set_visible(true);
+							mail_capacity_at_accommodation[i] = desc->get_capacity(i);
+							any_mail_cargo = true;
+						}
 					}
 				}
 			}
-			else if (desc_for_display->get_freight_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
-			{
-				for (int i = 0; i < mail_classes; i++)
-				{
-					if (desc_for_display->get_capacity(i) > 0)
-					{
-						mail_class_sel.at(i)->set_visible(true);
-						lb_mail_class.at(i)->set_visible(true);
-						mail_capacity_at_accommodation[i] = desc_for_display->get_capacity(i);
-						any_mail_cargo = true;
-					}
-				}
-			}					
-			else
-			{
-				// Display "none" if desc/vehicle doesnt support classes: Turn the firstmost passenger label visible
-				lb_pass_class.at(0)->set_visible(true);
-				no_class_vehicle = true;
-			}
-		}			
-		else
+		}
+		if (!any_pass_cargo && !any_mail_cargo)
 		{
 			// Display "none" if desc/vehicle doesnt support classes: Turn the firstmost passenger label visible
 			lb_pass_class.at(0)->set_visible(true);
 			no_class_vehicle = true;
 		}
-
 	}
 
 
@@ -5100,42 +5859,42 @@ void vehicle_manager_t::build_class_entries()
 }
 
 
-uint32 vehicle_manager_t::get_rdwr_id()
-{
-	return magic_vehicle_manager_t+player->get_player_nr();
-}
-void vehicle_manager_t::rdwr(loadsave_t *file)
-{
-	scr_size size;
-	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff, livery_xoff, livery_yoff;
-	if (file->is_saving()) {
-		size = get_windowsize();
-		desc_xoff = scrolly_desc.get_scroll_x();
-		desc_yoff = scrolly_desc.get_scroll_y();
-		veh_xoff = scrolly_veh.get_scroll_x();
-		veh_yoff = scrolly_veh.get_scroll_y();
-		upgrade_xoff = scrolly_upgrade.get_scroll_x();
-		upgrade_yoff = scrolly_upgrade.get_scroll_y();
-		//livery_xoff = scrolly_livery.get_scroll_x();
-		//livery_yoff = scrolly_livery.get_scroll_y();
-	}
-	size.rdwr(file);
-
-	file->rdwr_long(desc_xoff);
-	file->rdwr_long(desc_yoff);
-	file->rdwr_long(veh_xoff);
-	file->rdwr_long(veh_yoff);
-	file->rdwr_long(upgrade_xoff);
-	file->rdwr_long(upgrade_yoff);
-
-	// open dialogue
-	if (file->is_loading()) {
-		set_windowsize(size);
-		resize(scr_coord(0, 0));
-		scrolly_desc.set_scroll_position(desc_xoff, desc_yoff);
-		scrolly_veh.set_scroll_position(veh_xoff, veh_yoff);
-		scrolly_upgrade.set_scroll_position(upgrade_xoff, upgrade_yoff);
-		//scrolly_livery.set_scroll_position(livery_xoff, livery_yoff);
-	}
-}
+//uint32 vehicle_manager_t::get_rdwr_id()
+//{
+//	return magic_vehicle_manager_t+player->get_player_nr();
+//}
+//void vehicle_manager_t::rdwr(loadsave_t *file)
+//{
+//	scr_size size;
+//	sint32 desc_xoff, desc_yoff, veh_xoff, veh_yoff, upgrade_xoff, upgrade_yoff, livery_xoff, livery_yoff;
+//	if (file->is_saving()) {
+//		size = get_windowsize();
+//		desc_xoff = scrolly_desc.get_scroll_x();
+//		desc_yoff = scrolly_desc.get_scroll_y();
+//		veh_xoff = scrolly_veh.get_scroll_x();
+//		veh_yoff = scrolly_veh.get_scroll_y();
+//		upgrade_xoff = scrolly_upgrade.get_scroll_x();
+//		upgrade_yoff = scrolly_upgrade.get_scroll_y();
+//		//livery_xoff = scrolly_livery.get_scroll_x();
+//		//livery_yoff = scrolly_livery.get_scroll_y();
+//	}
+//	size.rdwr(file);
+//
+//	file->rdwr_long(desc_xoff);
+//	file->rdwr_long(desc_yoff);
+//	file->rdwr_long(veh_xoff);
+//	file->rdwr_long(veh_yoff);
+//	file->rdwr_long(upgrade_xoff);
+//	file->rdwr_long(upgrade_yoff);
+//
+//	// open dialogue
+//	if (file->is_loading()) {
+//		set_windowsize(size);
+//		resize(scr_coord(0, 0));
+//		scrolly_desc.set_scroll_position(desc_xoff, desc_yoff);
+//		scrolly_veh.set_scroll_position(veh_xoff, veh_yoff);
+//		scrolly_upgrade.set_scroll_position(upgrade_xoff, upgrade_yoff);
+//		//scrolly_livery.set_scroll_position(livery_xoff, livery_yoff);
+//	}
+//}
 

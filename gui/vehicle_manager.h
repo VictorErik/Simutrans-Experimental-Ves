@@ -14,6 +14,7 @@
 #include "components/gui_label.h"
 #include "components/gui_chart.h"
 #include "components/gui_textinput.h"
+#include "components/gui_textarea.h"
 #include "components/gui_scrolled_list.h"
 #include "components/gui_scrollpane.h"
 #include "components/gui_tab_panel.h"
@@ -25,6 +26,7 @@
 #include "../simline.h"
 #include "../simconvoi.h"
 #include "../simworld.h"
+#include "../utils/cbuffer_t.h"
 
 class player_t;
 
@@ -88,23 +90,29 @@ public:
 
 	enum info_tab_t {
 		infotab_general,
-		infotab_economics,
+		infotab_payload,
 		infotab_maintenance,
 		infotab_advanced,
 		DISPLAY_MODES_INFOTAB
 	};
 private:
+
+
+
 	player_t *player;
 	uint8 player_nr;
 
-	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_maintenance_info, cont_economics_info, dummy;
-	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade, scrolly_livery;
+	gui_container_t cont_desc, cont_veh, cont_upgrade, cont_livery, cont_general_info, cont_maintenance_info, cont_payload_info, cont_class_reassign, dummy;
+	gui_scrollpane_t scrolly_desc, scrolly_veh, scrolly_upgrade, scrolly_livery, scrolly_cargo, scrolly_class_reassign;
 	gui_tab_panel_t tabs_waytype;
 	gui_tab_panel_t tabs_vehicletype;
 	gui_tab_panel_t tabs_info;
 	gui_combobox_t combo_sorter_desc;
 	gui_combobox_t combo_sorter_veh;
 	gui_combobox_t combo_display_desc, combo_display_veh;
+
+	cbuffer_t buf_cargo; // Must be initialized BEFORE the corresponding gui_textarea_t, or it will crash
+	gui_textarea_t text_cargo;
 
 	button_t bt_show_available_vehicles, bt_show_out_of_production_vehicles, bt_show_obsolete_vehicles;
 	button_t bt_select_all, bt_hide_in_depot;
@@ -113,12 +121,12 @@ private:
 	button_t bt_upgrade_to_from;
 	button_t bt_desc_sortreverse, bt_veh_sortreverse ;
 	button_t bt_append_livery, bt_show_obsolete_liveries, bt_reset_all_classes;
-	button_t bt_select_multiple_desc;
+	button_t bt_select_multiple_desc, bt_display_combined_info, bt_split_fixed_couplings;
 
 	gui_label_t lb_amount_desc, lb_amount_veh;
 	gui_label_t lb_desc_page, lb_veh_page;
 	gui_label_t lb_desc_sortby, lb_veh_sortby, lb_display_desc, lb_display_veh;
-	gui_label_t lb_available_liveries, lb_available_classes, lb_reassign_class_to, lb_current_cargo_information;
+	gui_label_t lb_available_liveries, lb_available_classes, lb_reassign_class_to, lb_current_payload_information;
 
 	gui_textinput_t ti_desc_display, ti_veh_display;
 	gui_combobox_t combo_desc_display, combo_veh_display;
@@ -136,11 +144,13 @@ private:
 	bool any_mail_cargo, any_pass_cargo, no_class_vehicle;
 
 	char text_select_multiple_desc[50];
+	char text_split_fixed_couplings[50];
 	char text_show_all_vehicles[50];
 	char text_show_out_of_production_vehicles[50];
 	char text_show_obsolete_vehicles[50];
 	char text_upgrade_to[50];
 	char text_upgrade_from[50];
+	char text_display_combined_info[50];
 
 	char sortby_text[50];
 	char displayby_text[50];
@@ -156,9 +166,11 @@ private:
 	static bool show_out_of_production_vehicles;
 	static bool show_obsolete_vehicles;
 	static bool select_multiple_desc;
+	static bool split_fixed_couplings;
 	static bool select_all;
 	static bool hide_veh_in_depot;
 	static bool show_obsolete_liveries;
+	static bool display_combined_info;
 
 	static sort_mode_desc_t sortby_desc;
 	static sort_mode_veh_t sortby_veh;
@@ -212,8 +224,9 @@ private:
 	int h_column_2;
 	int h_column_3;
 	int h_column_4;
+	int h_column_5;
 
-	// Upper columns
+	// Upper columns: 6 columns (uneven)
 	int u_column_1;
 	int u_column_2;
 	int u_column_3;
@@ -223,7 +236,7 @@ private:
 
 	// (Middle section doesnt use columns)
 	
-	// Lower columns
+	// Lower columns: 6 columns
 	int l_column_1;
 	int l_column_2;
 	int l_column_3;
@@ -238,11 +251,12 @@ private:
 	uint32 amount_veh;
 	uint32 amount_veh_owned;
 
-	cbuffer_t cargo_buf; // Freight text
 
 	vehicle_desc_t* old_desc_for_display;
 	vehicle_desc_t* goto_this_desc = NULL;
 	int selected_desc_index;
+	int new_count_desc_selection;
+	int old_count_desc_selection = -1;
 	int new_count_veh_selection;
 	int old_count_veh_selection = -1;
 	int new_count_owned_veh;
@@ -314,8 +328,15 @@ private:
 	char veh_display_location[64];
 	int letters_to_compare;
 
-	bool display_show_any;
-	vector_tpl<uint8> veh_display_combobox_indexes;
+
+	vector_tpl<uint8> veh_display_combobox_indexes; // 254 = show all, 253 = any load, 252 = only empty load; 0 = Pass, 1 = Mail, 2 + n = Special freight, "desc_count_special_freight" + n = Normal freight
+	int desc_count_special_freight;
+	bool desc_includes_pass = false;
+	bool desc_includes_mail = false;
+	bool desc_includes_special = false;
+	bool desc_includes_normal = false;
+	bool display_show_any_payload;
+
 
 public:
 	vehicle_manager_t(player_t* player);
@@ -325,8 +346,7 @@ public:
 
 	static int display_desc_by_good;
 	static int display_desc_by_class;
-
-	static int display_veh_by_cargo;
+	static int display_veh_by_payload;
 
 	void build_desc_list();
 	void build_veh_list();
@@ -337,7 +357,7 @@ public:
 	void build_livery_list();
 
 	void draw_general_information(const scr_coord& pos);
-	void draw_economics_information(const scr_coord& pos);
+	void draw_payload_information(const scr_coord& pos);
 	void draw_maintenance_information(const scr_coord& pos);
 
 	void vehicle_manager_t::display_tab_objects();
@@ -357,7 +377,8 @@ public:
 	uint8 return_desc_category(vehicle_desc_t *desc);
 
 	void update_tabs();
-	void update_vehicle_type_tabs();
+	void update_vehicle_type_tabs(); 
+	void update_desc_selection();
 	void update_veh_selection();
 	void update_cargo_manifest(cbuffer_t& buf);
 	void build_class_entries();
@@ -419,8 +440,8 @@ public:
 
 
 	//// following: rdwr stuff
-	void rdwr( loadsave_t *file );
-	uint32 get_rdwr_id();
+	//void rdwr( loadsave_t *file );
+	//uint32 get_rdwr_id();
 };
 
 #endif

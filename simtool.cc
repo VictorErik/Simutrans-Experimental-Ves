@@ -8140,6 +8140,7 @@ static bool scenario_check_schedule(karte_t *welt, player_t *player, schedule_t 
  * 's' : change state to [number] (and maybe set open schedule flag)
  * 'l' : apply new line [number]
  * 'c' : reassign classes
+ * 'e' : reassign classes for a single vehicle (Note: A better way is to create a new function "tool_change_vehicle" and have this function there)
  */
 bool tool_change_convoi_t::init( player_t *player )
 {
@@ -8360,8 +8361,8 @@ bool tool_change_convoi_t::init( player_t *player )
 		break;
 	}
 	case 'c': // reassign class
-
-		uint8 compartment, new_class;
+	{
+		sint32 compartment, new_class;
 		sint32 good_type; // 0 = Passenger, 1 = Mail,
 		sint32 reset; // 0 = reset only single class, 1 = reset all classes
 		sscanf(p, "%hi,%hi,%i,%i", &compartment, &new_class, &good_type, &reset);
@@ -8419,6 +8420,74 @@ bool tool_change_convoi_t::init( player_t *player )
 		}
 		break;
 	}
+	case 'e': // reassign class for a single vehicle
+	{
+		sint32 compartment, new_class;
+		sint32 good_type; // 0 = Passenger, 1 = Mail,
+		sint32 reset; // 0 = reset only single class, 1 = reset all classes
+		sint32 vehicle_position; // 0 = front vehicle
+		sscanf(p, "%i,%i,%i,%i,%i", &compartment, &new_class, &good_type, &reset, &vehicle_position);
+		if (reset == 1)
+		{
+			for (uint8 veh = 0; veh < cnv->get_vehicle_count(); veh++)
+			{
+				if (veh == vehicle_position)
+				{
+					vehicle_t* v = cnv->get_vehicle(veh);
+					if (good_type == 0 && v->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+					{
+						uint8 classes_amount = v->get_desc()->get_number_of_classes();
+						for (sint32 i = 0; i < classes_amount; i++)
+						{
+							v->set_class_reassignment(i, i);
+						}
+					}
+					if (good_type == 1 && v->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+					{
+						uint8 classes_amount = v->get_desc()->get_number_of_classes();
+						for (sint32 i = 0; i < classes_amount; i++)
+						{
+							v->set_class_reassignment(i, i);
+						}
+					}
+				}
+			}
+		}
+		else if (reset == 0)
+		{
+			for (uint8 veh = 0; veh < cnv->get_vehicle_count(); veh++)
+			{
+				if (veh == vehicle_position)
+				{
+					vehicle_t* v = cnv->get_vehicle(veh);
+					uint8 classes_amount = v->get_desc()->get_number_of_classes();
+					if (good_type == 0 && v->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_PAS)
+					{
+						if (compartment < classes_amount)
+						{
+							v->set_class_reassignment(compartment, new_class);
+						}
+					}
+					if (good_type == 1 && v->get_cargo_type()->get_catg_index() == goods_manager_t::INDEX_MAIL)
+					{
+						if (compartment < classes_amount)
+						{
+							v->set_class_reassignment(compartment, new_class);
+						}
+					}
+				}
+			}
+		}
+		cnv->calc_classes_carried();
+		linehandle_t line = cnv->get_line();
+		if (line.is_bound())
+		{
+			line->calc_classes_carried();
+		}
+		break;
+	}
+	}
+	
 
 	if(  cnv->in_depot()  &&  (tool=='g'  ||  tool=='l')  ) {
 		const grund_t *const ground = welt->lookup( cnv->get_home_depot() );
