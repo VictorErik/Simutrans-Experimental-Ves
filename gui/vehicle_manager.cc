@@ -91,6 +91,7 @@ bool vehicle_manager_t::show_out_of_production_vehicles = false;
 bool vehicle_manager_t::show_obsolete_vehicles = false;
 bool vehicle_manager_t::select_multiple_desc = false;
 bool vehicle_manager_t::split_fixed_couplings = false;
+bool vehicle_manager_t::show_in_convoys = false;
 bool vehicle_manager_t::select_all = false;
 bool vehicle_manager_t::hide_veh_in_depot = false;
 bool vehicle_manager_t::show_obsolete_liveries = false;
@@ -169,7 +170,7 @@ static const char * engine_type_names[11] =
 	"turbine"
 };
 
-vehicle_manager_t::vehicle_manager_t(player_t *player_) :
+vehicle_manager_t::vehicle_manager_t(player_t* player_) :
 	gui_frame_t(translator::translate("vehicle_manager"), player_),
 	player(player_),
 	lb_amount_desc(NULL, SYSCOL_TEXT, gui_label_t::left),
@@ -204,7 +205,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_show_available_vehicles.pressed = show_available_vehicles;
 	add_component(&bt_show_available_vehicles);
 
-	
+
 	// Show vehicles out of production button
 	sprintf(text_show_out_of_production_vehicles, translator::translate("Show outdated"));
 	bt_show_out_of_production_vehicles.init(button_t::square_state, text_show_out_of_production_vehicles, coord_dummy, size_dummy);
@@ -214,7 +215,7 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 		bt_show_out_of_production_vehicles.pressed = show_out_of_production_vehicles;
 		add_component(&bt_show_out_of_production_vehicles);
 	}
-		
+
 	// Show obsolete vehicles button
 	sprintf(text_show_obsolete_vehicles, translator::translate("Show obsolete"));
 	bt_show_obsolete_vehicles.init(button_t::square_state, text_show_obsolete_vehicles, coord_dummy, size_dummy);
@@ -252,6 +253,15 @@ vehicle_manager_t::vehicle_manager_t(player_t *player_) :
 	bt_split_fixed_couplings.set_tooltip(translator::translate("when_unticked_vehicles_with_fixed_connections_will_display_in_the_same_entry"));
 	bt_split_fixed_couplings.pressed = split_fixed_couplings;
 	add_component(&bt_split_fixed_couplings);
+
+
+	sprintf(text_show_in_convoys, translator::translate("show_in_convoys"));
+	bt_show_in_convoys.init(button_t::square_state, text_show_in_convoys, coord_dummy, size_dummy);
+	bt_show_in_convoys.add_listener(this);
+	bt_show_in_convoys.set_tooltip(translator::translate("when_ticked_combine_your_vehicles_into_existing_convoys"));
+	bt_show_in_convoys.pressed = show_in_convoys;
+	add_component(&bt_show_in_convoys);
+
 
 	// "Desc" sorting label, combobox and reverse sort button
 	lb_desc_sortby.set_visible(true);
@@ -735,6 +745,14 @@ bool vehicle_manager_t::action_triggered(gui_action_creator_t* comp, value_t v) 
 		bt_split_fixed_couplings.pressed = !bt_split_fixed_couplings.pressed;
 		split_fixed_couplings = bt_split_fixed_couplings.pressed;
 		//update_tabs(); // To display a tab with only multiple units?
+		page_turn_desc = false;
+		build_desc_list();
+		display(scr_coord(0, 0));
+	}
+
+	if (comp == &bt_show_in_convoys) {
+		bt_show_in_convoys.pressed = !bt_show_in_convoys.pressed;
+		show_in_convoys = bt_show_in_convoys.pressed;
 		page_turn_desc = false;
 		build_desc_list();
 		display(scr_coord(0, 0));
@@ -3556,6 +3574,7 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 
 	header_section = 5;
 	int y_pos = header_section;
+	int x_pos = 0;
 
 	// ----------- Left hand side upper labels, buttons and comboboxes -----------------//
 	// Show available vehicles button
@@ -3588,10 +3607,22 @@ void vehicle_manager_t::set_windowsize(scr_size size)
 	label_length = display_calc_proportional_string_len_width(text_select_multiple_desc, -1) + 30;
 	bt_select_multiple_desc.set_pos(scr_coord(h_column_1, y_pos));
 	bt_select_multiple_desc.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
+	x_pos += label_length;
 
 	// Split fixed couplings button
-	bt_split_fixed_couplings.set_pos(scr_coord(h_column_1 + label_length, y_pos));
-	bt_split_fixed_couplings.set_size(scr_size(combobox_width, D_BUTTON_HEIGHT));
+	label_length = display_calc_proportional_string_len_width(text_split_fixed_couplings, -1) + 30;
+	bt_split_fixed_couplings.set_pos(scr_coord(h_column_2, y_pos));
+	//bt_split_fixed_couplings.set_pos(scr_coord(h_column_1 + x_pos, y_pos));
+	bt_split_fixed_couplings.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
+	x_pos += label_length;
+
+	// Show in convoy burron
+	label_length = display_calc_proportional_string_len_width(text_show_in_convoys, -1) + 30;
+	bt_show_in_convoys.set_pos(scr_coord(h_column_3, y_pos));
+	//bt_show_in_convoys.set_pos(scr_coord(h_column_1 + x_pos, y_pos));
+	bt_show_in_convoys.set_size(scr_size(label_length, D_BUTTON_HEIGHT));
+	x_pos += label_length;
+	x_pos = 0;
 
 
 	y_pos += D_BUTTON_HEIGHT;
